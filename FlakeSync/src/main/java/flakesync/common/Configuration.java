@@ -94,12 +94,11 @@ public class Configuration {
         this.createExecutionDirIfNeeded();
     }
 
-
-    public Configuration(String executionId, String nondexDir) {
+    public Configuration(String executionId, String nondexDir, String testName) {
         this(ConfigurationDefaults.DEFAULT_MODE, ConfigurationDefaults.DEFAULT_SEED,
-                    Pattern.compile(ConfigurationDefaults.DEFAULT_FILTER), 0, Long.MAX_VALUE,
-                    nondexDir, ConfigurationDefaults.DEFAULT_NONDEX_JAR_DIR,
-                    "SampleTest#testA" , executionId, Logger.getGlobal().getLoggingLevel());
+                Pattern.compile(ConfigurationDefaults.DEFAULT_FILTER), 0, Long.MAX_VALUE,
+                nondexDir, ConfigurationDefaults.DEFAULT_NONDEX_JAR_DIR,
+                testName, executionId, Logger.getGlobal().getLoggingLevel());
 
     }
 
@@ -120,7 +119,6 @@ public class Configuration {
         sb.append(" -D" + ConfigurationDefaults.PROPERTY_NONDEX_JAR_DIR + "=\"" + this.nondexJarDir + "\"");
         sb.append(" -D" + ConfigurationDefaults.PROPERTY_EXECUTION_ID + "=" + this.executionId);
         sb.append(" -D" + ConfigurationDefaults.PROPERTY_LOGGING_LEVEL + "=" + this.loggingLevel);
-        //sb.append(this.testName == null ? "" : " -Dtest=" + this.testName);
         //System.out.println("Arg line:   " + sb.toString());
         return sb.toString();
     }

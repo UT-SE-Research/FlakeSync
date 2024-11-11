@@ -1,0 +1,69 @@
+1.
+-Use NonDex code to run surefire test
+-Adding maven dependencies
+       -Look in imports and pom.xml
+       -Google the class and figure out which .jar,
+       -usually .jar files will be on maven central
+2. Make sure it works on other repositories, see if
+    -If mvn surefire:test fails, it is a me problem
+    -If it works consistently --> get fail data
+
+    Notes:
+        davidmoten/rxjava2-extras
+            -> mvn test -Dtest=TransformerDecodeTest#testIsUtilClass <-
+            pom.xml file contained:
+             <plugin>
+                            <groupId>org.apache.maven.plugins</groupId>
+                            <artifactId>maven-surefire-plugin</artifactId>
+                            <version>3.5.1</version>
+                            <configuration>
+                                <!-- required to get jacoco to work locally -->
+                                <!-- <argLine>@{argLine}</argLine> -->
+                            </configuration>
+            </plugin>
+                    -I needed to comment out <argLine>@{argLine}</argLine> for the plugin to work
+            Ran TransformerDecodeTest#testIsUtilClass -->fail, "Surefire failed when running tests for clean_..."
+        elasticjob/elastic-job-lite
+            Did not compile on local machine
+        flaxsearch/luwak:
+            Ran TestCollectionUtils#testPartitions --> pass with plugin
+        fluent/fluent-logger-java
+            Did not compile on local machine
+        javadelight/delight-nashorn-sandbox
+            Ran TestAccessFunction#test_access_variable -->pass with plugin
+        nlighten/tomcat-exporter
+             -> mvn test -Dtest=TomcatJDbcp2PoolExportsTest#testJDbcp2PoolMetrics -pl client <- WORKS
+             -> mvn surefire:test -Dtest=TomcatJDbcp2PoolExportsTest#testJDbcp2PoolMetrics -pl client <- WORKS
+             -> mvn surefire:test -Dtest=TomcatJDbcp2PoolExportsTest#testJDbcp2PoolMetrics <- DOES NOT WORK (needs "-pl client")
+            Ran TomcatJDbcp2PoolExportsTest#testJDbcp2PoolMetrics -->fail, "Surefire failed when running tests for clean_..."
+        qos-ch/logback
+            Did not compile on local machine
+        undertow-io/undertow
+            ->mvn test -pl core <- WORKS
+            ->mvn test -Dtest=TLS13HalfCloseHangTestCase#testHang -pl core -am <- DOES NOT WORK
+            ->mvn test -Dtest=TLS13HalfCloseHangTestCase#testHang -pl core <- DOES NOT WORK
+            Keep getting "No tests to run."
+            Ran TLS13HalfCloseHangTestCase#testHang -->fail, "Surefire failed when running tests for clean_..."
+
+3. Next step: Run one test at a time
+    -Make a method that only runs one test
+        -API-like design
+    -Get result of that test, whether passed or failed
+    -Add to NonDex config "rewriting the xml"
+    TESTING:
+    -Write your own input.csv file & write a bash script that can iterate through and run each test using the plugin
+        - USE THIS FOR EASE "cut -d, -f1 all_input.csv | sort -u | wc -l"
+        - Choose 1 test per project, maybe 1 per module
+
+        -flaxsearch/luwak: TestPartitionMatcher.testParallelSlowLog
+        -fluent/fluent-logger:  Source option 6 is no longer supported. Use 7 or later.
+                                Target option 6 is no longer supported. Use 7 or later.
+        -^^^Same error for qos-ch/logback
+        -
+
+
+4. Next step: Run test but with delays like delay injection
+    -Run test for concurrent methods
+          -Add agent as part of the argline
+            -Agent modifies the pom.xml and adds the dependencies
+          -Look for agent in the bash script

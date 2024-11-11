@@ -29,33 +29,22 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 package flakesync;
 
-import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.io.PrintWriter;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 
 import flakesync.common.ConfigurationDefaults;
-import flakesync.common.Configuration;
 import flakesync.common.Level;
 import flakesync.common.Logger;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
 import org.apache.maven.plugins.annotations.LifecyclePhase;
 import org.apache.maven.plugins.annotations.Mojo;
+import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.plugins.annotations.ResolutionScope;
 
 @Mojo(name = "flakesync", defaultPhase = LifecyclePhase.TEST, requiresDependencyResolution = ResolutionScope.TEST)
@@ -73,7 +62,7 @@ public class TestRunMojo extends FlakeSyncAbstractMojo {
     @Override
     public void execute() throws MojoExecutionException, MojoFailureException {
         super.execute();
-        //Logger.getGlobal().log(Level.INFO, ("The original argline is: " + this.originalArgLine));
+        Logger.getGlobal().log(Level.INFO, ("The test name is: " + this.testName));
         MojoExecutionException allExceptions = null;
 
         // If we add clean exceptions to allExceptions then the build fails if anything fails without nondex.
@@ -82,57 +71,18 @@ public class TestRunMojo extends FlakeSyncAbstractMojo {
             CleanSurefireExecution cleanExec = new CleanSurefireExecution(
                     this.surefire, this.originalArgLine, this.mavenProject,
                     this.mavenSession, this.pluginManager,
-                    Paths.get(this.baseDir.getAbsolutePath(), ConfigurationDefaults.DEFAULT_NONDEX_DIR).toString());
+                    Paths.get(this.baseDir.getAbsolutePath(), ConfigurationDefaults.DEFAULT_NONDEX_DIR).toString(),
+                    this.testName);
             this.executeSurefireExecution(allExceptions, cleanExec);
-            //this.executionsWithoutShuffling.add(cleanExec);
         }
-
-        /*for (int i = 0; i < this.numRuns; i++) {
-            NonDexSurefireExecution execution =
-                    new NonDexSurefireExecution(this.mode, this.computeIthSeed(i),
-                            Pattern.compile(this.filter), this.start, this.end,
-                            Paths.get(this.baseDir.getAbsolutePath(), ConfigurationDefaults.DEFAULT_NONDEX_DIR).toString(),
-                            Paths.get(this.baseDir.getAbsolutePath(), ConfigurationDefaults.DEFAULT_NONDEX_JAR_DIR)
-                                    .toString(),
-                            this.surefire, this.originalArgLine, this.mavenProject,
-                            this.mavenSession, this.pluginManager);
-            setFilePath(execution.getConfiguration().getRunFilePath());
-            this.executions.add(execution);
-            allExceptions = this.executeSurefireExecution(allExceptions, execution);
-            this.writeCurrentRunInfo(execution);
-        }*/
 
         for (CleanSurefireExecution cleanExec : this.executionsWithoutShuffling) {
             setFilePath(cleanExec.getConfiguration().getRunFilePath());
             this.writeCurrentRunInfo(cleanExec);
-            this.postProcessExecutions(cleanExec);
         }
-
-        /*Configuration config = this.executions.get(0).getConfiguration();
-
-        this.printSummary(config);
-
-        try {
-            Files.copy(config.getRunFilePath(), config.getLatestRunFilePath(), StandardCopyOption.REPLACE_EXISTING);
-        } catch (IOException ex) {
-            Logger.getGlobal().log(Level.SEVERE, "Could not copy current run info to latest", ex);
-        }
-
-        this.getLog().info("[NonDex] The id of this run is: " + this.executions.get(0).getConfiguration().executionId);
-        if (allExceptions != null) {
-            throw allExceptions;
-        }*/
 
     }
 
-    private void postProcessExecutions(CleanSurefireExecution cleanExec) {
-        System.out.println("in postProcessExecutions");
-        Collection<String> failedInClean = cleanExec.getConfiguration().getFailedTests();
-
-        /*for (NonDexSurefireExecution exec : this.executions) {
-            exec.getConfiguration().filterTests(failedInClean);
-        }*/
-    }
 
     private MojoExecutionException executeSurefireExecution(MojoExecutionException allExceptions,
                                                             CleanSurefireExecution execution) {
@@ -144,129 +94,6 @@ public class TestRunMojo extends FlakeSyncAbstractMojo {
         return allExceptions;
     }
 
-    /*private int computeIthSeed(int ithSeed) {
-        return Utils.computeIthSeed(ithSeed, this.rerun, this.seed);
-    }*/
-
-    /*private void printSummary(Configuration config) {
-        Set<String> allFailures = new LinkedHashSet<>();
-        Map<String, Integer> countsOfFailingTestsWithoutShuffling =
-                new LinkedHashMap<String, Integer>();
-        boolean failsWithoutShuffling = false;
-        this.getLog().info("NonDex SUMMARY:");
-        for (CleanSurefireExecution exec : this.executions) {
-            this.printExecutionResults(allFailures, exec);
-        }
-        for (int i = 0; i < this.executionsWithoutShuffling.size(); i++) {
-            CleanSurefireExecution exec = this.executionsWithoutShuffling.get(i);
-            Collection<String> failedTests = exec.getConfiguration().getFailedTests();
-            if (!failedTests.isEmpty()) {
-                failsWithoutShuffling = true;
-                if (this.numRunsWithoutShuffling == 1) {
-                    this.getLog().info("The following tests failed in the clean run:");
-                } else {
-                    this.getLog().info("In run #" + String.valueOf(i + 1)
-                            + " without NonDex shuffling, the following tests failed:");
-                }
-                for (String test : failedTests) {
-                    this.getLog().warn(test);
-                    int count = countsOfFailingTestsWithoutShuffling.containsKey(test)
-                            ? countsOfFailingTestsWithoutShuffling.get(test) : 0;
-                    countsOfFailingTestsWithoutShuffling.put(test, count + 1);
-                }
-            }
-        }
-        if (failsWithoutShuffling && (this.numRunsWithoutShuffling > 1)) {
-            this.getLog().info("------------------");
-            this.getLog().info("The following tests are failing in clean runs without NonDex shuffling");
-            for (Map.Entry<String, Integer> entry : countsOfFailingTestsWithoutShuffling.entrySet()) {
-                this.getLog().info("Test: " + entry.getKey());
-                this.getLog().info("Fails in " + String.valueOf(entry.getValue()) + " out of "
-                        + String.valueOf(this.numRunsWithoutShuffling) + " clean runs.");
-            }
-        } else if (!failsWithoutShuffling) {
-            this.getLog().info("All tests pass without NonDex shuffling");
-        }
-        this.getLog().info("####################");
-        this.getLog().info("Across all seeds:");
-        for (String test : allFailures) {
-            this.getLog().info(test);
-        }
-
-        this.generateHtml(allFailures, config);
-    }*/
-
-    /*private void generateHtml(Set<String> allFailures, Configuration config) {
-        String head = "<!DOCTYPE html>"
-                + "<html>"
-                + "<head>"
-                + "<title>Test Results</title>"
-                + "<style>"
-                + "table { border-collapse: collapse; width: 100%; }"
-                + "th { height: 50%; }"
-                + "th, td { padding: 10px; text-align: left; }"
-                + "tr:nth-child(even) {background-color:#f2f2f2;}"
-                + ".x { color: red; font-size: 150%;}"
-                + ".✓ { color: green; font-size: 150%;}"
-                + "</style>"
-                + "</head>";
-        String html = head + "<body>" + "<table>";
-
-        html += "<thead><tr>";
-        html += "<th>Test Name</th>";
-        for (int iter = 0; iter < this.executions.size(); iter++) {
-            html += "<th>";
-            html += "" + this.executions.get(iter).getConfiguration().seed;
-            html += "</th>";
-        }
-        html += "</tr></thead>";
-        html += "<tbody>";
-        for (String failure : allFailures) {
-            html += "<tr><td>" + failure + "</td>";
-            for (CleanSurefireExecution exec : this.executions) {
-                boolean testDidFail = false;
-                for (String test : exec.getConfiguration().getFailedTests()) {
-                    if (test.equals(failure)) {
-                        testDidFail = true;
-                    }
-                }
-                if (testDidFail) {
-                    html += "<td class=\"x\">&#10006;</td>";
-                } else {
-                    html += "<td class=\"✓\">&#10004;</td>";
-                }
-            }
-            html += "</tr>";
-        }
-        html += "</tbody></table></body></html>";
-
-        File nondexDir = config.getNondexDir().toFile();
-        File htmlFile = new File(nondexDir, "test_results.html");
-        try {
-            PrintWriter htmlPrinter = new PrintWriter(htmlFile);
-            htmlPrinter.print(html);
-            htmlPrinter.close();
-        } catch (FileNotFoundException ex) {
-            this.getLog().info("File Missing.  But that shouldn't happen...");
-        }
-        this.getLog().info("Test results can be found at: ");
-        this.getLog().info("file://" + htmlFile.getPath());
-    }*/
-
-    /*private void printExecutionResults(Set<String> allFailures, CleanSurefireExecution exec) {
-        this.getLog().info("*********");
-        this.getLog().info("mvn nondex:nondex " + exec.getConfiguration().toArgLine());
-        Collection<String> failedTests = exec.getConfiguration().getFailedTests();
-        if (failedTests.isEmpty()) {
-            this.getLog().info("No Test Failed with this configuration.");
-        }
-        for (String test : failedTests) {
-            allFailures.add(test);
-            this.getLog().warn(test);
-        }
-        this.getLog().info("*********");
-    }*/
-
     private void writeCurrentRunInfo(CleanSurefireExecution execution) {
         try {
             Files.write(this.runFilePath,
@@ -275,6 +102,12 @@ public class TestRunMojo extends FlakeSyncAbstractMojo {
         } catch (IOException ex) {
             Logger.getGlobal().log(Level.SEVERE, "Cannot write execution id to current run file", ex);
         }
+    }
+
+    public void setTestName(String[] testName) {
+        // we can do something more with provided parameter
+        System.out.println("Huzzah " + Arrays.toString(testName));
+        this.testName = testName[0];
     }
 
 }

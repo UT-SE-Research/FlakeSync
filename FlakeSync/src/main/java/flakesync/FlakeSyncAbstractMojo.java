@@ -127,6 +127,10 @@ public abstract class FlakeSyncAbstractMojo extends AbstractMojo {
     protected File baseDir;
     @Parameter(property = "goal", alias = "mojo")
     protected String goal;
+
+    @Parameter(property = "flakesync.testName", required = true)
+    protected String testName;
+
     @Component
     protected MavenSession mavenSession;
     @Component
@@ -149,17 +153,6 @@ public abstract class FlakeSyncAbstractMojo extends AbstractMojo {
             rtPathStr = rtPath.toString();
         }
 
-        /*try {
-            File fileForJar = Paths.get(this.baseDir.getAbsolutePath(),
-                    ConfigurationDefaults.DEFAULT_NONDEX_JAR_DIR).toFile();
-
-            fileForJar.mkdirs();
-            Instrumenter.instrument(rtPathStr, Paths.get(fileForJar.getAbsolutePath(),
-                    ConfigurationDefaults.INSTRUMENTATION_JAR).toString());
-        } catch (IOException | NoSuchAlgorithmException exc) {
-            exc.printStackTrace();
-        }*/
-
         this.surefire = this.lookupPlugin("org.apache.maven.plugins:maven-surefire-plugin");
 
         if (this.surefire == null) {
@@ -168,9 +161,11 @@ public abstract class FlakeSyncAbstractMojo extends AbstractMojo {
             this.surefire = getSureFirePlugin();
         }
 
-        //this.surefire = getSureFirePlugin();
-        Properties localProperties = this.mavenProject.getProperties();
+
+        /*Properties localProperties = this.mavenProject.getProperties();
         this.originalArgLine = localProperties.getProperty("argLine", "");
+        System.out.println("This is THE original argline: " + this.originalArgLine);*/
+
     }
 
     private Plugin lookupPlugin(String paramString) {
@@ -192,6 +187,8 @@ public abstract class FlakeSyncAbstractMojo extends AbstractMojo {
         surefire.setVersion("2.20");
         return surefire;
     }
+
+
 
 
 }

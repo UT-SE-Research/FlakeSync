@@ -58,26 +58,29 @@ public class CleanSurefireExecution {
     protected MavenProject mavenProject;
     protected MavenSession mavenSession;
     protected BuildPluginManager pluginManager;
+    protected String testName;
 
     protected String originalArgLine;
 
     protected CleanSurefireExecution(Plugin surefire, String originalArgLine, String executionId,
                                      MavenProject mavenProject, MavenSession mavenSession, BuildPluginManager pluginManager,
-                                     String nondexDir) {
+                                     String nondexDir, String testName) {
         this.executionId = executionId;
         this.surefire = surefire;
-        this.originalArgLine = sanitizeAndRemoveEnvironmentVars(originalArgLine);
+        this.testName = testName;
+        this.originalArgLine = originalArgLine;
+        //this.originalArgLine = sanitizeAndRemoveEnvironmentVars(originalArgLine);
         this.mavenProject = mavenProject;
         this.mavenSession = mavenSession;
         this.pluginManager = pluginManager;
-        this.configuration = new Configuration(executionId, nondexDir);
+        this.configuration = new Configuration(executionId, nondexDir, testName);
 
     }
 
     public CleanSurefireExecution(Plugin surefire, String originalArgLine, MavenProject mavenProject,
-                                  MavenSession mavenSession, BuildPluginManager pluginManager, String nondexDir) {
+                                  MavenSession mavenSession, BuildPluginManager pluginManager, String nondexDir, String testName) {
         this(surefire, originalArgLine, "clean_" + Utils.getFreshExecutionId(), mavenProject, mavenSession, pluginManager,
-                nondexDir);
+                nondexDir, testName);
     }
 
     public Configuration getConfiguration() {
@@ -92,7 +95,7 @@ public class CleanSurefireExecution {
         try {
             Xpp3Dom domNode = this.applyNonDexConfig((Xpp3Dom) this.surefire.getConfiguration());
             //this.addAttributeToConfig(domNode, "")
-            //this.setupArgline(domNode);
+            this.setupArgline(domNode);
             this.setupTest(domNode);
             Logger.getGlobal().log(Level.FINE, "Config node passed: " + domNode.toString());
             Logger.getGlobal().log(Level.FINE, this.mavenProject + "\n" + this.mavenSession + "\n" + this.pluginManager);
@@ -153,7 +156,7 @@ public class CleanSurefireExecution {
             configNode.addChild(this.makeNode("argLine", argLineToSet));
         }
 
-        argLineToSet = "-Dtest=SampleTest#testA";
+        //argLineToSet = "-Dtest=SampleTest#testA";
         // originalArgLine is the argLine set from Maven, not through the surefire config
         // if such an argLine exists, we modify that one also
         this.mavenProject.getProperties().setProperty("argLine",
@@ -162,8 +165,8 @@ public class CleanSurefireExecution {
     }
 
     protected void setupTest(Xpp3Dom configNode) {
-        configNode.addChild(this.makeNode("test", "TLS13HalfCloseHangTestCase#testHang"));
-        //configNode.addChild((this.makeNode("test", "SampleTest#testA")));
+        //configNode.addChild(this.makeNode("test", "TransformerDecodeTest#testIsUtilClass"));
+        configNode.addChild((this.makeNode("test", this.testName)));
     }
 
     protected Xpp3Dom applyNonDexConfig(Xpp3Dom configuration) {
