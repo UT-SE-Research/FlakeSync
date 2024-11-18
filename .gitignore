@@ -7,3 +7,4 @@ target/
 *Zone.Identifier
 .idea/
 *.iml
+.nondex/
