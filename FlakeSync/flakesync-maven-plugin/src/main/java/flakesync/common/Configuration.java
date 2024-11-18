@@ -107,7 +107,7 @@ public class Configuration {
     }
 
     public String toArgLine() {
-        StringBuilder sb = new StringBuilder();
+        /*StringBuilder sb = new StringBuilder();
         sb.append(this.testName == null ? "" : " -Dtest=" + this.testName);
         sb.append(" -D" + ConfigurationDefaults.PROPERTY_FILTER + "=" + "\'" + this.filter + "\'");
         sb.append(" -D" + ConfigurationDefaults.PROPERTY_MODE + "=" + this.mode);
@@ -118,9 +118,8 @@ public class Configuration {
         sb.append(" -D" + ConfigurationDefaults.PROPERTY_NONDEX_DIR + "=\"" + this.nondexDir + "\"");
         sb.append(" -D" + ConfigurationDefaults.PROPERTY_NONDEX_JAR_DIR + "=\"" + this.nondexJarDir + "\"");
         sb.append(" -D" + ConfigurationDefaults.PROPERTY_EXECUTION_ID + "=" + this.executionId);
-        sb.append(" -D" + ConfigurationDefaults.PROPERTY_LOGGING_LEVEL + "=" + this.loggingLevel);
-        //System.out.println("Arg line:   " + sb.toString());
-        return sb.toString();
+        sb.append(" -D" + ConfigurationDefaults.PROPERTY_LOGGING_LEVEL + "=" + this.loggingLevel);*/
+        return "";
     }
 
     @Override

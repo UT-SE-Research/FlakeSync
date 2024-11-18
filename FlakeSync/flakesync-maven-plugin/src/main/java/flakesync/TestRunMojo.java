@@ -106,7 +106,6 @@ public class TestRunMojo extends FlakeSyncAbstractMojo {
 
     public void setTestName(String[] testName) {
         // we can do something more with provided parameter
-        System.out.println("Huzzah " + Arrays.toString(testName));
         this.testName = testName[0];
     }
 

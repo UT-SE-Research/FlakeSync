@@ -58,11 +58,17 @@
         -flaxsearch/luwak: TestPartitionMatcher.testParallelSlowLog
         -fluent/fluent-logger:  Source option 6 is no longer supported. Use 7 or later.
                                 Target option 6 is no longer supported. Use 7 or later.
-        -^^^Same error for qos-ch/logback
+        -^^^Same error for qos-ch/logback, apache/httpcore
         -
+4. core contains the flakesync-core artifact files (this is already java code)
+    - Replace flakesync-core with flakesync-delay-core (written by Shanto) --> make sure it compiles
+    -the agent is the jar file
+    -"-javaagent:$THE_PATH_TO_AGENT_JAR/flakeDelay-core-0.1-SNAPSHOT.jar" construct this by:
+        -Maven should have API to get .m2
+        -get path to the core module i create
+    -Should not have to modify the pom.xml file
 
-
-4. Next step: Run test but with delays like delay injection
+5. Next step: Run test but with delays like delay injection--> minimizer agent
     -Run test for concurrent methods
           -Add agent as part of the argline
             -Agent modifies the pom.xml and adds the dependencies

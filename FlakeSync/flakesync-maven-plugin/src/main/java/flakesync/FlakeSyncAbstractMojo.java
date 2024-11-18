@@ -137,6 +137,7 @@ public abstract class FlakeSyncAbstractMojo extends AbstractMojo {
     protected BuildPluginManager pluginManager;
 
     protected Plugin surefire;
+
     protected String originalArgLine;
 
     @Override
@@ -162,9 +163,9 @@ public abstract class FlakeSyncAbstractMojo extends AbstractMojo {
         }
 
 
-        /*Properties localProperties = this.mavenProject.getProperties();
+        Properties localProperties = this.mavenProject.getProperties();
         this.originalArgLine = localProperties.getProperty("argLine", "");
-        System.out.println("This is THE original argline: " + this.originalArgLine);*/
+        System.out.println("This is the original argline: " + this.originalArgLine);
 
     }
 

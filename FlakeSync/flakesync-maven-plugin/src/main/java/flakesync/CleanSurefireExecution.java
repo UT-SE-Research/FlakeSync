@@ -1,5 +1,4 @@
-/*
-The MIT License (MIT)
+/*The MIT License (MIT)
 Copyright (c) 2015 Alex Gyori
 Copyright (c) 2022 Kaiyao Ke
 Copyright (c) 2015 Owolabi Legunsen
@@ -24,8 +23,9 @@ MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
 NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
 LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
 OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
-WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-*/
+WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.*/
+
+
 package flakesync;
 
 import java.util.Arrays;
@@ -68,8 +68,7 @@ public class CleanSurefireExecution {
         this.executionId = executionId;
         this.surefire = surefire;
         this.testName = testName;
-        this.originalArgLine = originalArgLine;
-        //this.originalArgLine = sanitizeAndRemoveEnvironmentVars(originalArgLine);
+        this.originalArgLine = sanitizeAndRemoveEnvironmentVars(originalArgLine);
         this.mavenProject = mavenProject;
         this.mavenSession = mavenSession;
         this.pluginManager = pluginManager;
@@ -99,7 +98,6 @@ public class CleanSurefireExecution {
             this.setupTest(domNode);
             Logger.getGlobal().log(Level.FINE, "Config node passed: " + domNode.toString());
             Logger.getGlobal().log(Level.FINE, this.mavenProject + "\n" + this.mavenSession + "\n" + this.pluginManager);
-            Logger.getGlobal().log(Level.CONFIG, this.configuration.toString());
             Logger.getGlobal().log(Level.FINE, "Surefire config: " + this.surefire + "  " + MojoExecutor.goal("test")
                     + " " + domNode + " "
                     + MojoExecutor.executionEnvironment(this.mavenProject, this.mavenSession,
@@ -137,14 +135,15 @@ public class CleanSurefireExecution {
     }
 
     protected void setupArgline(Xpp3Dom configNode) {
-        // create the NonDex argLine for surefire based on the current configuration
+        // create the flakeSync-delay argLine for surefire based on the current configuration
         // this adds things like where to save test reports, what directory NonDex
         // should store results in, what seed and mode should be used.
-        String argLineToSet =  this.configuration.toArgLine();
+        String pathToJar = "";
+        String argLineToSet =  "-javaagent:"+ pathToJar + "/flakeDelay-core-0.1-SNAPSHOT.jar";;
         boolean added = false;
         for (Xpp3Dom config : configNode.getChildren()) {
             if ("argLine".equals(config.getName())) {
-                Logger.getGlobal().log(Level.INFO, "Adding NonDex argLine to existing argLine specified by the project");
+                Logger.getGlobal().log(Level.INFO, "Adding flakeSync-delay argLine to existing argLine specified by the project");
                 String current = sanitizeAndRemoveEnvironmentVars(config.getValue());
                 config.setValue(argLineToSet + " " + current);
                 added = true;
@@ -152,20 +151,18 @@ public class CleanSurefireExecution {
             }
         }
         if (!added) {
-            Logger.getGlobal().log(Level.INFO, "Creating new argline for Surefire");
+            Logger.getGlobal().log(Level.INFO, "Creating new argline for Surefire: *" + argLineToSet + "*");
             configNode.addChild(this.makeNode("argLine", argLineToSet));
         }
 
-        //argLineToSet = "-Dtest=SampleTest#testA";
+	System.out.println("About to add the argLine as a property");
         // originalArgLine is the argLine set from Maven, not through the surefire config
         // if such an argLine exists, we modify that one also
         this.mavenProject.getProperties().setProperty("argLine",
                 this.originalArgLine + " " + argLineToSet);
-        System.out.println("ACTUAL ARGLINE IS " + this.mavenProject.getProperties().getProperty("argLine"));
     }
 
     protected void setupTest(Xpp3Dom configNode) {
-        //configNode.addChild(this.makeNode("test", "TransformerDecodeTest#testIsUtilClass"));
         configNode.addChild((this.makeNode("test", this.testName)));
     }
 
