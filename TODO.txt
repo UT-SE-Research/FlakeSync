@@ -73,3 +73,22 @@
           -Add agent as part of the argline
             -Agent modifies the pom.xml and adds the dependencies
           -Look for agent in the bash script
+
+6. Hack the core a little bit and change where it writes results to --> .flakesync
+
+7. find -name "*.class" | grep -v Tests | sed 's;.*target/classes/;;'| sed 's;/;.;g' | sed 's;.class$;;' > whitelist.txt
+    - This is how the whitelist.txt is created, have the developer pass this in as a paramter( -Dflakesync.whitelist=....)
+    - For concurrent methods, assume that the file exists in the hardcoded location
+    - for d in ${delayArray[@]}; do
+                  echo "delay === $d"
+                  timeout 2h mvn test $JMVNOPTIONS -pl $module -Dconcurrentmethods="$currentDir/Locations/ConcurrentMethodsWhiteList-$projName.txt" -Dwhitelist="$currentDir/Locations/whitelist-$projName.txt" -Dtest=$testName -Ddelay=$d > "$currentDir/logs/$projName-$d.txt"
+
+                  bugCount=$(grep -ic -E 'Errors: 1|Failures: 1' "$currentDir/logs/$projName-$d.txt")
+                  echo "$bugCount ****************"
+                  if [[ $bugCount -gt 0  ]]; then
+                      properDelay=$d
+                      break
+                  fi
+              done
+       --> THIS IN JAVA CODE, loop through the different delay lengths and look for errors
+            -Start with a high delay, hard-code a really long delay

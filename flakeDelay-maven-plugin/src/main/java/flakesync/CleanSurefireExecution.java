@@ -59,12 +59,12 @@ public class CleanSurefireExecution {
     protected MavenSession mavenSession;
     protected BuildPluginManager pluginManager;
     protected String testName;
-
+    protected String localRepository;
     protected String originalArgLine;
 
     protected CleanSurefireExecution(Plugin surefire, String originalArgLine, String executionId,
                                      MavenProject mavenProject, MavenSession mavenSession, BuildPluginManager pluginManager,
-                                     String nondexDir, String testName) {
+                                     String nondexDir, String testName, String localRepository) {
         this.executionId = executionId;
         this.surefire = surefire;
         this.testName = testName;
@@ -73,13 +73,14 @@ public class CleanSurefireExecution {
         this.mavenSession = mavenSession;
         this.pluginManager = pluginManager;
         this.configuration = new Configuration(executionId, nondexDir, testName);
+        this.localRepository = localRepository;
 
     }
 
     public CleanSurefireExecution(Plugin surefire, String originalArgLine, MavenProject mavenProject,
-                                  MavenSession mavenSession, BuildPluginManager pluginManager, String nondexDir, String testName) {
+                                  MavenSession mavenSession, BuildPluginManager pluginManager, String nondexDir, String testName, String localRepository) {
         this(surefire, originalArgLine, "clean_" + Utils.getFreshExecutionId(), mavenProject, mavenSession, pluginManager,
-                nondexDir, testName);
+                nondexDir, testName, localRepository);
     }
 
     public Configuration getConfiguration() {
@@ -87,6 +88,7 @@ public class CleanSurefireExecution {
     }
 
     public void run() throws MojoExecutionException {
+        System.out.println("Inside run in CleanSurefireExecution");
         Xpp3Dom origNode = null;
         if (this.surefire.getConfiguration() != null) {
             origNode = new Xpp3Dom((Xpp3Dom) this.surefire.getConfiguration());
@@ -107,30 +109,6 @@ public class CleanSurefireExecution {
                     MojoExecutor.executionEnvironment(this.mavenProject, this.mavenSession, this.pluginManager));
         } catch (MojoExecutionException mojoException) {
             Logger.getGlobal().log(Level.INFO, "Surefire failed when running tests for " + this.configuration.executionId);
-
-            SurefireReportParser parser = new SurefireReportParser(
-                    Arrays.asList(this.configuration.getExecutionDir().toFile()), Locale.getDefault());
-            try {
-                Set<String> failingTests = new LinkedHashSet<>();
-                for (ReportTestSuite report : parser.parseXMLReportFiles()) {
-                    for (ReportTestCase testCase : report.getTestCases()) {
-                        // Record if failed, but not skipped
-                        if (testCase.hasFailure() && !"skipped".equals(testCase.getFailureType())) {
-                            failingTests.add(testCase.getFullClassName() + '#' + testCase.getName());
-                            System.out.println("FAILED: " + testCase.getFullClassName() + '#' + testCase.getName());
-                        }
-                    }
-                }
-                this.configuration.setFailures(failingTests);
-            } catch (MavenReportException ex) {
-                throw new MojoExecutionException("Failed to parse mvn reports!");
-            }
-            throw mojoException;
-        } catch (Throwable tr) {
-            Logger.getGlobal().log(Level.SEVERE, "Some exception that is highly unexpected: ", tr);
-            throw tr;
-        } finally {
-            this.surefire.setConfiguration(origNode);
         }
     }
 
@@ -138,8 +116,11 @@ public class CleanSurefireExecution {
         // create the flakeSync-delay argLine for surefire based on the current configuration
         // this adds things like where to save test reports, what directory NonDex
         // should store results in, what seed and mode should be used.
-        String pathToJar = "";
-        String argLineToSet =  "-javaagent:"+ pathToJar + "/flakeDelay-core-0.1-SNAPSHOT.jar";;
+
+        String pathToJar = this.localRepository;
+        String argLineToSet =  "-javaagent:"+ pathToJar + "/sample/plugin/flakeDelay-core/0.1-SNAPSHOT/flakeDelay-core-0.1-SNAPSHOT.jar";;
+
+
         boolean added = false;
         for (Xpp3Dom config : configNode.getChildren()) {
             if ("argLine".equals(config.getName())) {
@@ -155,7 +136,6 @@ public class CleanSurefireExecution {
             configNode.addChild(this.makeNode("argLine", argLineToSet));
         }
 
-	System.out.println("About to add the argLine as a property");
         // originalArgLine is the argLine set from Maven, not through the surefire config
         // if such an argLine exists, we modify that one also
         this.mavenProject.getProperties().setProperty("argLine",
@@ -173,7 +153,6 @@ public class CleanSurefireExecution {
         }
 
         return setReportOutputDirectory(configNode);
-        //return configNode;
     }
 
     protected Xpp3Dom setReportOutputDirectory(Xpp3Dom configNode) {

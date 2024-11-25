@@ -131,6 +131,9 @@ public abstract class FlakeSyncAbstractMojo extends AbstractMojo {
     @Parameter(property = "flakesync.testName", required = true)
     protected String testName;
 
+    @Parameter(defaultValue = "${settings.localRepository}")
+    protected String localRepository;
+
     @Component
     protected MavenSession mavenSession;
     @Component
@@ -142,6 +145,7 @@ public abstract class FlakeSyncAbstractMojo extends AbstractMojo {
 
     @Override
     public void execute() throws MojoExecutionException, MojoFailureException {
+        System.out.println("REPO: " + this.localRepository);
         Logger.getGlobal().setLoggingLevel(Level.parse(this.loggingLevel));
         String rtPathStr = "";
         if (Utils.checkJDK8()) {

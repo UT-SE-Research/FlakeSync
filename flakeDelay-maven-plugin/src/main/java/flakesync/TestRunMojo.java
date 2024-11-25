@@ -50,15 +50,6 @@ import org.apache.maven.plugins.annotations.ResolutionScope;
 @Mojo(name = "flakesync", defaultPhase = LifecyclePhase.TEST, requiresDependencyResolution = ResolutionScope.TEST)
 public class TestRunMojo extends FlakeSyncAbstractMojo {
 
-    private List<CleanSurefireExecution> executions = new LinkedList<>();
-    private ArrayList<CleanSurefireExecution> executionsWithoutShuffling =
-            new ArrayList<CleanSurefireExecution>();
-    private Path runFilePath = null;
-
-    public void setFilePath(Path value) {
-        this.runFilePath = this.runFilePath == null ? value : this.runFilePath;
-    }
-
     @Override
     public void execute() throws MojoExecutionException, MojoFailureException {
         super.execute();
@@ -67,19 +58,13 @@ public class TestRunMojo extends FlakeSyncAbstractMojo {
 
         // If we add clean exceptions to allExceptions then the build fails if anything fails without nondex.
         // Everything in nondex-test is expected to fail without nondex so we throw away the result here.
-        for (int j = 0; j < this.numRunsWithoutShuffling; j++) {
-            CleanSurefireExecution cleanExec = new CleanSurefireExecution(
+        CleanSurefireExecution cleanExec = new CleanSurefireExecution(
                     this.surefire, this.originalArgLine, this.mavenProject,
                     this.mavenSession, this.pluginManager,
                     Paths.get(this.baseDir.getAbsolutePath(), ConfigurationDefaults.DEFAULT_NONDEX_DIR).toString(),
-                    this.testName);
-            this.executeSurefireExecution(allExceptions, cleanExec);
-        }
+                    this.testName, this.localRepository);
+        this.executeSurefireExecution(null, cleanExec);
 
-        for (CleanSurefireExecution cleanExec : this.executionsWithoutShuffling) {
-            setFilePath(cleanExec.getConfiguration().getRunFilePath());
-            this.writeCurrentRunInfo(cleanExec);
-        }
 
     }
 
@@ -94,19 +79,9 @@ public class TestRunMojo extends FlakeSyncAbstractMojo {
         return allExceptions;
     }
 
-    private void writeCurrentRunInfo(CleanSurefireExecution execution) {
-        try {
-            Files.write(this.runFilePath,
-                    (execution.getConfiguration().executionId + String.format("%n")).getBytes(),
-                    StandardOpenOption.CREATE, StandardOpenOption.APPEND);
-        } catch (IOException ex) {
-            Logger.getGlobal().log(Level.SEVERE, "Cannot write execution id to current run file", ex);
-        }
-    }
 
-    public void setTestName(String[] testName) {
-        // we can do something more with provided parameter
-        this.testName = testName[0];
+    public void setTestName(String testName) {
+        this.testName = testName;
     }
 
 }
