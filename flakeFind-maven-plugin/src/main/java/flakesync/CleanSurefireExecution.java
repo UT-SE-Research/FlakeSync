@@ -28,11 +28,9 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.*/
 
 package flakesync;
 
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-
-import flakesync.common.*;
-
+import flakesync.common.Configuration;
+import flakesync.common.Level;
+import flakesync.common.Logger;
 import org.apache.maven.execution.MavenSession;
 import org.apache.maven.model.Plugin;
 import org.apache.maven.plugin.BuildPluginManager;
@@ -40,6 +38,9 @@ import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.project.MavenProject;
 import org.codehaus.plexus.util.xml.Xpp3Dom;
 import org.twdata.maven.mojoexecutor.MojoExecutor;
+
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class CleanSurefireExecution {
 
@@ -60,6 +61,20 @@ public class CleanSurefireExecution {
         this.executionId = executionId;
         this.surefire = surefire;
         this.testName = testName;
+        this.originalArgLine = sanitizeAndRemoveEnvironmentVars(originalArgLine);
+        this.mavenProject = mavenProject;
+        this.mavenSession = mavenSession;
+        this.pluginManager = pluginManager;
+        this.configuration = new Configuration(executionId, nondexDir, testName);
+        this.localRepository = localRepository;
+
+    }
+
+    protected CleanSurefireExecution(Plugin surefire, String originalArgLine, String executionId,
+                                     MavenProject mavenProject, MavenSession mavenSession, BuildPluginManager pluginManager,
+                                     String nondexDir, String localRepository, int delays) {
+        this.executionId = executionId;
+        this.surefire = surefire;
         this.originalArgLine = sanitizeAndRemoveEnvironmentVars(originalArgLine);
         this.mavenProject = mavenProject;
         this.mavenSession = mavenSession;
@@ -110,7 +125,8 @@ public class CleanSurefireExecution {
         // should store results in, what seed and mode should be used.
 
         String pathToJar = this.localRepository;
-        String argLineToSet =  "-javaagent:"+ pathToJar + "/sample/plugin/flakeDelay-core/0.1-SNAPSHOT/flakeDelay-core-0.1-SNAPSHOT.jar";;
+        String argLineToSet = "-javaagent:" + pathToJar + "/sample/plugin/flakeDelay-core/0.1-SNAPSHOT/flakeDelay-core-0.1-SNAPSHOT.jar";
+        ;
 
 
         boolean added = false;

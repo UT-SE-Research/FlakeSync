@@ -29,13 +29,6 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 package flakesync;
 
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.nio.file.StandardOpenOption;
-import java.util.*;
-
 
 import flakesync.common.ConfigurationDefaults;
 import flakesync.common.Level;
@@ -44,25 +37,26 @@ import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
 import org.apache.maven.plugins.annotations.LifecyclePhase;
 import org.apache.maven.plugins.annotations.Mojo;
-import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.plugins.annotations.ResolutionScope;
 
-@Mojo(name = "flakesync", defaultPhase = LifecyclePhase.TEST, requiresDependencyResolution = ResolutionScope.TEST)
-public class TestRunMojo extends FlakeSyncAbstractMojo {
+import java.nio.file.Paths;
+
+@Mojo(name = "flakefind", defaultPhase = LifecyclePhase.TEST, requiresDependencyResolution = ResolutionScope.TEST)
+public class FindTestsRunMojo extends FlakeSyncAbstractMojo {
 
     @Override
     public void execute() throws MojoExecutionException, MojoFailureException {
         super.execute();
-        Logger.getGlobal().log(Level.INFO, ("The test name is: " + this.testName));
+        Logger.getGlobal().log(Level.INFO, ("Running FindTestsRunMojo"));
         MojoExecutionException allExceptions = null;
 
         // If we add clean exceptions to allExceptions then the build fails if anything fails without nondex.
         // Everything in nondex-test is expected to fail without nondex so we throw away the result here.
         CleanSurefireExecution cleanExec = new CleanSurefireExecution(
-                    this.surefire, this.originalArgLine, this.mavenProject,
-                    this.mavenSession, this.pluginManager,
-                    Paths.get(this.baseDir.getAbsolutePath(), ConfigurationDefaults.DEFAULT_NONDEX_DIR).toString(),
-                    this.testName, this.localRepository);
+                this.surefire, this.originalArgLine, this.mavenProject,
+                this.mavenSession, this.pluginManager,
+                Paths.get(this.baseDir.getAbsolutePath(), ConfigurationDefaults.DEFAULT_FLAKESYNC_DIR).toString(),
+                this.testName, this.localRepository);
         this.executeSurefireExecution(null, cleanExec);
 
 

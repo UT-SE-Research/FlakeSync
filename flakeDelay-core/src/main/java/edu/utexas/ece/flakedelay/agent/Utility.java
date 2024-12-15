@@ -15,6 +15,7 @@ public class Utility{
     static {
         try {
             delay = Integer.parseInt(System.getProperty("delay", "100"));
+            System.out.println("delay = " + delay);
         } catch (NumberFormatException e) {
             delay = 100;
         }
@@ -27,6 +28,7 @@ public class Utility{
         }*/
 
         try {
+            System.out.println("Inside delay method: calling Thread.sleep("+delay+")");
             Thread.sleep(delay);
             /*for (StackTraceElement ste : Thread.currentThread().getStackTrace()) {
                 System.out.println(ste);

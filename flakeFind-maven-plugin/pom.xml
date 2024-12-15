@@ -4,14 +4,14 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <parent>
-        <groupId>sample.plugin</groupId>
+        <groupId>edu.utexas.ece</groupId>
         <artifactId>flakesync</artifactId>
         <version>1.0-SNAPSHOT</version>
     </parent>
 
     <packaging>maven-plugin</packaging>
 
-    <artifactId>flakeDelay-maven-plugin</artifactId>
+    <artifactId>flakeFind-maven-plugin</artifactId>
 
     <properties>
         <maven.compiler.source>11</maven.compiler.source>

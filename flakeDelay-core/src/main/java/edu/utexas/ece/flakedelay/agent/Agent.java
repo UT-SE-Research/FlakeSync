@@ -6,6 +6,7 @@ import org.objectweb.asm.ClassWriter;
 import java.lang.instrument.ClassFileTransformer;
 import java.lang.instrument.IllegalClassFormatException;
 import java.lang.instrument.Instrumentation;
+import java.nio.file.Paths;
 import java.security.ProtectionDomain;
 import java.util.*;
 import java.io.*;
@@ -83,17 +84,21 @@ public class Agent {
 
                 final ClassReader reader = new ClassReader(bytes);
                 final ClassWriter writer = new ClassWriter(reader, ClassWriter.COMPUTE_FRAMES|ClassWriter.COMPUTE_MAXS );
+
+                //System.out.println("whitelist: "+System.getProperty("whitelist"));
+                //System.out.println("whitelist: "+System.getProperty("whitelist"));
+
                 ClassVisitor visitor;
-                //if (System.getProperty("searchForConcurrentMethods") != null) {
-                if (!blackListContains(s) && System.getProperty("whitelist") == null ) {
+                if (!blackListContains(s) && (System.getProperty("whitelist") == null) ) {
                     System.out.println("no whitelist given and going to execute EnterExit");
                     visitor = new EnterExitClassTracer(writer);
                     reader.accept(visitor, 0);
                     return writer.toByteArray();
                 }
-                // Use whitelist if it is defined as a property; otherwise rely on blacklist, If whitelist will only be given if we want to run flakedelay detector
+                // Use whitelist if it is defined as a property; otherwise rely on blacklist, whitelist will only be given if we want to run flakedelay detector
                 //else if (System.getProperty("whitelist") != null ? whiteListContains(s) : !blackListContains(s)) {
-                else if (System.getProperty("whitelist") != null ? whiteListContains(s) : !blackListContains(s)) {
+                else if ((System.getProperty("whitelist") != null) ? (whiteListContains(s)) : (!blackListContains(s))) {
+                    System.out.println("whitelist check true");
                     //ClassTracer visitor = new ClassTracer(writer);
                     // If the concurrentmethods option is not set (meaning we do not know what the concurrent methods are, use the EnterExitClassTracer to find them
                     visitor = new RandomClassTracer(writer);
@@ -103,6 +108,7 @@ public class Agent {
                 return null;
             }
         });
+        Paths.get(".flakedelay").toFile().mkdirs();
         printStartStopTimes();
     }
 
@@ -126,11 +132,12 @@ public class Agent {
                 BufferedWriter bfConcurrentMethodsPairs = null;
 
                 try {
-
-                   System.out.println("Found AGENT PRINT****");
-                    FileWriter outputMethodsFile = new FileWriter("ResultMethods.txt");
+                    //When are the files being overwritten???? Check the execution to see where this is happening
+                    System.out.println("Found AGENT PRINT****");
+                    File omf = new File("./.flakedelay/ResultMethods.txt");
+                    FileWriter outputMethodsFile = new FileWriter(omf);
                     bfMethods = new BufferedWriter(outputMethodsFile);
-                    if (edu.utexas.ece.flakedelay.agent.Utility.methodsRunConcurrently.size() > 0) { 
+                    if (edu.utexas.ece.flakedelay.agent.Utility.methodsRunConcurrently.size() > 0) {
                         System.out.println("Found ConCURRENT****");
                         synchronized(Utility.methodsRunConcurrently) {
                             for (String meth : Utility.methodsRunConcurrently) {
@@ -139,6 +146,8 @@ public class Agent {
                             }
                         }
                         bfMethods.flush();
+                    }else{
+                        System.out.println(":(");
                     }
                     
                     /*FileWriter outputConcurrentMethodsFile = new FileWriter("ResultMethods-1.txt");
@@ -162,7 +171,8 @@ public class Agent {
 
 
                     if (RandomClassTracer.locations.size() > 0) {
-                        FileWriter outputLocationsFile = new FileWriter("ResultLocations.txt");
+                        File locsFile = new File("./.flakedelay/Locations.txt");
+                        FileWriter outputLocationsFile = new FileWriter(locsFile);
                         bfLocations = new BufferedWriter(outputLocationsFile);
 
                         for (String location : RandomClassTracer.locations) {
@@ -171,12 +181,13 @@ public class Agent {
                         }
                         bfLocations.flush();
                     }
-                    FileWriter outputThreadCount = new FileWriter("ThreadCountList.txt");
+                    File otc = new File("./.flakedelay/ThreadCountList.txt");
+                    FileWriter outputThreadCount = new FileWriter(otc);
                     bfThreads = new BufferedWriter(outputThreadCount);
                     
                     int totalThreadCount = Utility.threadCountListFromUtility.size();
                     String threadCountNo=Integer.toString(totalThreadCount);
-                    //System.out.println(" Total # Thread Count = " + totalThreadCount);
+                    System.out.println(" Total # Thread Count = " + totalThreadCount);
                     //System.out.println(Helper.threadCountList);
                      bfThreads.write(threadCountNo);
                      bfThreads.newLine();

@@ -74,7 +74,9 @@
             -Agent modifies the pom.xml and adds the dependencies
           -Look for agent in the bash script
 
-6. Hack the core a little bit and change where it writes results to --> .flakesync
+6. Hack the core a little bit and change where it writes results to --> .flakesync (DONE)
+
+Do not make new module, make new Mojo inside previous module
 
 7. find -name "*.class" | grep -v Tests | sed 's;.*target/classes/;;'| sed 's;/;.;g' | sed 's;.class$;;' > whitelist.txt
     - This is how the whitelist.txt is created, have the developer pass this in as a paramter( -Dflakesync.whitelist=....)
@@ -92,3 +94,19 @@
               done
        --> THIS IN JAVA CODE, loop through the different delay lengths and look for errors
             -Start with a high delay, hard-code a really long delay
+
+
+    <configuration>
+              <systemPropertyVariables>
+                <propertyName>propertyValue</propertyName>
+                <buildDirectory>${project.build.directory}</buildDirectory>
+                [...]
+              </systemPropertyVariables>
+    </configuration>
+
+
+Features to add before deadline:
+-No way to automatically generate code that creates the variables and code to synchronize execution
+    -Possibly through JavaParser
+    -Given a critical point, name of class/file, line number, find Java source code file and try to insert variable(static var)
+    -Assuming you have critical and barrier point

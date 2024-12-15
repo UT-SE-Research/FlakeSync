@@ -1,20 +1,8 @@
 package flakesync;
 
-import java.io.File;
-import java.io.IOException;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.security.NoSuchAlgorithmException;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Properties;
-
-
 import flakesync.common.ConfigurationDefaults;
 import flakesync.common.Level;
 import flakesync.common.Logger;
-import flakesync.common.Mode;
-import flakesync.instrumentation.Instrumenter;
 import org.apache.maven.execution.MavenSession;
 import org.apache.maven.model.Plugin;
 import org.apache.maven.plugin.AbstractMojo;
@@ -26,6 +14,12 @@ import org.apache.maven.plugins.annotations.Execute;
 import org.apache.maven.plugins.annotations.LifecyclePhase;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.project.MavenProject;
+
+import java.io.File;
+import java.nio.file.Path;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Properties;
 
 
 @Execute(phase = LifecyclePhase.TEST_COMPILE)
@@ -109,8 +103,6 @@ public abstract class FlakeSyncAbstractMojo extends AbstractMojo {
         surefire.setVersion("2.20");
         return surefire;
     }
-
-
 
 
 }
