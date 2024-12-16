@@ -11,7 +11,7 @@
 
     <packaging>maven-plugin</packaging>
 
-    <artifactId>flakeFind-maven-plugin</artifactId>
+    <artifactId>flakesync-maven-plugin</artifactId>
 
     <properties>
         <maven.compiler.source>11</maven.compiler.source>

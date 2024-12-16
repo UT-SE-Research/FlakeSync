@@ -9,9 +9,9 @@
     <version>1.0-SNAPSHOT</version>
   </parent>
 
-  <artifactId>flakeDelay-core</artifactId>
-  <version>0.1-SNAPSHOT</version>
   <packaging>jar</packaging>
+
+  <artifactId>flakesync-core</artifactId>
 
   <dependencies>
     <dependency>

@@ -7,9 +7,10 @@
   <packaging>pom</packaging>
  
   <name>iDFlakies Plugin</name>
+
   <modules>
-    <module>flakeDelay-core</module>
-      <module>flakeFind-maven-plugin</module>
+    <module>flakesync-core</module>
+    <module>flakesync-maven-plugin</module>
   </modules>
 
   <dependencies>
