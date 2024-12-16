@@ -71,8 +71,8 @@
   <build>
     <plugins>
       <plugin>
-        <groupId>sample.plugin</groupId>
-        <artifactId>flake-sync-plugin</artifactId>
+        <groupId>edu.utexas.ece</groupId>
+        <artifactId>flakesync-maven-plugin</artifactId>
         <version>1.0-SNAPSHOT</version>
         <executions>
           <execution>

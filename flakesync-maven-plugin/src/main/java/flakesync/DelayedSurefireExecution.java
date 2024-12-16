@@ -83,15 +83,17 @@ public class DelayedSurefireExecution {
     }
 
     public void run() throws MojoExecutionException {
-        System.out.println("Inside run in CleanSurefireExecution");
+        System.out.println("Inside run in DelayedSurefireExecution");
         Xpp3Dom origNode = null;
         if (this.surefire.getConfiguration() != null) {
             origNode = new Xpp3Dom((Xpp3Dom) this.surefire.getConfiguration());
         }
+        System.out.println("Created node");
         try {
             Xpp3Dom domNode = this.applyFlakesyncConfig((Xpp3Dom) this.surefire.getConfiguration());
             this.setupArgline(domNode);
             this.setupArgs(domNode);
+            System.out.println("Setup args worked");
             Logger.getGlobal().log(Level.FINE, "Config node passed: " + domNode.toString());
             Logger.getGlobal().log(Level.FINE, this.mavenProject + "\n" + this.mavenSession + "\n" + this.pluginManager);
             Logger.getGlobal().log(Level.FINE, "Surefire config: " + this.surefire + "  " + MojoExecutor.goal("test")
@@ -134,19 +136,25 @@ public class DelayedSurefireExecution {
         // if such an argLine exists, we modify that one also
         this.mavenProject.getProperties().setProperty("argLine",
                 this.originalArgLine + " " + argLineToSet);
+        System.out.println("argline: " + this.mavenProject.getProperties().getProperty("argLine"));
     }
 
     private boolean checkSysPropsDeprecated() {
-        if(Float.parseFloat(this.surefire.getVersion()) > 2.20){
-            return true;
-        }else return false;
+        System.out.println("Checking system properties deprecated");
+        String[] split = this.surefire.getVersion().split("\\.");
+        System.out.println(split[0]);
+        float f = Float.parseFloat(split[0]) + (Float.parseFloat(split[1])/split[1].length());
+        System.out.println("here's the version as a float: " + f);
+        return f > 2.20;
     }
 
     protected void setupArgs(Xpp3Dom configNode) {
 
         //Add the test name
+        System.out.println("Inside setup args");
         configNode.addChild((this.makeNode("test", this.testName)));
         String properties = (checkSysPropsDeprecated()) ? ("systemPropertyVariables") : ("systemProperties");
+        System.out.println("properties: " + properties);
 
         for (Xpp3Dom node : configNode.getChildren()) {
             if (properties.equals(node.getName())) {
