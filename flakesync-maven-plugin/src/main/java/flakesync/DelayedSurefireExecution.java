@@ -152,8 +152,9 @@ public class DelayedSurefireExecution {
             if (properties.equals(node.getName())) {
                  Xpp3Dom sysPropVarsNode = node;
                  sysPropVarsNode.addChild(this.makeNode("delay", this.delay+""));
-                 sysPropVarsNode.addChild(this.makeNode("concurrentmethods", "./.flakedelay/ResultMethods.txt"));
-                 sysPropVarsNode.addChild(this.makeNode("whitelist", "./.flakedelay/whitelist.txt"));
+                 // TODO: Make the results directory name a final static variable so things can be changed in one location
+                 sysPropVarsNode.addChild(this.makeNode("concurrentmethods", "./.flakesync/ResultMethods.txt"));
+                 sysPropVarsNode.addChild(this.makeNode("whitelist", "./.flakesync/whitelist.txt"));
             }
         }
     }

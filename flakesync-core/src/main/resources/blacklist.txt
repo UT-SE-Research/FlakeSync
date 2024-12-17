@@ -29,7 +29,7 @@ jdk.
 javax.
 sun.
 java.
-edu.utexas.ece.flakedelay
+edu.utexas.ece.flakesync
 org.eclipse.jetty.server.nio.SelectChannelConnector
 javassist.
 org.apache.zookeeper.server.persistence.FileTxnLog

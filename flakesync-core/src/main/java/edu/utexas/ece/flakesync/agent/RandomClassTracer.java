@@ -1,4 +1,4 @@
-package edu.utexas.ece.flakedelay.agent;
+package edu.utexas.ece.flakesync.agent;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -94,14 +94,14 @@ public class RandomClassTracer extends ClassVisitor {
                 // If locations are provided, delay only at those locations
                 if (System.getProperty("locations") != null) {
                     if (providedLocations.contains(location)) {
-                        super.visitMethodInsn(Opcodes.INVOKESTATIC, "edu/utexas/ece/flakedelay/agent/Utility", "delay", "()V", false);
+                        super.visitMethodInsn(Opcodes.INVOKESTATIC, "edu/utexas/ece/flakesync/agent/Utility", "delay", "()V", false);
                     }
                 }
 
                 // Insert some random delay call right before invoking the method, with some probability
                 else if (whiteListContains(containingMethod)) {
                     locations.add(location);
-                    super.visitMethodInsn(Opcodes.INVOKESTATIC, "edu/utexas/ece/flakedelay/agent/Utility", "delay", "()V", false);
+                    super.visitMethodInsn(Opcodes.INVOKESTATIC, "edu/utexas/ece/flakesync/agent/Utility", "delay", "()V", false);
                 }
 
                 super.visitMethodInsn(opcode, owner, name, desc, itf);
