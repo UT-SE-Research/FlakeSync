@@ -110,3 +110,22 @@ Features to add before deadline:
     -Possibly through JavaParser
     -Given a critical point, name of class/file, line number, find Java source code file and try to insert variable(static var)
     -Assuming you have critical and barrier point
+
+Notes for 12/17 meeting:
+*Need to find a way to not clear the file after running delay
+**Automatically generate whitelist instead of passing it in
+-Next steps:
+
+e2e.sh runs + delay_injection_and_minimized_locations.sh
+                - runs runAll.sh -->DONE
+                     -- delta-debugging.sh -->TESTING
+            + root_method_and_critical_point_search.sh
+                - requires "boundaryPoint" agent
+                - runs mvn-run-and-find-stack-trace.sh
+                        ++ mvn test -pl $module -Dtest=$4  -Ddelay=$3  -Dlocations=$7 >  "$currentDir/logs/$projName-FlakeDelay.txt"
+                     -- parse-stack-trace.sh
+                     -- mvn test $JMVNOPTIONS -pl $module -Dtest=$testName -DsearchForMethodName="$currentDir/logs/org_loc.txt"
+                     -- analyzeRootMethod.sh
+                        ++ mvn test -pl $module -Dlocations="$currentDir/Locations/Root-${projName}-$lower_line_num.txt" -DmethodNameForDelayAtBeginning="$methodNameToInjectDelay" -Dtest=$testName -Ddelay=${delay} > "$currentDir/logs/Root-Beginning-log-${projName}-$delay.txt"
+            + barrier_point_search.sh
+
