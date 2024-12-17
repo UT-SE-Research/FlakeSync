@@ -89,7 +89,7 @@ public class RandomClassTracer extends ClassVisitor {
             public void visitMethodInsn(int opcode, String owner, String name, String desc, boolean itf) {
                 String methodName = owner + "." + name + desc;
 
-                String location = cn + "#" + lineNumber;
+                String location = cn + "#" + lineNumber + "&" + System.getProperty("delay");
 
                 // If locations are provided, delay only at those locations
                 if (System.getProperty("locations") != null) {

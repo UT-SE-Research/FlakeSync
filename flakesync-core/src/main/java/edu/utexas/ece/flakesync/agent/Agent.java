@@ -92,7 +92,6 @@ public class Agent {
                 final ClassWriter writer = new ClassWriter(reader, ClassWriter.COMPUTE_FRAMES|ClassWriter.COMPUTE_MAXS );
 
                 //System.out.println("whitelist: "+System.getProperty("whitelist"));
-                //System.out.println("whitelist: "+System.getProperty("whitelist"));
 
                 ClassVisitor visitor;
                 if (!blackListContains(s) && (System.getProperty("whitelist") == null) ) {
@@ -114,7 +113,7 @@ public class Agent {
                 return null;
             }
         });
-        Paths.get(".flakesync").toFile().mkdirs();
+        Paths.get(".flakedelay").toFile().mkdirs();
         printStartStopTimes();
     }
 
@@ -140,7 +139,7 @@ public class Agent {
                 try {
                     //When are the files being overwritten???? Check the execution to see where this is happening
                     System.out.println("Found AGENT PRINT****");
-                    File omf = new File("./.flakesync/ResultMethods.txt");
+                    File omf = new File("./.flakedelay/ResultMethods.txt");
                     FileWriter outputMethodsFile = new FileWriter(omf);
                     bfMethods = new BufferedWriter(outputMethodsFile);
                     if (edu.utexas.ece.flakesync.agent.Utility.methodsRunConcurrently.size() > 0) {
@@ -177,7 +176,7 @@ public class Agent {
 
 
                     if (RandomClassTracer.locations.size() > 0) {
-                        File locsFile = new File("./.flakesync/Locations.txt");
+                        File locsFile = new File("./.flakedelay/Locations.txt");
                         FileWriter outputLocationsFile = new FileWriter(locsFile);
                         bfLocations = new BufferedWriter(outputLocationsFile);
 
@@ -187,7 +186,7 @@ public class Agent {
                         }
                         bfLocations.flush();
                     }
-                    File otc = new File("./.flakesync/ThreadCountList.txt");
+                    File otc = new File("./.flakedelay/ThreadCountList.txt");
                     FileWriter outputThreadCount = new FileWriter(otc);
                     bfThreads = new BufferedWriter(outputThreadCount);
                     

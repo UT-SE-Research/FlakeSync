@@ -47,7 +47,7 @@ import org.apache.maven.plugins.annotations.ResolutionScope;
 @Mojo(name = "flakedelay", defaultPhase = LifecyclePhase.TEST, requiresDependencyResolution = ResolutionScope.TEST)
 public class RunWithDelaysMojo extends FlakeSyncAbstractMojo {
 
-    int[] delays = {/*100,*/ 200, 400, 800, 1600, 3200, 6400, 12800};
+    int[] delays = {/*100, 200,*/ 400 /*, 800, 1600, 3200, 6400, 12800*/};
 
     @Override
     public void execute() throws MojoExecutionException, MojoFailureException {

@@ -59,26 +59,31 @@ public class DeltaDebugMojo extends FlakeSyncAbstractMojo {
         Logger.getGlobal().log(Level.INFO, ("Running FindTestsRunMojo"));
         MojoExecutionException allExceptions = null;
 
+        //Generate list of all locations
+        List<String> locations = new ArrayList<String>();
+        int delay = generateLocsList(locations);
+
         LocationsDeltaDebug deltaDebug = new LocationsDeltaDebug(
                 this.surefire, this.originalArgLine, this.mavenProject,
                 this.mavenSession, this.pluginManager,
                 this.baseDir,
-                this.localRepository, this.testName, 200);
+                this.localRepository, this.testName, delay);
 
-        //Generate list of all locations
-        List<String> locations = generateLocsList();
+
 
         //Run delta debugging
         deltaDebug.deltaDebug(locations, locations.size());
 
     }
 
-    private List<String> generateLocsList(){
-        List<String> locsList = new ArrayList<>();
+    private int generateLocsList(List<String> locsList){
+        int delay = 0;
         try {
             BufferedReader reader = new BufferedReader(new FileReader(new File("/.flakedelay/Locations.txt")));
             String line = reader.readLine();
             while (line != null) {
+                line = line.split("&")[0];
+                delay = Integer.parseInt(line.split("&")[1]);
                 locsList.add(line);
                 // read next line
                 line = reader.readLine();
@@ -87,7 +92,7 @@ public class DeltaDebugMojo extends FlakeSyncAbstractMojo {
         } catch (IOException e) {
             e.printStackTrace();
         }
-        return locsList;
+        return delay;
     }
 
 
