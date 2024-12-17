@@ -42,7 +42,7 @@ import org.twdata.maven.mojoexecutor.MojoExecutor;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-public class DelayedSurefireExecution {
+public class DeltaDebugSurefireExecution {
 
     protected Configuration configuration;
     protected final String executionId;
@@ -56,9 +56,9 @@ public class DelayedSurefireExecution {
     protected String originalArgLine;
     protected int delay;
 
-    protected DelayedSurefireExecution(Plugin surefire, String originalArgLine, String executionId,
-                                       MavenProject mavenProject, MavenSession mavenSession, BuildPluginManager pluginManager,
-                                       String flakesyncDir, String localRepository, String testName, int delay) {
+    protected DeltaDebugSurefireExecution(Plugin surefire, String originalArgLine, String executionId,
+                                          MavenProject mavenProject, MavenSession mavenSession, BuildPluginManager pluginManager,
+                                          String flakesyncDir, String localRepository, String testName, int delay) {
         this.executionId = executionId;
         this.surefire = surefire;
         this.originalArgLine = sanitizeAndRemoveEnvironmentVars(originalArgLine);
@@ -72,8 +72,8 @@ public class DelayedSurefireExecution {
 
     }
 
-    public DelayedSurefireExecution(Plugin surefire, String originalArgLine, MavenProject mavenProject,
-                                    MavenSession mavenSession, BuildPluginManager pluginManager, String flakesyncDir, String localRepository, String testName, int delay) {
+    public DeltaDebugSurefireExecution(Plugin surefire, String originalArgLine, MavenProject mavenProject,
+                                       MavenSession mavenSession, BuildPluginManager pluginManager, String flakesyncDir, String localRepository, String testName, int delay) {
         this(surefire, originalArgLine, "clean_" + Utils.getFreshExecutionId(), mavenProject, mavenSession, pluginManager,
                 flakesyncDir,localRepository, testName, delay);
     }
@@ -162,6 +162,7 @@ public class DelayedSurefireExecution {
                  boolean addedDelay = false;
                  boolean addedCM = false;
                  boolean addedWL = false;
+                 boolean addedL = false;
                  for(Xpp3Dom node2 : sysPropVarsNode.getChildren()) {
                      if(node2.getName().equals("delay")) {
                          node2.setValue(this.delay+"");
@@ -175,10 +176,15 @@ public class DelayedSurefireExecution {
                          node2.setValue("./.flakedelay/whitelist.txt");
                          addedWL = true;
                      }
+                     if(node2.getName().equals("locations")) {
+                         node2.setValue("./.flakedelay/Locations_tmp.txt");
+                         addedWL = true;
+                     }
                  }
                  if(!addedDelay) sysPropVarsNode.addChild(this.makeNode("delay", this.delay+""));
                  if(!addedCM) sysPropVarsNode.addChild(this.makeNode("concurrentmethods", "./.flakedelay/ResultMethods.txt"));
                  if(!addedWL) sysPropVarsNode.addChild(this.makeNode("whitelist", "./.flakedelay/whitelist.txt"));
+                 if(!addedL) sysPropVarsNode.addChild(this.makeNode("locations", "./.flakedelay/Locations_tmp.txt"));
             }
         }
     }
