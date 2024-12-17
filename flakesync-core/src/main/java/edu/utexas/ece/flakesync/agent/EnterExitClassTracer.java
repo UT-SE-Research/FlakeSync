@@ -1,4 +1,4 @@
-package edu.utexas.ece.flakedelay.agent;
+package edu.utexas.ece.flakesync.agent;
 
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.Label;
@@ -39,7 +39,7 @@ public class EnterExitClassTracer extends ClassVisitor {
 
                 // At beginning of method, insert call to help record start of method
                 super.visitLdcInsn(methodName);
-                super.visitMethodInsn(Opcodes.INVOKESTATIC, "edu/utexas/ece/flakedelay/agent/Utility", "recordMethodEntry", "(Ljava/lang/String;)V", false);
+                super.visitMethodInsn(Opcodes.INVOKESTATIC, "edu/utexas/ece/flakesync/agent/Utility", "recordMethodEntry", "(Ljava/lang/String;)V", false);
 
                 // TODO: Wrap a giant try-catch block to catch all exceptions around this method
                 //super.visitTryCatchBlock(start, end, end, "java/lang/Exception");
@@ -52,7 +52,7 @@ public class EnterExitClassTracer extends ClassVisitor {
                         || opcode == Opcodes.DRETURN || opcode == Opcodes.ARETURN || opcode == Opcodes.RETURN) {
                     // At trying to return from method (ignore exception for now), insert call to help record end of method
                     super.visitLdcInsn(methodName);
-                    super.visitMethodInsn(Opcodes.INVOKESTATIC, "edu/utexas/ece/flakedelay/agent/Utility", "recordMethodExit", "(Ljava/lang/String;)V", false);
+                    super.visitMethodInsn(Opcodes.INVOKESTATIC, "edu/utexas/ece/flakesync/agent/Utility", "recordMethodExit", "(Ljava/lang/String;)V", false);
                 }
 
                 super.visitInsn(opcode);
@@ -63,7 +63,7 @@ public class EnterExitClassTracer extends ClassVisitor {
                 // TODO: Upon exception, insert call to help record end of method
                 //super.visitLabel(end);
                 //super.visitLdcInsn(methodName);
-                //super.visitMethodInsn(Opcodes.INVOKESTATIC, "edu/utexas/ece/flakedelay/agent/Utility", "recordMethodExit", "(Ljava/lang/String;)V", false);
+                //super.visitMethodInsn(Opcodes.INVOKESTATIC, "edu/utexas/ece/flakesync/agent/Utility", "recordMethodExit", "(Ljava/lang/String;)V", false);
                 //super.visitInsn(Opcodes.ATHROW);
 
                 super.visitMaxs(maxStack, maxLocals);
