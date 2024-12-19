@@ -168,7 +168,7 @@ public class DelayedSurefireExecution {
                          addedDelay = true;
                      }
                      if(node2.getName().equals("concurrentmethods")) {
-                         node2.setValue("./.flakedelay/ResultMethods.txt");
+                         node2.setValue("./.flakedelay/ResultMethods_tmp.txt");
                          addedCM = true;
                      }
                      if(node2.getName().equals("whitelist")) {
@@ -177,7 +177,7 @@ public class DelayedSurefireExecution {
                      }
                  }
                  if(!addedDelay) sysPropVarsNode.addChild(this.makeNode("delay", this.delay+""));
-                 if(!addedCM) sysPropVarsNode.addChild(this.makeNode("concurrentmethods", "./.flakedelay/ResultMethods.txt"));
+                 if(!addedCM) sysPropVarsNode.addChild(this.makeNode("concurrentmethods", "./.flakedelay/ResultMethods_tmp.txt"));
                  if(!addedWL) sysPropVarsNode.addChild(this.makeNode("whitelist", "./.flakedelay/whitelist.txt"));
             }
         }

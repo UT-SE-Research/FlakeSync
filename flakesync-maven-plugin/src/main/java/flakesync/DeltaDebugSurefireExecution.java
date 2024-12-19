@@ -83,29 +83,25 @@ public class DeltaDebugSurefireExecution {
     }
 
     public void run() throws MojoExecutionException {
-        System.out.println("Inside run in DelayedSurefireExecution "+ this.delay);
+        System.out.println("Inside run in DeltaDebugSurefireExecution "+ this.delay);
         Xpp3Dom origNode = null;
         if (this.surefire.getConfiguration() != null) {
             origNode = new Xpp3Dom((Xpp3Dom) this.surefire.getConfiguration());
         }
         System.out.println("Created node");
-        try {
-            Xpp3Dom domNode = this.applyFlakesyncConfig((Xpp3Dom) this.surefire.getConfiguration());
-            this.setupArgline(domNode);
-            this.setupArgs(domNode);
-            System.out.println("Setup args worked");
-            Logger.getGlobal().log(Level.FINE, "Config node passed: " + domNode.toString());
-            Logger.getGlobal().log(Level.FINE, this.mavenProject + "\n" + this.mavenSession + "\n" + this.pluginManager);
-            Logger.getGlobal().log(Level.FINE, "Surefire config: " + this.surefire + "  " + MojoExecutor.goal("test")
-                    + " " + domNode + " "
-                    + MojoExecutor.executionEnvironment(this.mavenProject, this.mavenSession,
-                    this.pluginManager));
-            MojoExecutor.executeMojo(this.surefire, MojoExecutor.goal("test"),
-                    domNode,
-                    MojoExecutor.executionEnvironment(this.mavenProject, this.mavenSession, this.pluginManager));
-        } catch (MojoExecutionException mojoException) {
-            Logger.getGlobal().log(Level.INFO, "Surefire failed when running tests for " + this.configuration.executionId + "with delay: " + this.delay);
-        }
+        Xpp3Dom domNode = this.applyFlakesyncConfig((Xpp3Dom) this.surefire.getConfiguration());
+        this.setupArgline(domNode);
+        this.setupArgs(domNode);
+        System.out.println("Setup args worked");
+        Logger.getGlobal().log(Level.FINE, "Config node passed: " + domNode.toString());
+        Logger.getGlobal().log(Level.FINE, this.mavenProject + "\n" + this.mavenSession + "\n" + this.pluginManager);
+        Logger.getGlobal().log(Level.FINE, "Surefire config: " + this.surefire + "  " + MojoExecutor.goal("test")
+                + " " + domNode + " "
+                + MojoExecutor.executionEnvironment(this.mavenProject, this.mavenSession,
+                this.pluginManager));
+        MojoExecutor.executeMojo(this.surefire, MojoExecutor.goal("test"),
+                domNode,
+                MojoExecutor.executionEnvironment(this.mavenProject, this.mavenSession, this.pluginManager));
     }
 
     protected void setupArgline(Xpp3Dom configNode) {
@@ -169,22 +165,22 @@ public class DeltaDebugSurefireExecution {
                          addedDelay = true;
                      }
                      if(node2.getName().equals("concurrentmethods")) {
-                         node2.setValue("./.flakedelay/ResultMethods.txt");
+                         node2.setValue("./.flakedelay/ResultMethods_tmp.txt");
                          addedCM = true;
                      }
                      if(node2.getName().equals("whitelist")) {
                          node2.setValue("./.flakedelay/whitelist.txt");
                          addedWL = true;
                      }
-                     if(node2.getName().equals("locations")) {
+                     /*if(node2.getName().equals("locations")) {
                          node2.setValue("./.flakedelay/Locations_tmp.txt");
                          addedWL = true;
-                     }
+                     }*/
                  }
                  if(!addedDelay) sysPropVarsNode.addChild(this.makeNode("delay", this.delay+""));
-                 if(!addedCM) sysPropVarsNode.addChild(this.makeNode("concurrentmethods", "./.flakedelay/ResultMethods.txt"));
+                 if(!addedCM) sysPropVarsNode.addChild(this.makeNode("concurrentmethods", "./.flakedelay/ResultMethods_tmp.txt"));
                  if(!addedWL) sysPropVarsNode.addChild(this.makeNode("whitelist", "./.flakedelay/whitelist.txt"));
-                 if(!addedL) sysPropVarsNode.addChild(this.makeNode("locations", "./.flakedelay/Locations_tmp.txt"));
+                 //if(!addedL) sysPropVarsNode.addChild(this.makeNode("locations", "./.flakedelay/Locations_tmp.txt"));
             }
         }
     }

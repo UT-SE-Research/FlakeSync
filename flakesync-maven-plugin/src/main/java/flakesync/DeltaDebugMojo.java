@@ -43,6 +43,7 @@ import org.apache.maven.plugin.PluginManager;
 import org.apache.maven.plugins.annotations.LifecyclePhase;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.ResolutionScope;
+import org.apache.maven.plugins.surefire.report.SurefireReportParser;
 import org.apache.maven.project.MavenProject;
 
 import java.io.*;
@@ -56,7 +57,7 @@ public class DeltaDebugMojo extends FlakeSyncAbstractMojo {
     @Override
     public void execute() throws MojoExecutionException, MojoFailureException {
         super.execute();
-        Logger.getGlobal().log(Level.INFO, ("Running FindTestsRunMojo"));
+        Logger.getGlobal().log(Level.INFO, ("Running DeltaDebugMojo"));
         MojoExecutionException allExceptions = null;
 
         //Generate list of all locations
@@ -72,19 +73,41 @@ public class DeltaDebugMojo extends FlakeSyncAbstractMojo {
 
 
         //Run delta debugging
-        deltaDebug.deltaDebug(locations, locations.size());
+        locations = deltaDebug.deltaDebug(locations, locations.size());
+        writeLocationsToFile(locations);
+        //deltaDebug.testRun(locations);
 
+    }
+
+    private void writeLocationsToFile(List<String> locs){
+        File f = new File(this.mavenProject.getBasedir()+"/.flakedelay/Locations.txt");
+        f.delete();
+        try {
+            f.createNewFile();
+            FileWriter outputLocationsFile = new FileWriter(f);
+            BufferedWriter bw = new BufferedWriter(outputLocationsFile);
+
+            for (String location : locs) {
+                bw.write(location);
+                bw.newLine();
+            }
+            bw.flush();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     private int generateLocsList(List<String> locsList){
         int delay = 0;
         try {
-            BufferedReader reader = new BufferedReader(new FileReader(new File("/.flakedelay/Locations.txt")));
+            File f = new File(this.mavenProject.getBasedir()+"/.flakedelay/Locations.txt");
+            BufferedReader reader = new BufferedReader(new FileReader(f));
             String line = reader.readLine();
+            System.out.println(line);
             while (line != null) {
-                line = line.split("&")[0];
+                String data = line.split("&")[0];
                 delay = Integer.parseInt(line.split("&")[1]);
-                locsList.add(line);
+                locsList.add(data);
                 // read next line
                 line = reader.readLine();
             }
@@ -140,8 +163,10 @@ public class DeltaDebugMojo extends FlakeSyncAbstractMojo {
         }
 
         private void createTempFile(List<String> elements) {
-            File locsFile = new File("./.flakedelay/Locations_tmp.txt");
+            File locsFile = new File(this.mavenProject.getBasedir()+"/.flakedelay/Locations_tmp.txt");
+            locsFile.delete();
             try {
+                locsFile.createNewFile();
                 FileWriter outputLocationsFile = new FileWriter(locsFile);
                 BufferedWriter bw = new BufferedWriter(outputLocationsFile);
 
@@ -159,11 +184,22 @@ public class DeltaDebugMojo extends FlakeSyncAbstractMojo {
                                                                 DeltaDebugSurefireExecution execution) {
             try {
                 execution.run();
-            } catch (MojoExecutionException ex) {
+            } catch (Exception ex) {
+                System.out.println("==========check valid will return true ========");
                 return true;
             }
+            System.out.println("==========check valid will return false========");
             return false;
         }
-    }
 
+        private void testRun(List<String> elements){
+            createTempFile(elements);
+
+            DeltaDebugSurefireExecution cleanExec = new DeltaDebugSurefireExecution(this.surefire, this.originalArgLine, this.mavenProject,
+                    this.mavenSession, this.pluginManager,
+                    Paths.get(this.baseDir.getAbsolutePath(), ConfigurationDefaults.DEFAULT_FLAKESYNC_DIR).toString(),
+                    this.localRepository, this.testName, this.delay);
+            this.executeSurefireExecution(null, cleanExec);
+        }
+    }
 }
