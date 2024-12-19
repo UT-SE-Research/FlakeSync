@@ -30,7 +30,16 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 package flakesync;
 
 
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 
 import flakesync.common.ConfigurationDefaults;
@@ -47,13 +56,15 @@ import org.apache.maven.plugins.annotations.ResolutionScope;
 @Mojo(name = "flakedelay", defaultPhase = LifecyclePhase.TEST, requiresDependencyResolution = ResolutionScope.TEST)
 public class RunWithDelaysMojo extends FlakeSyncAbstractMojo {
 
-    int[] delays = {100, 200, 400 , 800, 1600, 3200, 6400, 12800};
+    int[] delays = {/*100,*/ 200, /*400 , 800, 1600, 3200, 6400, 12800*/};
 
     @Override
     public void execute() throws MojoExecutionException, MojoFailureException {
         super.execute();
         Logger.getGlobal().log(Level.INFO, ("Running RunWithDelaysMojo"));
         MojoExecutionException allExceptions = null;
+
+        createWhiteList();
 
         for(int i = 0; i < delays.length; i++) {
             DelayedSurefireExecution cleanExec = new DelayedSurefireExecution(
@@ -67,9 +78,6 @@ public class RunWithDelaysMojo extends FlakeSyncAbstractMojo {
                 break;
             }
         }
-
-        //this.mavenProject.getBuild().getOutputDirectory() for getting target classes for generating whitelist
-        //scripts/data_list/critic-search...
     }
 
 
@@ -81,5 +89,38 @@ public class RunWithDelaysMojo extends FlakeSyncAbstractMojo {
 
     public void setTestName(String testName) {
         this.testName = testName;
+    }
+
+    private boolean createWhiteList() {
+        System.out.println("Inside createWhiteList");
+        File whitelist = new File(this.mavenProject.getBasedir() + "/.flakesync/whitelist.txt");
+        File outputDir = new File(this.mavenProject.getBuild().getOutputDirectory());
+
+        try {
+            whitelist.createNewFile();
+            FileWriter outputLocationsFile = new FileWriter(whitelist);
+            BufferedWriter bw = new BufferedWriter(outputLocationsFile);
+
+            try (Stream<Path> paths = Files.walk(Paths.get(outputDir.toURI()))) {
+                List<String> classNames = paths
+                        .filter(Files::isRegularFile)
+                        .filter(path -> path.toString().endsWith(".class"))
+                        .filter(path -> !path.toString().contains("Tests"))
+                        .map(path -> path.toString()
+                                .replaceFirst(".*target/classes/", "")
+                                .replace("/", ".")
+                                .replace(".class", ""))
+                        .collect(Collectors.toList());
+
+                for (String location : classNames) {
+                    bw.write(location);
+                    bw.newLine();
+                }
+                bw.flush();
+            }
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+        return true;
     }
 }

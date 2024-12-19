@@ -39,8 +39,18 @@ import org.apache.maven.project.MavenProject;
 import org.codehaus.plexus.util.xml.Xpp3Dom;
 import org.twdata.maven.mojoexecutor.MojoExecutor;
 
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class DelayedSurefireExecution {
 
@@ -70,12 +80,15 @@ public class DelayedSurefireExecution {
         this.testName = testName;
         this.delay = delay;
 
+        //this.mavenProject.getBuild().getOutputDirectory() for getting target classes for generating whitelist
+        //scripts/data_list/critic-search...
+
     }
 
     public DelayedSurefireExecution(Plugin surefire, String originalArgLine, MavenProject mavenProject,
                                     MavenSession mavenSession, BuildPluginManager pluginManager, String flakesyncDir, String localRepository, String testName, int delay) {
         this(surefire, originalArgLine, "clean_" + Utils.getFreshExecutionId(), mavenProject, mavenSession, pluginManager,
-                flakesyncDir,localRepository, testName, delay);
+                flakesyncDir, localRepository, testName, delay);
     }
 
     public Configuration getConfiguration() {
@@ -83,7 +96,7 @@ public class DelayedSurefireExecution {
     }
 
     public void run() throws MojoExecutionException {
-        System.out.println("Inside run in DelayedSurefireExecution "+ this.delay);
+        System.out.println("Inside run in DelayedSurefireExecution " + this.delay);
         Xpp3Dom origNode = null;
         if (this.surefire.getConfiguration() != null) {
             origNode = new Xpp3Dom((Xpp3Dom) this.surefire.getConfiguration());
@@ -144,7 +157,7 @@ public class DelayedSurefireExecution {
         System.out.println("Checking system properties deprecated");
         String[] split = this.surefire.getVersion().split("\\.");
         System.out.println(split[0]);
-        float f = Float.parseFloat(split[0]) + (Float.parseFloat(split[1])/(10*split[1].length()));
+        float f = Float.parseFloat(split[0]) + (Float.parseFloat(split[1]) / (10 * split[1].length()));
         System.out.println("here's the version as a float: " + f);
         return f > 2.20;
     }
@@ -159,27 +172,28 @@ public class DelayedSurefireExecution {
 
         for (Xpp3Dom node : configNode.getChildren()) {
             if (properties.equals(node.getName())) {
-                 Xpp3Dom sysPropVarsNode = node;
-                 boolean addedDelay = false;
-                 boolean addedCM = false;
-                 boolean addedWL = false;
-                 for(Xpp3Dom node2 : sysPropVarsNode.getChildren()) {
-                     if(node2.getName().equals("delay")) {
-                         node2.setValue(this.delay+"");
-                         addedDelay = true;
-                     }
-                     if(node2.getName().equals("concurrentmethods")) {
-                         node2.setValue("./.flakesync/ResultMethods_tmp.txt");
-                         addedCM = true;
-                     }
-                     if(node2.getName().equals("whitelist")) {
-                         node2.setValue("./.flakesync/whitelist.txt");
-                         addedWL = true;
-                     }
-                 }
-                 if(!addedDelay) sysPropVarsNode.addChild(this.makeNode("delay", this.delay+""));
-                 if(!addedCM) sysPropVarsNode.addChild(this.makeNode("concurrentmethods", "./.flakesync/ResultMethods_tmp.txt"));
-                 if(!addedWL) sysPropVarsNode.addChild(this.makeNode("whitelist", "./.flakesync/whitelist.txt"));
+                Xpp3Dom sysPropVarsNode = node;
+                boolean addedDelay = false;
+                boolean addedCM = false;
+                boolean addedWL = false;
+                for (Xpp3Dom node2 : sysPropVarsNode.getChildren()) {
+                    if (node2.getName().equals("delay")) {
+                        node2.setValue(this.delay + "");
+                        addedDelay = true;
+                    }
+                    if (node2.getName().equals("concurrentmethods")) {
+                        node2.setValue("./.flakesync/ResultMethods_tmp.txt");
+                        addedCM = true;
+                    }
+                    if (node2.getName().equals("whitelist")) {
+                        node2.setValue("./.flakesync/whitelist.txt");
+                        addedWL = true;
+                    }
+                }
+                if (!addedDelay) sysPropVarsNode.addChild(this.makeNode("delay", this.delay + ""));
+                if (!addedCM)
+                    sysPropVarsNode.addChild(this.makeNode("concurrentmethods", "./.flakesync/ResultMethods_tmp.txt"));
+                if (!addedWL) sysPropVarsNode.addChild(this.makeNode("whitelist", "./.flakesync/whitelist.txt"));
             }
         }
     }
