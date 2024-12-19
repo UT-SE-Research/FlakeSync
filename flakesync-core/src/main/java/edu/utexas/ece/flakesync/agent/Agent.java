@@ -95,7 +95,7 @@ public class Agent {
 
                 ClassVisitor visitor;
                 if (!blackListContains(s) && (System.getProperty("whitelist") == null) ) {
-                    System.out.println("no whitelist given and going to execute EnterExit");
+                    //System.out.println("no whitelist given and going to execute EnterExit");
                     visitor = new EnterExitClassTracer(writer);
                     reader.accept(visitor, 0);
                     return writer.toByteArray();
@@ -131,7 +131,6 @@ public class Agent {
                 //System.out.println();
                 BufferedWriter bf = null;
                 BufferedWriter bfTrap = null;
-                BufferedWriter bfMethods = null;
                 BufferedWriter bfLocations = null;
                 BufferedWriter bfThreads = null;
                 BufferedWriter bfConcurrentMethodsPairs = null;
@@ -139,19 +138,24 @@ public class Agent {
                 try {
                     //When are the files being overwritten???? Check the execution to see where this is happening
                     System.out.println("Found AGENT PRINT****");
-                    File omf = new File("./.flakesync/ResultMethods.txt");
-                    FileWriter outputMethodsFile = new FileWriter(omf);
-                    bfMethods = new BufferedWriter(outputMethodsFile);
                     if (edu.utexas.ece.flakesync.agent.Utility.methodsRunConcurrently.size() > 0) {
-                        System.out.println("Found ConCURRENT****");
-                        synchronized(Utility.methodsRunConcurrently) {
-                            for (String meth : Utility.methodsRunConcurrently) {
-                                bfMethods.write(meth);
-                                bfMethods.newLine();
+                        BufferedWriter bfMethods = null;
+                        try {
+                            System.out.println("Found CONCURRENT****");
+                            File omf = new File("./.flakesync/ResultMethods.txt");
+                            FileWriter outputMethodsFile = new FileWriter(omf);
+                            bfMethods = new BufferedWriter(outputMethodsFile);
+                            synchronized(Utility.methodsRunConcurrently) {
+                                for (String meth : Utility.methodsRunConcurrently) {
+                                    bfMethods.write(meth);
+                                    bfMethods.newLine();
+                                }
                             }
+                            bfMethods.flush();
+                        } finally {
+                            bfMethods.close();
                         }
-                        bfMethods.flush();
-                    }else{
+                    } else{
                         System.out.println(":(");
                     }
                     
@@ -206,7 +210,6 @@ public class Agent {
                     try {
                         bf.close();
                         bfTrap.close();
-                        bfMethods.close();
                         bfLocations.close();
                         bfThreads.close();
                         bfConcurrentMethodsPairs.close();

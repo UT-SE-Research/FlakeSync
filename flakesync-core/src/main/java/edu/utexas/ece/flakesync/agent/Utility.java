@@ -15,7 +15,7 @@ public class Utility{
     static {
         try {
             delay = Integer.parseInt(System.getProperty("delay", "100"));
-            System.out.println("delay = " + delay);
+            //System.out.println("delay = " + delay);
         } catch (NumberFormatException e) {
             delay = 100;
         }
