@@ -165,22 +165,22 @@ public class DeltaDebugSurefireExecution {
                          addedDelay = true;
                      }
                      if(node2.getName().equals("concurrentmethods")) {
-                         node2.setValue("./.flakedelay/ResultMethods_tmp.txt");
+                         node2.setValue("./.flakesync/ResultMethods_tmp.txt");
                          addedCM = true;
                      }
                      if(node2.getName().equals("whitelist")) {
-                         node2.setValue("./.flakedelay/whitelist.txt");
+                         node2.setValue("./.flakesync/whitelist.txt");
                          addedWL = true;
                      }
                      /*if(node2.getName().equals("locations")) {
-                         node2.setValue("./.flakedelay/Locations_tmp.txt");
+                         node2.setValue("./.flakesync/Locations_tmp.txt");
                          addedWL = true;
                      }*/
                  }
                  if(!addedDelay) sysPropVarsNode.addChild(this.makeNode("delay", this.delay+""));
-                 if(!addedCM) sysPropVarsNode.addChild(this.makeNode("concurrentmethods", "./.flakedelay/ResultMethods_tmp.txt"));
-                 if(!addedWL) sysPropVarsNode.addChild(this.makeNode("whitelist", "./.flakedelay/whitelist.txt"));
-                 //if(!addedL) sysPropVarsNode.addChild(this.makeNode("locations", "./.flakedelay/Locations_tmp.txt"));
+                 if(!addedCM) sysPropVarsNode.addChild(this.makeNode("concurrentmethods", "./.flakesync/ResultMethods_tmp.txt"));
+                 if(!addedWL) sysPropVarsNode.addChild(this.makeNode("whitelist", "./.flakesync/whitelist.txt"));
+                 //if(!addedL) sysPropVarsNode.addChild(this.makeNode("locations", "./.flakesync/Locations_tmp.txt"));
             }
         }
     }

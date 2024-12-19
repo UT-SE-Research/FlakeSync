@@ -80,7 +80,7 @@ public class DeltaDebugMojo extends FlakeSyncAbstractMojo {
     }
 
     private void writeLocationsToFile(List<String> locs){
-        File f = new File(this.mavenProject.getBasedir()+"/.flakedelay/Locations.txt");
+        File f = new File(this.mavenProject.getBasedir()+"/.flakesync/Locations.txt");
         f.delete();
         try {
             f.createNewFile();
@@ -100,7 +100,7 @@ public class DeltaDebugMojo extends FlakeSyncAbstractMojo {
     private int generateLocsList(List<String> locsList){
         int delay = 0;
         try {
-            File f = new File(this.mavenProject.getBasedir()+"/.flakedelay/Locations.txt");
+            File f = new File(this.mavenProject.getBasedir()+"/.flakesync/Locations.txt");
             BufferedReader reader = new BufferedReader(new FileReader(f));
             String line = reader.readLine();
             System.out.println(line);
@@ -163,7 +163,7 @@ public class DeltaDebugMojo extends FlakeSyncAbstractMojo {
         }
 
         private void createTempFile(List<String> elements) {
-            File locsFile = new File(this.mavenProject.getBasedir()+"/.flakedelay/Locations_tmp.txt");
+            File locsFile = new File(this.mavenProject.getBasedir()+"/.flakesync/Locations_tmp.txt");
             locsFile.delete();
             try {
                 locsFile.createNewFile();
