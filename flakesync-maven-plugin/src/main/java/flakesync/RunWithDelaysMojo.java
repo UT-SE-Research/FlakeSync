@@ -47,7 +47,7 @@ import org.apache.maven.plugins.annotations.ResolutionScope;
 @Mojo(name = "flakedelay", defaultPhase = LifecyclePhase.TEST, requiresDependencyResolution = ResolutionScope.TEST)
 public class RunWithDelaysMojo extends FlakeSyncAbstractMojo {
 
-    int[] delays = {/*100, 200,*/ 400 /*, 800, 1600, 3200, 6400, 12800*/};
+    int[] delays = {100, 200, 400 , 800, 1600, 3200, 6400, 12800};
 
     @Override
     public void execute() throws MojoExecutionException, MojoFailureException {
@@ -61,7 +61,11 @@ public class RunWithDelaysMojo extends FlakeSyncAbstractMojo {
                     this.mavenSession, this.pluginManager,
                     Paths.get(this.baseDir.getAbsolutePath(), ConfigurationDefaults.DEFAULT_FLAKESYNC_DIR).toString(),
                     this.localRepository, this.testName, delays[i]);
-            this.executeSurefireExecution(null, cleanExec);
+            try {
+                this.executeSurefireExecution(null, cleanExec);
+            } catch(MojoExecutionException e) {
+                break;
+            }
         }
 
         //this.mavenProject.getBuild().getOutputDirectory() for getting target classes for generating whitelist
@@ -70,12 +74,8 @@ public class RunWithDelaysMojo extends FlakeSyncAbstractMojo {
 
 
     private MojoExecutionException executeSurefireExecution(MojoExecutionException allExceptions,
-                                                            DelayedSurefireExecution execution) {
-        try {
-            execution.run();
-        } catch (MojoExecutionException ex) {
-            return (MojoExecutionException) Utils.linkException(ex, allExceptions);
-        }
+                                                            DelayedSurefireExecution execution) throws MojoExecutionException {
+        execution.run();
         return allExceptions;
     }
 

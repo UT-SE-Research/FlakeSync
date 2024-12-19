@@ -105,6 +105,7 @@ public class DelayedSurefireExecution {
                     MojoExecutor.executionEnvironment(this.mavenProject, this.mavenSession, this.pluginManager));
         } catch (MojoExecutionException mojoException) {
             Logger.getGlobal().log(Level.INFO, "Surefire failed when running tests for " + this.configuration.executionId + "with delay: " + this.delay);
+            throw new MojoExecutionException("escalating");
         }
     }
 
