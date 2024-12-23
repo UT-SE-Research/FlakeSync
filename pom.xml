@@ -11,6 +11,7 @@
   <modules>
     <module>flakesync-core</module>
     <module>flakesync-maven-plugin</module>
+      <module>localization-core</module>
   </modules>
 
   <dependencies>

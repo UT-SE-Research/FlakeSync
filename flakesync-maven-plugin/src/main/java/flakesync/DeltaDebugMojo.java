@@ -30,8 +30,9 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 package flakesync;
 
 
-import flakesync.common.ConfigurationDefaults;
 import flakesync.common.DeltaDebugger;
+import flakesync.common.ConfigurationDefaults;
+
 import flakesync.common.Level;
 import flakesync.common.Logger;
 import org.apache.maven.execution.MavenSession;
@@ -39,11 +40,9 @@ import org.apache.maven.model.Plugin;
 import org.apache.maven.plugin.BuildPluginManager;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
-import org.apache.maven.plugin.PluginManager;
 import org.apache.maven.plugins.annotations.LifecyclePhase;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.ResolutionScope;
-import org.apache.maven.plugins.surefire.report.SurefireReportParser;
 import org.apache.maven.project.MavenProject;
 
 import java.io.*;
@@ -54,6 +53,8 @@ import java.util.List;
 @Mojo(name = "flakedeltadebug", defaultPhase = LifecyclePhase.TEST, requiresDependencyResolution = ResolutionScope.TEST)
 public class DeltaDebugMojo extends FlakeSyncAbstractMojo {
 
+    protected int delay;
+
     @Override
     public void execute() throws MojoExecutionException, MojoFailureException {
         super.execute();
@@ -62,13 +63,13 @@ public class DeltaDebugMojo extends FlakeSyncAbstractMojo {
 
         //Generate list of all locations
         List<String> locations = new ArrayList<String>();
-        int delay = generateLocsList(locations);
+        this.delay = generateLocsList(locations);
 
         LocationsDeltaDebug deltaDebug = new LocationsDeltaDebug(
                 this.surefire, this.originalArgLine, this.mavenProject,
                 this.mavenSession, this.pluginManager,
                 this.baseDir,
-                this.localRepository, this.testName, delay);
+                this.localRepository, this.testName, this.delay);
 
 
 
@@ -89,6 +90,7 @@ public class DeltaDebugMojo extends FlakeSyncAbstractMojo {
 
             for (String location : locs) {
                 bw.write(location);
+                bw.write("&"+this.delay);
                 bw.newLine();
             }
             bw.flush();
@@ -106,7 +108,7 @@ public class DeltaDebugMojo extends FlakeSyncAbstractMojo {
             System.out.println(line);
             while (line != null) {
                 String data = line.split("&")[0];
-                delay = Integer.parseInt(line.split("&")[1]);
+                delay = Integer.parseInt((line.split("&")[1]));
                 locsList.add(data);
                 // read next line
                 line = reader.readLine();
@@ -123,7 +125,7 @@ public class DeltaDebugMojo extends FlakeSyncAbstractMojo {
         this.testName = testName;
     }
 
-    private class LocationsDeltaDebug extends DeltaDebugger<String>{
+    private class LocationsDeltaDebug extends DeltaDebugger<String> {
 
         protected Plugin surefire;
         protected MavenProject mavenProject;
