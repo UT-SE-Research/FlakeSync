@@ -1,32 +1,3 @@
-/*
-The MIT License (MIT)
-Copyright (c) 2015 Alex Gyori
-Copyright (c) 2022 Kaiyao Ke
-Copyright (c) 2015 Owolabi Legunsen
-Copyright (c) 2015 Darko Marinov
-Copyright (c) 2015 August Shi
-
-
-Permission is hereby granted, free of charge, to any person obtaining
-a copy of this software and associated documentation files (the
-"Software"), to deal in the Software without restriction, including
-without limitation the rights to use, copy, modify, merge, publish,
-distribute, sublicense, and/or sell copies of the Software, and to
-permit persons to whom the Software is furnished to do so, subject to
-the following conditions:
-
-The above copyright notice and this permission notice shall be
-included in all copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
-EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
-MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
-NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
-LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
-OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
-WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-*/
-
 package flakesync;
 
 
@@ -43,10 +14,13 @@ import org.apache.maven.plugins.annotations.ResolutionScope;
 import java.io.*;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 
 @Mojo(name = "critsearch", defaultPhase = LifecyclePhase.TEST, requiresDependencyResolution = ResolutionScope.TEST)
 public class CritSearchMojo extends FlakeSyncAbstractMojo {
+
+    HashSet<String> stackTraceLines;
 
     @Override
     public void execute() throws MojoExecutionException, MojoFailureException {
@@ -66,8 +40,14 @@ public class CritSearchMojo extends FlakeSyncAbstractMojo {
 
         executeSurefireExecution(allExceptions, cleanExec);
 
-    }
 
+        /*parse-stack-trace.sh*/
+        stackTraceLines = new HashSet<String>();
+        parseStackTrace();
+
+
+
+    }
 
     private int generateLocsList(List<String> locsList){
         int delay = 0;
@@ -88,6 +68,49 @@ public class CritSearchMojo extends FlakeSyncAbstractMojo {
             e.printStackTrace();
         }
         return delay;
+    }
+
+    private void parseStackTrace(){
+        try {
+            File f = new File(this.mavenProject.getBasedir()+"/.flakesync/Stacktrace-.txt");
+            BufferedReader reader = new BufferedReader(new FileReader(f));
+            String parsedInfo = "";
+            String line = reader.readLine();
+            System.out.println(line);
+            while (line != null) {
+                String[] data = line.split(",");
+                if(("END").equals(data[1])){
+                    parsedInfo += data[0];
+                    this.stackTraceLines.add(parsedInfo);
+                    parsedInfo = "";
+                }else{
+                    String tmp = data[1].substring(0, data[1].indexOf('('));
+                    String className = tmp.substring(0, tmp.lastIndexOf('/'));
+                    System.out.println(className);
+                    int lineNumber = Integer.parseInt(data[1].split(":")[1].substring(0, data[1].split(":")[1].length() - 1));
+                    System.out.println(lineNumber);
+                    // ${className}#${lineNumber},
+                    parsedInfo += (className + "#" + lineNumber + ",");
+                }
+                // read next line
+                line = reader.readLine();
+            }
+            reader.close();
+
+            f = new File(this.mavenProject.getBasedir()+"/.flakesync/stackTraced-parsed-.txt");
+            f.delete();
+            f.createNewFile();
+            FileWriter outputLocationsFile = new FileWriter(f);
+            BufferedWriter bw = new BufferedWriter(outputLocationsFile);
+
+            for (String location : this.stackTraceLines) {
+                bw.write(location);
+                bw.newLine();
+            }
+            bw.flush();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
 
