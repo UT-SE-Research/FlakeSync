@@ -22,14 +22,14 @@ Authors: Max Vetrenko, Ruslan Diachenko, Roman Ivanov.
   <property name="fileExtensions" value="java, properties, xml"/>
   <!-- Checks for whitespace                               !-->
   <!-- See http://checkstyle.sf.net/config_whitespace.html !-->
-  <!--<module name="FileTabCharacter">
+  <module name="FileTabCharacter">
     <property name="eachLine" value="true"/>
   </module>
 
-  &lt;!&ndash;<module name="LineLength">
+  <module name="LineLength">
     <property name="max" value="125"/>
     <property name="ignorePattern" value="^package.*|^import.*|a href|href|http://|https://|ftp://"/>
-  </module>!&ndash;&gt;
+  </module>
 
   <module name="SuppressWarningsFilter"/>
 
@@ -158,23 +158,23 @@ Authors: Max Vetrenko, Ruslan Diachenko, Roman Ivanov.
       <message key="ws.notPreceded"
                value="GenericWhitespace ''{0}'' is not preceded with whitespace."/>
     </module>
-    &lt;!&ndash;<module name="Indentation">
+    <module name="Indentation">
       <property name="basicOffset" value="4"/>
       <property name="braceAdjustment" value="0"/>
       <property name="caseIndent" value="4"/>
       <property name="throwsIndent" value="4"/>
       <property name="lineWrappingIndentation" value="4"/>
       <property name="arrayInitIndent" value="4"/>
-    </module>!&ndash;&gt;
+    </module>
     <module name="AbbreviationAsWordInName">
       <property name="ignoreFinal" value="true"/>
     </module>
     <module name="OverloadMethodsDeclarationOrder"/>
-    &lt;!&ndash;<module name="CustomImportOrder">
+    <module name="CustomImportOrder">
       <property name="specialImportsRegExp" value="edu.illinois.cs"/>
       <property name="sortImportsInGroupAlphabetically" value="true"/>
       <property name="customImportOrderRules" value="SPECIAL_IMPORTS###THIRD_PARTY_PACKAGE###STANDARD_JAVA_PACKAGE###STATIC"/>
-    </module>!&ndash;&gt;
+    </module>
     <module name="MethodParamPad"/>
     <module name="OperatorWrap">
       <property name="option" value="NL"/>
@@ -196,9 +196,9 @@ Authors: Max Vetrenko, Ruslan Diachenko, Roman Ivanov.
       <property name="tagOrder" value="@param, @return, @throws, @deprecated"/>
       <property name="target" value="CLASS_DEF, INTERFACE_DEF, ENUM_DEF, METHOD_DEF, CTOR_DEF, VARIABLE_DEF"/>
     </module>
-    <module name="JavadocMethod"> -->
+    <module name="JavadocMethod">
       <!-- Changed severity level for missing javadocs. -->
-      <!--<property name="severity" value="warning"/>
+      <property name="severity" value="warning"/>
       <property name="scope" value="public"/>
       <property name="allowMissingParamTags" value="true"/>
       <property name="allowMissingReturnTag" value="true"/>
@@ -215,5 +215,5 @@ Authors: Max Vetrenko, Ruslan Diachenko, Roman Ivanov.
     <module name="EmptyCatchBlock">
       <property name="exceptionVariableName" value="expected"/>
     </module>
-  </module>-->
+  </module>
 </module>
