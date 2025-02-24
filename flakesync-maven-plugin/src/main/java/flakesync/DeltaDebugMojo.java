@@ -155,6 +155,7 @@ public class DeltaDebugMojo extends FlakeSyncAbstractMojo {
         @Override
         public boolean checkValid(List<String> elements) {
             //First we need to write the elements to a temporary file for the agent to write to
+            System.out.println("THIS IS THE SIZE OF THE SUBSET" + elements.size());
             createTempFile(elements);
 
             DeltaDebugSurefireExecution cleanExec = new DeltaDebugSurefireExecution(this.surefire, this.originalArgLine, this.mavenProject,
@@ -166,8 +167,8 @@ public class DeltaDebugMojo extends FlakeSyncAbstractMojo {
 
         private void createTempFile(List<String> elements) {
             File locsFile = new File(this.mavenProject.getBasedir()+"/.flakesync/Locations_tmp.txt");
-            locsFile.delete();
             try {
+                locsFile.delete();
                 locsFile.createNewFile();
                 FileWriter outputLocationsFile = new FileWriter(locsFile);
                 BufferedWriter bw = new BufferedWriter(outputLocationsFile);

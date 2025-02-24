@@ -1,31 +1,3 @@
-/*The MIT License (MIT)
-Copyright (c) 2015 Alex Gyori
-Copyright (c) 2022 Kaiyao Ke
-Copyright (c) 2015 Owolabi Legunsen
-Copyright (c) 2015 Darko Marinov
-Copyright (c) 2015 August Shi
-
-
-Permission is hereby granted, free of charge, to any person obtaining
-a copy of this software and associated documentation files (the
-"Software"), to deal in the Software without restriction, including
-without limitation the rights to use, copy, modify, merge, publish,
-distribute, sublicense, and/or sell copies of the Software, and to
-permit persons to whom the Software is furnished to do so, subject to
-the following conditions:
-
-The above copyright notice and this permission notice shall be
-included in all copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
-EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
-MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
-NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
-LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
-OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
-WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.*/
-
-
 package flakesync;
 
 import flakesync.common.Configuration;
@@ -42,8 +14,7 @@ import org.twdata.maven.mojoexecutor.MojoExecutor;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-public class DelayedSurefireExecution {
-
+public class DownWardMvnSurefireExecution {
     protected Configuration configuration;
     protected final String executionId;
 
@@ -54,11 +25,27 @@ public class DelayedSurefireExecution {
     protected String testName;
     protected String localRepository;
     protected String originalArgLine;
-    protected int delay;
 
-    protected DelayedSurefireExecution(Plugin surefire, String originalArgLine, String executionId,
-                                       MavenProject mavenProject, MavenSession mavenSession, BuildPluginManager pluginManager,
-                                       String flakesyncDir, String localRepository, String testName, int delay) {
+
+
+    protected DownWardMvnSurefireExecution(Plugin surefire, String originalArgLine, String executionId,
+                                     MavenProject mavenProject, MavenSession mavenSession, BuildPluginManager pluginManager,
+                                     String flakesyncDir, String testName, String localRepository) {
+        this.executionId = executionId;
+        this.surefire = surefire;
+        this.testName = testName;
+        this.originalArgLine = sanitizeAndRemoveEnvironmentVars(originalArgLine);
+        this.mavenProject = mavenProject;
+        this.mavenSession = mavenSession;
+        this.pluginManager = pluginManager;
+        this.configuration = new Configuration(executionId, flakesyncDir, testName);
+        this.localRepository = localRepository;
+
+    }
+
+    protected DownWardMvnSurefireExecution(Plugin surefire, String originalArgLine, String executionId,
+                                     MavenProject mavenProject, MavenSession mavenSession, BuildPluginManager pluginManager,
+                                     String flakesyncDir, String localRepository, int delays) {
         this.executionId = executionId;
         this.surefire = surefire;
         this.originalArgLine = sanitizeAndRemoveEnvironmentVars(originalArgLine);
@@ -67,36 +54,31 @@ public class DelayedSurefireExecution {
         this.pluginManager = pluginManager;
         this.configuration = new Configuration(executionId, flakesyncDir, testName);
         this.localRepository = localRepository;
-        this.testName = testName;
-        this.delay = delay;
-
-        //this.mavenProject.getBuild().getOutputDirectory() for getting target classes for generating whitelist
-        //scripts/data_list/critic-search...
 
     }
 
-    public DelayedSurefireExecution(Plugin surefire, String originalArgLine, MavenProject mavenProject,
-                                    MavenSession mavenSession, BuildPluginManager pluginManager, String flakesyncDir, String localRepository, String testName, int delay) {
+    public DownWardMvnSurefireExecution(Plugin surefire, String originalArgLine, MavenProject mavenProject,
+                                  MavenSession mavenSession, BuildPluginManager pluginManager, String flakesyncDir, String testName,
+                                        String localRepository) {
         this(surefire, originalArgLine, "clean_" + Utils.getFreshExecutionId(), mavenProject, mavenSession, pluginManager,
-                flakesyncDir, localRepository, testName, delay);
+                flakesyncDir, testName, localRepository);
     }
 
     public Configuration getConfiguration() {
         return this.configuration;
     }
 
-    public void run() throws MojoExecutionException {
-        System.out.println("Inside run in DelayedSurefireExecution " + this.delay);
+    public void run(int mode) throws MojoExecutionException {
+        System.out.println("Inside run in DownWardMvnSurefireExecution");
         Xpp3Dom origNode = null;
         if (this.surefire.getConfiguration() != null) {
             origNode = new Xpp3Dom((Xpp3Dom) this.surefire.getConfiguration());
         }
-        System.out.println("Created node");
         try {
-            Xpp3Dom domNode = this.applyFlakesyncConfig((Xpp3Dom) this.surefire.getConfiguration());
-            this.setupArgline(domNode);
-            this.setupArgs(domNode);
-            System.out.println("Setup args worked");
+            Xpp3Dom domNode = this.applyNonDexConfig((Xpp3Dom) this.surefire.getConfiguration());
+            //this.addAttributeToConfig(domNode, "")
+            this.setupArgline(domNode, mode);
+            this.setupTest(domNode);
             Logger.getGlobal().log(Level.FINE, "Config node passed: " + domNode.toString());
             Logger.getGlobal().log(Level.FINE, this.mavenProject + "\n" + this.mavenSession + "\n" + this.pluginManager);
             Logger.getGlobal().log(Level.FINE, "Surefire config: " + this.surefire + "  " + MojoExecutor.goal("test")
@@ -107,89 +89,81 @@ public class DelayedSurefireExecution {
                     domNode,
                     MojoExecutor.executionEnvironment(this.mavenProject, this.mavenSession, this.pluginManager));
         } catch (MojoExecutionException mojoException) {
-            Logger.getGlobal().log(Level.INFO, "Surefire failed when running tests for " + this.configuration.executionId + "with delay: " + this.delay);
-            throw new MojoExecutionException("escalating");
+            Logger.getGlobal().log(Level.INFO, "Surefire failed when running tests for " + this.configuration.executionId);
         }
     }
 
-    protected void setupArgline(Xpp3Dom configNode) {
+    protected void setupArgline(Xpp3Dom configNode, int mode) {
         // create the flakeSync-delay argLine for surefire based on the current configuration
-        // this adds things like where to save test reports, what directory flakesync
+        // this adds things like where to save test reports, what directory NonDex
         // should store results in, what seed and mode should be used.
 
         String pathToJar = this.localRepository;
         // TODO: Encode path to agent in some final static variable for ease of access and potential changes to name/version
-        String argLineToSet = "-javaagent:" + pathToJar + "/edu/utexas/ece/flakesync-core/1.0-SNAPSHOT/flakesync-core-1.0-SNAPSHOT.jar";
+        String argLineToSet = "-javaagent:" + pathToJar + "/edu/utexas/ece/barrierSearch-core/0.1-SNAPSHOT/barrierSearch-core-0.1-SNAPSHOT.jar";
 
-        boolean added = false;
+        boolean addedAL = false;
+        boolean addedSML = false;
+        boolean addedCTV = false;
+        boolean addedYP = false;
+        boolean addedT = false;
         for (Xpp3Dom config : configNode.getChildren()) {
             if ("argLine".equals(config.getName())) {
                 Logger.getGlobal().log(Level.INFO, "Adding flakeSync-delay argLine to existing argLine specified by the project");
                 String current = sanitizeAndRemoveEnvironmentVars(config.getValue());
                 config.setValue(argLineToSet + " " + current);
-                added = true;
+                addedAL = true;
+                break;
+            }
+            if ("searchMethodEndLine".equals(config.getName()) && mode == 1) {
+                config.setValue("search");
+                addedSML = true;
+                break;
+            }
+            if ("CodeToIntroduceVariable".equals(config.getName())) {
+                config.setValue(""); // change to starting boundary
+                addedCTV = true;
+                break;
+            }
+            if ("YieldingPoint".equals(config.getName()) && mode == 2) {
+                config.setValue(""); // change to yielding point
+                addedYP = true;
+                break;
+            }
+            if ("threshold".equals(config.getName()) && mode == 2) {
+                config.setValue(""); // change to threshold
+                addedT = true;
                 break;
             }
         }
-        if (!added) {
+        if (!addedAL) {
             Logger.getGlobal().log(Level.INFO, "Creating new argline for Surefire: *" + argLineToSet + "*");
             configNode.addChild(this.makeNode("argLine", argLineToSet));
+        }
+        if (!addedSML && mode == 1) {
+            configNode.addChild(this.makeNode("searchMethodEndLine", "search"));
+        }
+        if (!addedSML) {
+            configNode.addChild(this.makeNode("CodeToIntroduceVariable", "search"));
+        }
+        if (!addedSML && mode == 2) {
+            configNode.addChild(this.makeNode("searchMethodEndLine", "search"));
+        }
+        if (!addedSML && mode == 2) {
+            configNode.addChild(this.makeNode("searchMethodEndLine", "search"));
         }
 
         // originalArgLine is the argLine set from Maven, not through the surefire config
         // if such an argLine exists, we modify that one also
         this.mavenProject.getProperties().setProperty("argLine",
                 this.originalArgLine + " " + argLineToSet);
-        System.out.println("argline: " + this.mavenProject.getProperties().getProperty("argLine"));
     }
 
-    private boolean checkSysPropsDeprecated() {
-        System.out.println("Checking system properties deprecated");
-        String[] split = this.surefire.getVersion().split("\\.");
-        System.out.println(split[0]);
-        float f = Float.parseFloat(split[0]) + (Float.parseFloat(split[1]) / (10 * split[1].length()));
-        System.out.println("here's the version as a float: " + f);
-        return f > 2.20;
-    }
-
-    protected void setupArgs(Xpp3Dom configNode) {
-
-        //Add the test name
-        System.out.println("Inside setup args");
+    protected void setupTest(Xpp3Dom configNode) {
         configNode.addChild((this.makeNode("test", this.testName)));
-        String properties = (!checkSysPropsDeprecated()) ? ("systemPropertyVariables") : ("systemProperties");
-        System.out.println("properties: " + properties);
-
-        for (Xpp3Dom node : configNode.getChildren()) {
-            if (properties.equals(node.getName())) {
-                Xpp3Dom sysPropVarsNode = node;
-                boolean addedDelay = false;
-                boolean addedCM = false;
-                boolean addedWL = false;
-                for (Xpp3Dom node2 : sysPropVarsNode.getChildren()) {
-                    if (node2.getName().equals("delay")) {
-                        node2.setValue(this.delay + "");
-                        addedDelay = true;
-                    }
-                    if (node2.getName().equals("concurrentmethods")) {
-                        node2.setValue("./.flakesync/ResultMethods_tmp.txt");
-                        addedCM = true;
-                    }
-                    if (node2.getName().equals("whitelist")) {
-                        node2.setValue("./.flakesync/whitelist.txt");
-                        addedWL = true;
-                    }
-                }
-                if (!addedDelay) sysPropVarsNode.addChild(this.makeNode("delay", this.delay + ""));
-                if (!addedCM)
-                    sysPropVarsNode.addChild(this.makeNode("concurrentmethods", "./.flakesync/ResultMethods_tmp.txt"));
-                if (!addedWL) sysPropVarsNode.addChild(this.makeNode("whitelist", "./.flakesync/whitelist.txt"));
-            }
-        }
     }
 
-
-    protected Xpp3Dom applyFlakesyncConfig(Xpp3Dom configuration) {
+    protected Xpp3Dom applyNonDexConfig(Xpp3Dom configuration) {
         Xpp3Dom configNode = configuration;
         if (configNode == null) {
             configNode = new Xpp3Dom("configuration");

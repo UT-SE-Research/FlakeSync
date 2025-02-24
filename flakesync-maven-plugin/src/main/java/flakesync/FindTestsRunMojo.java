@@ -51,7 +51,7 @@ public class FindTestsRunMojo extends FlakeSyncAbstractMojo {
         MojoExecutionException allExceptions = null;
 
         // If we add clean exceptions to allExceptions then the build fails if anything fails without nondex.
-        // Everything in nondex-test is expected to fail without nondex so we throw away the result here.
+        // Everything in flakesync-test is expected to fail without flakesync so we throw away the result here.
         CleanSurefireExecution cleanExec = new CleanSurefireExecution(
                 this.surefire, this.originalArgLine, this.mavenProject,
                 this.mavenSession, this.pluginManager,
