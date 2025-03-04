@@ -26,6 +26,7 @@ public class RandomClassTracer extends ClassVisitor {
             try {
                 BufferedReader reader = new BufferedReader(new FileReader(new File(System.getProperty("locations"))));
                 String line = reader.readLine();
+                System.out.println(line);
                 while (line != null) {
                     if(line.contains(":")) {
                         String[] arr = line.split(":", 2);
@@ -33,7 +34,7 @@ public class RandomClassTracer extends ClassVisitor {
                         providedLocations.add(arr[0]);
                         testName = arr[1];
                         // read next line
-                        //System.out.println("Line ="+line +", arr[0]="+arr[0] +", testName=" + testName); // Expecting ClassName#LineNumber
+                        System.out.println("Line ="+line +", arr[0]="+arr[0] +", testName=" + testName); // Expecting ClassName#LineNumber
                      } else {
                             providedLocations.add(line); //This will only be needed from analyzeRoot.sh, because in that case only a linenumber with the class name is given
                      }
@@ -93,7 +94,7 @@ public class RandomClassTracer extends ClassVisitor {
             @Override
             public void visitInsn(int opcode){
                 String location = cn + "#" + lineNumber;
-                //System.out.println("From RandomClassTraced *** location ="+location);
+                System.out.println("From RandomClassTraced *** location ="+location);
                 // If locations are provided, delay only at those locations
                 if (!Agent.blackListContains(className)) { // To double check if the classname is in the blacklist
                     if ((System.getProperty("locations") != null) && (providedLocations.contains(location))) {

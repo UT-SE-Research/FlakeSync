@@ -39,22 +39,10 @@ import org.apache.maven.project.MavenProject;
 import org.codehaus.plexus.util.xml.Xpp3Dom;
 import org.twdata.maven.mojoexecutor.MojoExecutor;
 
-import org.apache.maven.shared.invoker.DefaultInvocationRequest;
-import org.apache.maven.shared.invoker.DefaultInvoker;
-import org.apache.maven.shared.invoker.InvocationRequest;
-import org.apache.maven.shared.invoker.InvocationResult;
-import org.apache.maven.shared.invoker.Invoker;
-import org.apache.maven.shared.invoker.MavenInvocationException;
-import org.apache.maven.shared.invoker.PrintStreamHandler;
-
-import java.io.ByteArrayOutputStream;
-import java.io.PrintStream;
-import java.util.Arrays;
-import java.util.Properties;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-public class CritSearchSurefireExecution {
+public class RootMethodAnalysisSurefireExecution {
 
     protected Configuration configuration;
     protected final String executionId;
@@ -68,10 +56,11 @@ public class CritSearchSurefireExecution {
     protected String originalArgLine;
     protected int delay;
     protected String locations;
+    protected String methodName;
 
-    protected CritSearchSurefireExecution(Plugin surefire, String originalArgLine, String executionId,
-                                          MavenProject mavenProject, MavenSession mavenSession, BuildPluginManager pluginManager,
-                                          String flakesyncDir, String localRepository, String testName, int delay, String locations) {
+    protected RootMethodAnalysisSurefireExecution(Plugin surefire, String originalArgLine, String executionId,
+                                                  MavenProject mavenProject, MavenSession mavenSession, BuildPluginManager pluginManager,
+                                                  String flakesyncDir, String localRepository, String testName, int delay, String methodName) {
         this.executionId = executionId;
         this.surefire = surefire;
         this.originalArgLine = sanitizeAndRemoveEnvironmentVars(originalArgLine);
@@ -82,15 +71,15 @@ public class CritSearchSurefireExecution {
         this.localRepository = localRepository;
         this.testName = testName;
         this.delay = delay;
-        this.locations = locations;
+        this.methodName = methodName;
 
     }
 
-    public CritSearchSurefireExecution(Plugin surefire, String originalArgLine, MavenProject mavenProject,
-                                       MavenSession mavenSession, BuildPluginManager pluginManager, String flakesyncDir, String localRepository,
-                                       String testName, int delay, String locations) {
+    public RootMethodAnalysisSurefireExecution(Plugin surefire, String originalArgLine, MavenProject mavenProject,
+                                               MavenSession mavenSession, BuildPluginManager pluginManager, String flakesyncDir, String localRepository,
+                                               String testName, int delay, String methodName) {
         this(surefire, originalArgLine, "clean_" + Utils.getFreshExecutionId(), mavenProject, mavenSession, pluginManager,
-                flakesyncDir,localRepository, testName, delay, locations);
+                flakesyncDir,localRepository, testName, delay, methodName);
     }
 
     public Configuration getConfiguration() {
@@ -98,16 +87,16 @@ public class CritSearchSurefireExecution {
     }
 
     public void run() throws MojoExecutionException {
-        System.out.println("Inside run in CritSearchSurefireExecution "+ this.delay);
+        System.out.println("Inside run in RootMethodAnalysisSurefireExecution "+ this.delay);
         Xpp3Dom origNode = null;
         if (this.surefire.getConfiguration() != null) {
             origNode = new Xpp3Dom((Xpp3Dom) this.surefire.getConfiguration());
         }
-        //System.out.println("Created node");
+        System.out.println("Created node");
         Xpp3Dom domNode = this.applyFlakesyncConfig((Xpp3Dom) this.surefire.getConfiguration());
         this.setupArgline(domNode);
         this.setupArgs(domNode);
-        //System.out.println("Setup args worked");
+        System.out.println("Setup args worked");
         Logger.getGlobal().log(Level.FINE, "Config node passed: " + domNode.toString());
         Logger.getGlobal().log(Level.FINE, this.mavenProject + "\n" + this.mavenSession + "\n" + this.pluginManager);
         Logger.getGlobal().log(Level.FINE, "Surefire config: " + this.surefire + "  " + MojoExecutor.goal("test")
@@ -151,43 +140,49 @@ public class CritSearchSurefireExecution {
         // if such an argLine exists, we modify that one also
         this.mavenProject.getProperties().setProperty("argLine",
                 this.originalArgLine + " " + argLineToSet);
-        //System.out.println("argline: " + this.mavenProject.getProperties().getProperty("argLine"));
+        System.out.println("argline: " + this.mavenProject.getProperties().getProperty("argLine"));
     }
 
     private boolean checkSysPropsDeprecated() {
-        //System.out.println("Checking system properties deprecated");
+        System.out.println("Checking system properties deprecated");
         String[] split = this.surefire.getVersion().split("\\.");
-        //System.out.println(split[0]);
+        System.out.println(split[0]);
         float f = Float.parseFloat(split[0]) + (Float.parseFloat(split[1])/(10*split[1].length()));
-        //System.out.println("here's the version as a float: " + f);
+        System.out.println("here's the version as a float: " + f);
         return f > 2.20;
     }
 
     protected void setupArgs(Xpp3Dom configNode) {
 
         //Add the test name
-        //System.out.println("Inside setup args");
+        System.out.println("Inside setup args");
         configNode.addChild((this.makeNode("test", this.testName)));
         String properties = (!checkSysPropsDeprecated()) ? ("systemPropertyVariables") : ("systemProperties");
-        //System.out.println("properties: " + properties);
+        System.out.println("properties: " + properties);
 
         for (Xpp3Dom node : configNode.getChildren()) {
             if (properties.equals(node.getName())) {
                 Xpp3Dom sysPropVarsNode = node;
                 boolean addedDelay = false;
+                boolean addedMDB = false;
                 boolean addedL = false;
                 for(Xpp3Dom node2 : sysPropVarsNode.getChildren()) {
                     if(node2.getName().equals("delay")) {
                         node2.setValue(this.delay+"");
                         addedDelay = true;
                     }
-                     if(node2.getName().equals("locations")) {
-                         node2.setValue("."+this.locations);
-                         addedL = true;
-                     }
+                    if(node2.getName().equals("rootMethod")) {
+                        node2.setValue("./.flakesync/Locations/Root.txt");
+                        addedL = true;
+                    }
+                    if(node2.getName().equals("methodOnly")) {
+                        node2.setValue(this.methodName);
+                        addedMDB = true;
+                    }
                 }
                 if(!addedDelay) sysPropVarsNode.addChild(this.makeNode("delay", this.delay+""));
-                if(!addedL) sysPropVarsNode.addChild(this.makeNode("locations", "."+this.locations));
+                if(!addedL) sysPropVarsNode.addChild(this.makeNode("rootMethod", "./.flakesync/Locations/Root.txt"));
+                if(!addedMDB) sysPropVarsNode.addChild(this.makeNode("methodOnly", this.methodName));
             }
         }
     }

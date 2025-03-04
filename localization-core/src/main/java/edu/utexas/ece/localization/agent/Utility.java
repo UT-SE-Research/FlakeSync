@@ -52,6 +52,8 @@ public class Utility{
             x = x*3 / 234 + 32 * x;
         } */
 
+        System.out.println("Delaying " + testName + " " + className);
+
         collectStackTrace(testName, className);
         try {
             //locationSavedInFile(location);
@@ -98,10 +100,10 @@ public class Utility{
 
     public static void collectStackTrace(String testName, String className) {
         className = className.replaceAll("[/]",".");
-        //System.out.println("collectStackTrace*** ClassName="+className);
+        System.out.println("collectStackTrace*** ClassName="+className);
         String[] classNameItems = className.split("#", 2);
         //System.out.println("Stack Trace Collect, className="+className);
-        String fileName="./.flakesync/StackTrace-"+testName+".txt";
+        String fileName="./.flakesync/StackTrace.txt";
         try {   
             FileWriter outputFile = new FileWriter(fileName, true);
             BufferedWriter bf = new BufferedWriter(outputFile);

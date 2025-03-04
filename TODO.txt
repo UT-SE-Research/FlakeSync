@@ -140,3 +140,25 @@ not_in_library_code=$(find . -name "${java_class_name}.java" | wc -l) --> maybe 
 ---Merge pre-delta-debugging commits into the main branch
     --checkout old commit, merge, checkout new commit
     --Update README.md
+
+
+Reach out to shanto for repo version
+
+==================================================================
+
+--Clean everything and run everything and see if it still fails
+        -- Check for any file pollution
+        -- Grab all line numbers first and run all delayinjection at once
+        -- Combine configurations of surefire executions
+        -- Consider not running a surefire execution just to get line numbers
+            --Reuse visitor implementation from Agent in order to bypass need for a surefire execution
+            --Better to work off of byte code because this is how it is being done currently
+        -- Possibly combine delta-debugging + crit search
+        -- Combine concurrent methods + identifying the delay length
+                1. Concurrent methods + delay(add delay everywhere)
+                2. Delta-debugging
+                3. Crit Search
+
+--Try these refactorings in order to clean this up
+
+

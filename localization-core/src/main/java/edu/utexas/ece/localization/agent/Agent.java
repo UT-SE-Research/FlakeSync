@@ -144,9 +144,11 @@ public class Agent {
                 System.out.println(System.getProperty("locations"));
                 // Use locationlist if it is defined as a property; otherwise rely on blacklist
                 if (System.getProperty("rootMethod") != null && !blackListContains(s)){
+                    System.out.println("1. Trying to analyze root method");
                     //System.out.println("***s="+s);
                     boolean methodExists = rootMethodContains(s);
                     if ( methodExists ){
+                        System.out.println("2. Trying to analyze root method");
                       System.out.println("rootMethod From ASM");
                       final ClassReader reader = new ClassReader(bytes);
                       final ClassWriter writer = new ClassWriter(reader, ClassWriter.COMPUTE_FRAMES|ClassWriter.COMPUTE_MAXS);
@@ -197,6 +199,7 @@ public class Agent {
                         }
                     }
                 }
+                System.out.println("3. Trying to analyze root method");
 
                 return null;
             }
@@ -241,18 +244,22 @@ public class Agent {
                         FileWriter outputLocationsFile = new FileWriter("./.flakesync/MethodStartAndEndLine.txt");
                         bfLocations = new BufferedWriter(outputLocationsFile);
 
+                        HashSet<String> alreadyWritten = new HashSet<>();
                         for (String location: FunctionTracer.methodRangeList) {
                             if (firstElement) {
-                                bfLocations.write(location);
-                                firstElement=false;
-                            } else {
-                                bfLocations.write("-");
-                                bfLocations.write(location); 
-                                bfLocations.write("#"+System.getProperty("methodOnly")); 
-                            }
+                                    bfLocations.write(location);
+                                    firstElement=false;
+                                } else {
+                                    if (!alreadyWritten.contains(location)) {
+                                        bfLocations.write("-");
+                                        bfLocations.write(location);
+                                        bfLocations.write("#" + System.getProperty("methodOnly"));
+                                    }
+                                }
+                            alreadyWritten.add(location);
                         }
 
-                        bfLocations.newLine();    
+                        bfLocations.newLine();
                         bfLocations.flush(); 
                     } catch (IOException e) {
                         System.out.println("An error occurred.");
