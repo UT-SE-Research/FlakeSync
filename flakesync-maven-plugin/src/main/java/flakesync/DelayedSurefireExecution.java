@@ -39,8 +39,18 @@ import org.apache.maven.project.MavenProject;
 import org.codehaus.plexus.util.xml.Xpp3Dom;
 import org.twdata.maven.mojoexecutor.MojoExecutor;
 
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class DelayedSurefireExecution {
 
@@ -187,7 +197,6 @@ public class DelayedSurefireExecution {
             }
         }
     }
-
 
     protected Xpp3Dom applyFlakesyncConfig(Xpp3Dom configuration) {
         Xpp3Dom configNode = configuration;

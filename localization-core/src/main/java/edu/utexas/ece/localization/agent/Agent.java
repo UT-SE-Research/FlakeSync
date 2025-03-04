@@ -39,7 +39,6 @@ public class Agent {
                 BufferedReader reader = new BufferedReader(streamReader);
                 String line = reader.readLine();
                 while (line != null) {
-                    //System.out.println("adding " + line + " to blacklist");
                     blackList.add(line);
                     // read next line
                     line = reader.readLine();
@@ -141,14 +140,10 @@ public class Agent {
             public byte[] transform(ClassLoader classLoader, String s, Class<?> aClass,
                     ProtectionDomain protectionDomain, byte[] bytes) throws IllegalClassFormatException {
                 s = s.replaceAll("[/]",".");
-                //Add file writes for debugging purposes -> don't write to STDOUT
-                //System.out.println("PREMAIN****   " + !blackListContains(s));
-                //System.out.println("STRING****   " + s);
-                //System.out.println("CLASS****   " + aClass);
-                //System.out.println("rootMethod is !!!!: " + System.getProperty("rootMethod"));
+                System.out.println("PREMAIN****");
+                System.out.println(System.getProperty("locations"));
                 // Use locationlist if it is defined as a property; otherwise rely on blacklist
                 if (System.getProperty("rootMethod") != null && !blackListContains(s)){
-                    //System.out.println("rootMethod is not null!!!!: " + System.getProperty("rootMethod"));
                     //System.out.println("***s="+s);
                     boolean methodExists = rootMethodContains(s);
                     if ( methodExists ){
@@ -187,29 +182,25 @@ public class Agent {
 
                 else if (System.getProperty("locations") != null) {
                     if (locationListContains(s) && !blackListContains(s)) {
-                        System.out.println("1. STRING****   " + s);
                         final ClassReader reader = new ClassReader(bytes);
                         final ClassWriter writer = new ClassWriter(reader, ClassWriter.COMPUTE_FRAMES|ClassWriter.COMPUTE_MAXS );
                         System.out.println("Location arg is given");
                         if (System.getProperty("methodNameForDelayAtEnd") != null || System.getProperty("methodNameForDelayAtBeginning") !=null) {
-                            System.out.println("2. STRING****   " + s);
-                            ClassVisitor visitor = new FunctionNameTracer(writer);
+                            ClassVisitor visitor = new FunctionNameTracer(writer); 
                             reader.accept(visitor, 0);
                             return writer.toByteArray();
 
                         } else {
-                            System.out.println("3. STRING****   " + s);
                             ClassVisitor visitor = new RandomClassTracer(writer);
                             reader.accept(visitor, 0);
                             return writer.toByteArray();
                         }
                     }
                 }
-                System.out.println("4. STRING****   " + s);
+
                 return null;
             }
         });
-        System.out.println("Going to printStartStopTimes()");
         printStartStopTimes();
     }
     
@@ -234,9 +225,7 @@ public class Agent {
         Thread hook = new Thread() {
             @Override
             public void run() {
-                System.out.println("Outside of file creation ===============");
                 if (Utility.stackTraceList.size() > 0) {
-                    System.out.println("Inside file creation ===============");
 					String curDir = new File("").getAbsolutePath();
 					System.out.println("curDir="+curDir);
                     for (String location: Utility.stackTraceList) {

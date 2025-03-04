@@ -54,7 +54,4 @@ public class ConfigurationDefaults {
 
     public static final String PROPERTY_LOGGING_LEVEL = "flakesyncLogging";
     public static final String DEFAULT_LOGGING_LEVEL = "CONFIG";
-
-
-    //Refactor paths into global variables and put here for consistency
 }
