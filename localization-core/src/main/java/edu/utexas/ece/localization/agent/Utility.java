@@ -37,6 +37,7 @@ public class Utility{
 
  
     public static void injectDelay() {
+        System.out.println("1. Delaying");
         try {
             Thread.sleep(delay);
         }
@@ -52,8 +53,7 @@ public class Utility{
             x = x*3 / 234 + 32 * x;
         } */
 
-        System.out.println("Delaying " + testName + " " + className);
-
+        System.out.println("2. Delaying " + testName + " " + className);
         collectStackTrace(testName, className);
         try {
             //locationSavedInFile(location);
@@ -74,7 +74,7 @@ public class Utility{
         }*/
     }
     public static void delayInDifferentPlacesInMethod(String location) {
-        //System.out.println("Delay injected for testName ");
+        System.out.println("4. Delay injected for testName ");
         try {
             //locationSavedInFile(location);
             Thread.sleep(delay);
@@ -86,7 +86,7 @@ public class Utility{
     }
 
     public static void onlyDelay(String location) {
-        //System.out.println("Delay injected for location, delay= "+delay);
+        System.out.println("3. Delay injected for location, delay= "+delay);
         try {
             //locationSavedInFile(location);
             Thread.sleep(delay);
@@ -99,6 +99,7 @@ public class Utility{
 
 
     public static void collectStackTrace(String testName, String className) {
+        System.out.println("Is this even getting called, please tell me it is");
         className = className.replaceAll("[/]",".");
         System.out.println("collectStackTrace*** ClassName="+className);
         String[] classNameItems = className.split("#", 2);

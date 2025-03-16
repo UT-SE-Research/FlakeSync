@@ -42,6 +42,8 @@ import org.twdata.maven.mojoexecutor.MojoExecutor;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import static flakesync.common.ConfigurationDefaults.BOUNDARY_SEARCH_JAR;
+
 public class InjectDelaySurefireExecution {
 
     protected Configuration configuration;
@@ -120,7 +122,7 @@ public class InjectDelaySurefireExecution {
 
         String pathToJar = this.localRepository;
         // TODO: Encode path to agent in some final static variable for ease of access and potential changes to name/version
-        String argLineToSet = "-javaagent:" + pathToJar + "/edu/utexas/ece/localization-core/0.1-SNAPSHOT/localization-core-0.1-SNAPSHOT.jar";
+        String argLineToSet = "-javaagent:" + pathToJar + BOUNDARY_SEARCH_JAR;
 
         boolean added = false;
         for (Xpp3Dom config : configNode.getChildren()) {
@@ -165,7 +167,6 @@ public class InjectDelaySurefireExecution {
             if (properties.equals(node.getName())) {
                 Xpp3Dom sysPropVarsNode = node;
                 boolean addedDelay = false;
-                boolean addedCM = false;
                 boolean addedMDB = false;
                 boolean addedL = false;
                 for(Xpp3Dom node2 : sysPropVarsNode.getChildren()) {

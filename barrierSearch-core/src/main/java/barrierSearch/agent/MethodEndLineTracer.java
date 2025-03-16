@@ -1,4 +1,4 @@
-package edu.utexas.ece.barrierSearch.agent;
+package barrierSearch.agent;
 
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.FieldVisitor;

@@ -141,8 +141,9 @@ public class Agent {
                     ProtectionDomain protectionDomain, byte[] bytes) throws IllegalClassFormatException {
                 s = s.replaceAll("[/]",".");
                 System.out.println("PREMAIN****");
-                System.out.println(System.getProperty("locations"));
-                // Use locationlist if it is defined as a property; otherwise rely on blacklist
+                //System.out.println(System.getProperty("locations"));
+                // Use locationlist if it is defined as a property; otherwise rely on:q
+                // blacklist
                 if (System.getProperty("rootMethod") != null && !blackListContains(s)){
                     System.out.println("1. Trying to analyze root method");
                     //System.out.println("***s="+s);
@@ -199,7 +200,7 @@ public class Agent {
                         }
                     }
                 }
-                System.out.println("3. Trying to analyze root method");
+                //System.out.println("3. Trying to analyze root method");
 
                 return null;
             }
@@ -253,8 +254,7 @@ public class Agent {
                                     if (!alreadyWritten.contains(location)) {
                                         bfLocations.write("-");
                                         bfLocations.write(location);
-                                        bfLocations.write("#" + System.getProperty("methodOnly"));
-                                    }
+                                        bfLocations.write("#" + System.getProperty("methodOnly"));}
                                 }
                             alreadyWritten.add(location);
                         }

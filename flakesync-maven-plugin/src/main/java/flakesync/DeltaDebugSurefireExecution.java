@@ -165,7 +165,7 @@ public class DeltaDebugSurefireExecution {
                          addedDelay = true;
                      }
                      if(node2.getName().equals("concurrentmethods")) {
-                         node2.setValue("./.flakesync/ResultMethods_tmp.txt");
+                         node2.setValue("./.flakesync/ResultMethods.txt");
                          addedCM = true;
                      }
                      if(node2.getName().equals("whitelist")) {
@@ -174,11 +174,11 @@ public class DeltaDebugSurefireExecution {
                      }
                      if(node2.getName().equals("locations")) {
                          node2.setValue("./.flakesync/Locations_tmp.txt");
-                         addedWL = true;
+                         addedL = true;
                      }
                  }
                  if(!addedDelay) sysPropVarsNode.addChild(this.makeNode("delay", this.delay+""));
-                 if(!addedCM) sysPropVarsNode.addChild(this.makeNode("concurrentmethods", "./.flakesync/ResultMethods_tmp.txt"));
+                 if(!addedCM) sysPropVarsNode.addChild(this.makeNode("concurrentmethods", "./.flakesync/ResultMethods.txt"));
                  if(!addedWL) sysPropVarsNode.addChild(this.makeNode("whitelist", "./.flakesync/whitelist.txt"));
                  if(!addedL) sysPropVarsNode.addChild(this.makeNode("locations", "./.flakesync/Locations_tmp.txt"));
             }

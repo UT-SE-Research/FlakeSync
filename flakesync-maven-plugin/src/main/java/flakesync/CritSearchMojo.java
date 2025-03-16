@@ -41,14 +41,13 @@ public class CritSearchMojo extends FlakeSyncAbstractMojo {
         //runs mvn-run-and-find-stack-trace.sh: mvn test -pl $module -Dtest=$4  -Ddelay=$3  -Dlocations=$7
 
         List<String> locations = new ArrayList<String>();
-        this.delay = generateLocsList(locations, this.mavenProject.getBasedir()+"/.flakesync/Locations.txt");
-        //System.out.println("WHY THIS NOT WORKING: ------------------------------------------------" +  this.delay);
+        this.delay = generateLocsList(locations, this.mavenProject.getBasedir() + "/.flakesync/Locations.txt");
 
 
-        CritSearchSurefireExecution cleanExec  = new CritSearchSurefireExecution(this.surefire, this.originalArgLine, this.mavenProject,
-                this.mavenSession, this.pluginManager,
+        CleanSurefireExecution cleanExec  = new CleanSurefireExecution(this.surefire, this.originalArgLine,
+                this.mavenProject, this.mavenSession, this.pluginManager,
                 Paths.get(this.baseDir.getAbsolutePath(), ConfigurationDefaults.DEFAULT_FLAKESYNC_DIR).toString(),
-                this.localRepository, this.testName, this.delay, "/.flakesync/Locations_tmp.txt");
+                this.localRepository, this.testName, this.delay, "/.flakesync/Locations_tmp.txt", true);
 
         if(!executeSurefireExecution(cleanExec)){ //Running this will create the stacktrace to be parsed later
             System.out.println("This minimized location is not a good one. Go back and run minimizer.");
@@ -87,10 +86,10 @@ public class CritSearchMojo extends FlakeSyncAbstractMojo {
                         e.printStackTrace();
                     }
 
-                    cleanExec = new CritSearchSurefireExecution(this.surefire, this.originalArgLine, this.mavenProject,
+                    cleanExec = new CleanSurefireExecution(this.surefire, this.originalArgLine, this.mavenProject,
                             this.mavenSession, this.pluginManager,
                             Paths.get(this.baseDir.getAbsolutePath(), ConfigurationDefaults.DEFAULT_FLAKESYNC_DIR).toString(),
-                            this.localRepository, this.testName, delay, filePath);
+                            this.localRepository, this.testName, delay, filePath, true);
 
                     int result = executeSurefireExecution(allExceptions, cleanExec, itemLocation, threadId);
 
@@ -103,10 +102,10 @@ public class CritSearchMojo extends FlakeSyncAbstractMojo {
                         while(delay <= maxDelay) {
                             System.out.println("Let's try this again with a longer delay, it looks like the test passed");
 
-                            cleanExec = new CritSearchSurefireExecution(this.surefire, this.originalArgLine, this.mavenProject,
+                            cleanExec = new CleanSurefireExecution(this.surefire, this.originalArgLine, this.mavenProject,
                                     this.mavenSession, this.pluginManager,
                                     Paths.get(this.baseDir.getAbsolutePath(), ConfigurationDefaults.DEFAULT_FLAKESYNC_DIR).toString(),
-                                    this.localRepository, this.testName, delay, "/.flakesync/Locations_tmp.txt");
+                                    this.localRepository, this.testName, delay, "/.flakesync/Locations_tmp.txt", true);
 
 
                             result = executeSurefireExecution(allExceptions, cleanExec, itemLocation, threadId);
@@ -127,6 +126,8 @@ public class CritSearchMojo extends FlakeSyncAbstractMojo {
 
         if(!roots.isEmpty()) {
             createResultsFile1();
+        }else {
+            System.out.println("No roots found");
         }
 
 
@@ -158,12 +159,12 @@ public class CritSearchMojo extends FlakeSyncAbstractMojo {
             //Refactor into multiple constructors
             //Get rid of STDOUT in Agent
 
-            RootMethodAnalysisSurefireExecution rootMethodAnalysisExecution =
-                    new RootMethodAnalysisSurefireExecution(this.surefire, this.originalArgLine, this.mavenProject,
+            CleanSurefireExecution rootMethodAnalysisExecution =
+                    new CleanSurefireExecution(this.surefire, this.originalArgLine, this.mavenProject,
                             this.mavenSession, this.pluginManager,
                             Paths.get(this.baseDir.getAbsolutePath(), ConfigurationDefaults.DEFAULT_FLAKESYNC_DIR).toString(),
                             this.localRepository, this.testName, delay, methodName);
-            executeSurefireExecution(allExceptions, rootMethodAnalysisExecution);
+            executeSurefireExecution(rootMethodAnalysisExecution);
 
 
 
@@ -195,7 +196,11 @@ public class CritSearchMojo extends FlakeSyncAbstractMojo {
                                     //"[" + delay + "]");
                             bw.newLine();
                         } else {
-                            System.out.println("Cluster with 1 element");
+                            System.out.println("Cluster with < 1 element");
+                            if(clusters.get(i).isEmpty()) {
+                                System.out.println("Cluster without element: NO CRITICAL POINT FOUND");
+                                return;
+                            }
                             bw.write(clusters.get(i).get(0) + "-" + clusters.get(i).get(0) +
                                     "[" + delay + "]");
                             //System.out.println(clusters.get(i).get(0) + "-" + clusters.get(i).get(0) +
@@ -279,7 +284,7 @@ public class CritSearchMojo extends FlakeSyncAbstractMojo {
             BufferedWriter bw = new BufferedWriter(outputLocationsFile);
 
             String line = reader.readLine();
-            System.out.println(line);
+            //System.out.println(line);
             while (line != null) {
                 String data = line.split("&")[0];
                 delay = Integer.parseInt(line.split("&")[1]);
@@ -377,11 +382,11 @@ public class CritSearchMojo extends FlakeSyncAbstractMojo {
                 writer.newLine();
                 writer.flush();
 
-                InjectDelaySurefireExecution execution = new InjectDelaySurefireExecution(this.surefire, this.originalArgLine, this.mavenProject,
+                CleanSurefireExecution execution = new CleanSurefireExecution(this.surefire, this.originalArgLine, this.mavenProject,
                         this.mavenSession, this.pluginManager,
                         Paths.get(this.baseDir.getAbsolutePath(), ConfigurationDefaults.DEFAULT_FLAKESYNC_DIR).toString(),
                         this.localRepository, this.testName, this.delay, "./.flakesync/Locations/Root-" +
-                        lowerLineNumber + ".txt", methodName);
+                        lowerLineNumber + ".txt", methodName, false);
 
                 beginningFail = executeSurefireExecution(execution);
 
@@ -437,7 +442,7 @@ public class CritSearchMojo extends FlakeSyncAbstractMojo {
                     writer.newLine();
                     writer.flush();
 
-                    CritSearchSurefireExecution execution = new CritSearchSurefireExecution(this.surefire, this.originalArgLine, this.mavenProject,
+                    CleanSurefireExecution execution = new CleanSurefireExecution(this.surefire, this.originalArgLine, this.mavenProject,
                             this.mavenSession, this.pluginManager,
                             Paths.get(this.baseDir.getAbsolutePath(), ConfigurationDefaults.DEFAULT_FLAKESYNC_DIR).toString(),
                             this.localRepository, this.testName, this.delay, "/.flakesync/Locations/Root-" + i
@@ -477,7 +482,7 @@ public class CritSearchMojo extends FlakeSyncAbstractMojo {
     }
 
     private int executeSurefireExecution(MojoExecutionException allExceptions,
-                                         CritSearchSurefireExecution execution,
+                                         CleanSurefireExecution execution,
                                          String itemLoc,
                                          int threadID) {
         try {
@@ -495,32 +500,13 @@ public class CritSearchMojo extends FlakeSyncAbstractMojo {
         return 3;
     }
 
-    private boolean executeSurefireExecution(CritSearchSurefireExecution execution) {
+    private boolean executeSurefireExecution(CleanSurefireExecution execution) {
         try {
             execution.run();
         } catch (MojoExecutionException ex) {
             return true;
         }
         return false;
-    }
-
-    private boolean executeSurefireExecution(InjectDelaySurefireExecution execution) {
-        try {
-            execution.run();
-        } catch (MojoExecutionException ex) {
-            return true;
-        }
-        return false;
-    }
-
-    private MojoExecutionException executeSurefireExecution(MojoExecutionException allExceptions,
-                                                            RootMethodAnalysisSurefireExecution execution) {
-        try {
-            execution.run();
-        } catch (MojoExecutionException ex) {
-            return (MojoExecutionException) Utils.linkException(ex, allExceptions);
-        }
-        return allExceptions;
     }
 
 }

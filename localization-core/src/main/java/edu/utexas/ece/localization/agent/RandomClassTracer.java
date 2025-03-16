@@ -34,7 +34,7 @@ public class RandomClassTracer extends ClassVisitor {
                         providedLocations.add(arr[0]);
                         testName = arr[1];
                         // read next line
-                        System.out.println("Line ="+line +", arr[0]="+arr[0] +", testName=" + testName); // Expecting ClassName#LineNumber
+                        //System.out.println("Line ="+line +", arr[0]="+arr[0] +", testName=" + testName); // Expecting ClassName#LineNumber
                      } else {
                             providedLocations.add(line); //This will only be needed from analyzeRoot.sh, because in that case only a linenumber with the class name is given
                      }
@@ -98,7 +98,7 @@ public class RandomClassTracer extends ClassVisitor {
                 // If locations are provided, delay only at those locations
                 if (!Agent.blackListContains(className)) { // To double check if the classname is in the blacklist
                     if ((System.getProperty("locations") != null) && (providedLocations.contains(location))) {
-                        //System.out.println("****Enter-DELAYING " + location + " FOR METHOD " + methodName);
+                        System.out.println("****Enter-DELAYING " + location + " FOR TESTNAME " + testName );
                         if (testName != "") {
                             String methodSignature = "(Ljava/lang/String;Ljava/lang/String;)V"; // sending testName as parameter
                             super.visitLdcInsn(testName);

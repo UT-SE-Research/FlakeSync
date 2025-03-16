@@ -42,6 +42,9 @@ import org.twdata.maven.mojoexecutor.MojoExecutor;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import static flakesync.common.ConfigurationDefaults.BOUNDARY_SEARCH_JAR;
+import static flakesync.common.ConfigurationDefaults.DEFAULT_FLAKESYNC_DIR;
+
 public class RootMethodAnalysisSurefireExecution {
 
     protected Configuration configuration;
@@ -119,7 +122,7 @@ public class RootMethodAnalysisSurefireExecution {
 
         String pathToJar = this.localRepository;
         // TODO: Encode path to agent in some final static variable for ease of access and potential changes to name/version
-        String argLineToSet = "-javaagent:" + pathToJar + "/edu/utexas/ece/localization-core/0.1-SNAPSHOT/localization-core-0.1-SNAPSHOT.jar";
+        String argLineToSet = "-javaagent:" + pathToJar + BOUNDARY_SEARCH_JAR;
 
         boolean added = false;
         for (Xpp3Dom config : configNode.getChildren()) {
@@ -172,7 +175,7 @@ public class RootMethodAnalysisSurefireExecution {
                         addedDelay = true;
                     }
                     if(node2.getName().equals("rootMethod")) {
-                        node2.setValue("./.flakesync/Locations/Root.txt");
+                        node2.setValue("./" + DEFAULT_FLAKESYNC_DIR + "/Locations/Root.txt");
                         addedL = true;
                     }
                     if(node2.getName().equals("methodOnly")) {
@@ -181,7 +184,7 @@ public class RootMethodAnalysisSurefireExecution {
                     }
                 }
                 if(!addedDelay) sysPropVarsNode.addChild(this.makeNode("delay", this.delay+""));
-                if(!addedL) sysPropVarsNode.addChild(this.makeNode("rootMethod", "./.flakesync/Locations/Root.txt"));
+                if(!addedL) sysPropVarsNode.addChild(this.makeNode("rootMethod", "./" + DEFAULT_FLAKESYNC_DIR + "/Locations/Root.txt"));
                 if(!addedMDB) sysPropVarsNode.addChild(this.makeNode("methodOnly", this.methodName));
             }
         }

@@ -74,17 +74,15 @@ public class DeltaDebugMojo extends FlakeSyncAbstractMojo {
 
 
         //Run delta debugging
-        locations = deltaDebug.deltaDebug(locations, locations.size());
+        locations = deltaDebug.deltaDebug(locations,2);
         writeLocationsToFile(locations);
         //deltaDebug.testRun(locations);
 
     }
 
     private void writeLocationsToFile(List<String> locs){
-        File f = new File(this.mavenProject.getBasedir()+"/.flakesync/Locations.txt");
-        f.delete();
+        File f = new File(this.mavenProject.getBasedir()+"/.flakesync/Locations_minimized.txt");
         try {
-            f.createNewFile();
             FileWriter outputLocationsFile = new FileWriter(f);
             BufferedWriter bw = new BufferedWriter(outputLocationsFile);
 
@@ -155,20 +153,19 @@ public class DeltaDebugMojo extends FlakeSyncAbstractMojo {
         @Override
         public boolean checkValid(List<String> elements) {
             //First we need to write the elements to a temporary file for the agent to write to
+            System.out.println(elements);
             createTempFile(elements);
 
-            DeltaDebugSurefireExecution cleanExec = new DeltaDebugSurefireExecution(this.surefire, this.originalArgLine, this.mavenProject,
+            CleanSurefireExecution cleanExec = new CleanSurefireExecution(this.surefire, this.originalArgLine, this.mavenProject,
                     this.mavenSession, this.pluginManager,
                     Paths.get(this.baseDir.getAbsolutePath(), ConfigurationDefaults.DEFAULT_FLAKESYNC_DIR).toString(),
-                    this.localRepository, this.testName, this.delay);
+                    this.localRepository, this.testName, this.delay, "./.flakesync/Locations_tmp.txt", false);
             return this.executeSurefireExecution(null, cleanExec);
         }
 
         private void createTempFile(List<String> elements) {
             File locsFile = new File(this.mavenProject.getBasedir()+"/.flakesync/Locations_tmp.txt");
-            locsFile.delete();
             try {
-                locsFile.createNewFile();
                 FileWriter outputLocationsFile = new FileWriter(locsFile);
                 BufferedWriter bw = new BufferedWriter(outputLocationsFile);
 
@@ -183,7 +180,7 @@ public class DeltaDebugMojo extends FlakeSyncAbstractMojo {
         }
 
         private boolean executeSurefireExecution(MojoExecutionException allExceptions,
-                                                                DeltaDebugSurefireExecution execution) {
+                                                                CleanSurefireExecution execution) {
             try {
                 execution.run();
             } catch (Exception ex) {
@@ -192,16 +189,6 @@ public class DeltaDebugMojo extends FlakeSyncAbstractMojo {
             }
             System.out.println("==========check valid will return false========");
             return false;
-        }
-
-        private void testRun(List<String> elements){
-            createTempFile(elements);
-
-            DeltaDebugSurefireExecution cleanExec = new DeltaDebugSurefireExecution(this.surefire, this.originalArgLine, this.mavenProject,
-                    this.mavenSession, this.pluginManager,
-                    Paths.get(this.baseDir.getAbsolutePath(), ConfigurationDefaults.DEFAULT_FLAKESYNC_DIR).toString(),
-                    this.localRepository, this.testName, this.delay);
-            this.executeSurefireExecution(null, cleanExec);
         }
     }
 }

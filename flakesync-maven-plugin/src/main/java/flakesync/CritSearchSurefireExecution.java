@@ -54,6 +54,8 @@ import java.util.Properties;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import static flakesync.common.ConfigurationDefaults.BOUNDARY_SEARCH_JAR;
+
 public class CritSearchSurefireExecution {
 
     protected Configuration configuration;
@@ -103,20 +105,17 @@ public class CritSearchSurefireExecution {
         if (this.surefire.getConfiguration() != null) {
             origNode = new Xpp3Dom((Xpp3Dom) this.surefire.getConfiguration());
         }
-        //System.out.println("Created node");
+        System.out.println("Created node");
         Xpp3Dom domNode = this.applyFlakesyncConfig((Xpp3Dom) this.surefire.getConfiguration());
         this.setupArgline(domNode);
         this.setupArgs(domNode);
-        //System.out.println("Setup args worked");
+        System.out.println("Setup args worked");
         Logger.getGlobal().log(Level.FINE, "Config node passed: " + domNode.toString());
         Logger.getGlobal().log(Level.FINE, this.mavenProject + "\n" + this.mavenSession + "\n" + this.pluginManager);
         Logger.getGlobal().log(Level.FINE, "Surefire config: " + this.surefire + "  " + MojoExecutor.goal("test")
                 + " " + domNode + " "
                 + MojoExecutor.executionEnvironment(this.mavenProject, this.mavenSession,
                 this.pluginManager));
-
-        //runs mvn clean install
-        //install();
 
         MojoExecutor.executeMojo(this.surefire, MojoExecutor.goal("test"),
                 domNode,
@@ -130,7 +129,7 @@ public class CritSearchSurefireExecution {
 
         String pathToJar = this.localRepository;
         // TODO: Encode path to agent in some final static variable for ease of access and potential changes to name/version
-        String argLineToSet = "-javaagent:" + pathToJar + "/edu/utexas/ece/localization-core/0.1-SNAPSHOT/localization-core-0.1-SNAPSHOT.jar";
+        String argLineToSet = "-javaagent:" + pathToJar + BOUNDARY_SEARCH_JAR;
 
         boolean added = false;
         for (Xpp3Dom config : configNode.getChildren()) {
@@ -155,25 +154,17 @@ public class CritSearchSurefireExecution {
     }
 
     private boolean checkSysPropsDeprecated() {
-        //System.out.println("Checking system properties deprecated");
         String[] split = this.surefire.getVersion().split("\\.");
-        //System.out.println(split[0]);
         float f = Float.parseFloat(split[0]) + (Float.parseFloat(split[1])/(10*split[1].length()));
-        //System.out.println("here's the version as a float: " + f);
         return f > 2.20;
     }
 
     protected void setupArgs(Xpp3Dom configNode) {
-
-        //Add the test name
-        //System.out.println("Inside setup args");
-        configNode.addChild((this.makeNode("test", this.testName)));
         String properties = (!checkSysPropsDeprecated()) ? ("systemPropertyVariables") : ("systemProperties");
-        //System.out.println("properties: " + properties);
 
-        for (Xpp3Dom node : configNode.getChildren()) {
-            if (properties.equals(node.getName())) {
-                Xpp3Dom sysPropVarsNode = node;
+        boolean addedT = false;
+        for (Xpp3Dom sysPropVarsNode : configNode.getChildren()) {
+            if (properties.equals(sysPropVarsNode.getName())) {
                 boolean addedDelay = false;
                 boolean addedL = false;
                 for(Xpp3Dom node2 : sysPropVarsNode.getChildren()) {
@@ -189,7 +180,13 @@ public class CritSearchSurefireExecution {
                 if(!addedDelay) sysPropVarsNode.addChild(this.makeNode("delay", this.delay+""));
                 if(!addedL) sysPropVarsNode.addChild(this.makeNode("locations", "."+this.locations));
             }
+            if(sysPropVarsNode.getName().equals("test")) {
+                sysPropVarsNode.setValue(this.testName);
+                addedT = true;
+            }
         }
+        if(!addedT) configNode.addChild(this.makeNode("test", this.testName));
+        System.out.println(delay + " " + "."+this.locations + " " + this.testName);
     }
 
     protected Xpp3Dom applyFlakesyncConfig(Xpp3Dom configuration) {
