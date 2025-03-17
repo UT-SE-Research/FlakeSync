@@ -159,7 +159,7 @@ public class DeltaDebugMojo extends FlakeSyncAbstractMojo {
             CleanSurefireExecution cleanExec = new CleanSurefireExecution(this.surefire, this.originalArgLine, this.mavenProject,
                     this.mavenSession, this.pluginManager,
                     Paths.get(this.baseDir.getAbsolutePath(), ConfigurationDefaults.DEFAULT_FLAKESYNC_DIR).toString(),
-                    this.localRepository, this.testName, this.delay, "./.flakesync/Locations_tmp.txt", false);
+                    this.localRepository, this.testName, this.delay, "./.flakesync/Locations_tmp.txt", 1);
             return this.executeSurefireExecution(null, cleanExec);
         }
 

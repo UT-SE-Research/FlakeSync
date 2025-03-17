@@ -149,11 +149,11 @@ public class CleanSurefireExecution {
         if (generateStacktrace == 0) {
             this.phase = PHASE.CRITICAL_POINT_SEARCH;
             this.domNode = this.applyFlakeSyncConfig((Xpp3Dom) this.surefire.getConfiguration());
-            this.setupArgline(TYPE.DELTA_DEBUG);
+            this.setupArgline(TYPE.GET_STACK_TRACE);
         }else if (generateStacktrace == 1) {
             this.phase = PHASE.LOCATIONS_MINIMIZER;
             this.domNode = this.applyFlakeSyncConfig((Xpp3Dom) this.surefire.getConfiguration());
-            this.setupArgline(TYPE.GET_STACK_TRACE);
+            this.setupArgline(TYPE.DELTA_DEBUG);
         } else if (generateStacktrace == 2) {
             this.phase = PHASE.BARRIER_POINT_SEARCH;
             this.domNode = this.applyFlakeSyncConfig((Xpp3Dom) this.surefire.getConfiguration());
@@ -263,9 +263,9 @@ public class CleanSurefireExecution {
 
     public void run() throws MojoExecutionException {
         try {
-            System.out.println("Running surefire execution" + this.surefire + " "
-            + this.mavenProject + " " + this.mavenSession + " " +
-                    this.pluginManager);
+            //System.out.println("Running surefire execution" + this.surefire + " "
+            //+ this.mavenProject + " " + this.mavenSession + " " +
+            //        this.pluginManager);
             MojoExecutor.executeMojo(this.surefire, MojoExecutor.goal("test"), domNode,
                     MojoExecutor.executionEnvironment(this.mavenProject, this.mavenSession, this.pluginManager));
         } catch (MojoExecutionException mojoException) {
