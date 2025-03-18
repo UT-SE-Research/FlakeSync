@@ -341,6 +341,10 @@ public class CleanSurefireExecution {
                     if (node.getChild("methodNameForDelayAtBeginning") == null) node.addChild(this.makeNode("methodNameForDelayAtBeginning", this.methodName));
                     else node.getChild("methodNameForDelayAtBeginning").setValue(this.methodName);
                 } else if(mode == TYPE.ROOT_METHOD_ANALYSIS) {
+                    if (node.getChild("locations") == null) node.addChild(this.makeNode("locations", "null"));
+                    else node.getChild("locations").setValue("null");
+                    if (node.getChild("methodNameForDelayAtBeginning") == null) node.addChild(this.makeNode("methodNameForDelayAtBeginning", "null"));
+                    else node.getChild("methodNameForDelayAtBeginning").setValue("null");
                     if (node.getChild("rootMethod") == null)
                         node.addChild(this.makeNode("rootMethod", "./" + DEFAULT_FLAKESYNC_DIR + "/Locations/Root.txt"));
                     else node.getChild("rootMethod").setValue("./" + DEFAULT_FLAKESYNC_DIR + "/Locations/Root.txt");

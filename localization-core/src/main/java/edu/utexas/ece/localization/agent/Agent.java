@@ -145,13 +145,14 @@ public class Agent {
             public byte[] transform(ClassLoader classLoader, String s, Class<?> aClass,
                     ProtectionDomain protectionDomain, byte[] bytes) throws IllegalClassFormatException {
                 s = s.replaceAll("[/]",".");
-                System.out.println("PREMAIN****");
+                System.out.println("PREMAIN****" + System.getProperty("rootMethod") + " " + System.getProperty("locations")
+                + " " + System.getProperty("methodNameForDelayAtBeginning"));
                 //System.out.println(System.getProperty("locations"));
                 // Use locationlist if it is defined as a property; otherwise rely on:q
                 // blacklist
                 if (System.getProperty("rootMethod") != null && !blackListContains(s) &&
-                        System.getProperty("methodNameForDelayAtBeginning") == null
-                        && System.getProperty("locations") == null) {
+                        System.getProperty("methodNameForDelayAtBeginning").equals("null")
+                        && System.getProperty("locations").equals("null")) {
                     System.out.println("1. Trying to analyze root method" + System.getProperty("rootMethod"));
                     //System.out.println("***s="+s);
                     boolean methodExists = rootMethodContains(s);
