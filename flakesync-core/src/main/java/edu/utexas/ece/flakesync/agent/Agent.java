@@ -185,7 +185,7 @@ public class Agent {
                         bfLocations = new BufferedWriter(outputLocationsFile);
 
                         for (String location : RandomClassTracer.locations) {
-                            bfLocations.write(location);
+                            bfLocations.write(location + "&" + System.getProperty("delay"));
                             bfLocations.newLine();
                         }
                         bfLocations.flush();
