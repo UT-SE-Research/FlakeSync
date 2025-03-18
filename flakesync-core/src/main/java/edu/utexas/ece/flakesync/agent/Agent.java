@@ -34,8 +34,7 @@ public class Agent {
             InputStream is = classloader.getResourceAsStream("blacklist.txt");
             if (is == null) {
                 System.out.println("blacklist.txt not found");
-            }
-            else {
+            } else {
                 // failed if files have whitespaces or special characters
                 InputStreamReader streamReader = new InputStreamReader(is, StandardCharsets.UTF_8);
                 BufferedReader reader = new BufferedReader(streamReader);
@@ -47,14 +46,14 @@ public class Agent {
                 }
                 reader.close();
             }
-        } catch (IOException e) {
-            e.printStackTrace();
+        } catch (IOException ioe) {
+            ioe.printStackTrace();
         }
     }
 
-    public static boolean blackListContains(String s) {
+    public static boolean blackListContains(String name) {
         for (String prefix : blackList) {
-            if (s.startsWith(prefix)) {
+            if (name.startsWith(prefix)) {
                 return true;
             }
         }
@@ -62,7 +61,7 @@ public class Agent {
     }
 
     // White list consists of specific class names (not package prefixing as black list relies on)
-    public static boolean whiteListContains(String s) {
+    public static boolean whiteListContains(String className) {
         if (whiteList.isEmpty()) {
             whiteList = new ArrayList<>();
             try {
@@ -74,38 +73,36 @@ public class Agent {
                     line = reader.readLine();
                 }
                 reader.close();
-            } catch (IOException e) {
-                e.printStackTrace();
+            } catch (IOException ioe) {
+                ioe.printStackTrace();
             }
         }
-        return whiteList.contains(s);
+        return whiteList.contains(className);
     }
 
     public static void premain(String agentArgs, Instrumentation inst) {
         inst.addTransformer(new ClassFileTransformer() {
             @Override
-            public byte[] transform(ClassLoader classLoader, String s, Class<?> aClass,
+            public byte[] transform(ClassLoader classLoader, String className, Class<?> classBeingRedefined,
                     ProtectionDomain protectionDomain, byte[] bytes) throws IllegalClassFormatException {
-                s = s.replaceAll("[/]","."); 
+                className = className.replaceAll("[/]",".");
 
                 final ClassReader reader = new ClassReader(bytes);
-                final ClassWriter writer = new ClassWriter(reader, ClassWriter.COMPUTE_FRAMES|ClassWriter.COMPUTE_MAXS );
-
-                System.out.println("whitelist: "+System.getProperty("whitelist"));
+                final ClassWriter writer = new ClassWriter(reader, ClassWriter.COMPUTE_FRAMES | ClassWriter.COMPUTE_MAXS);
 
                 ClassVisitor visitor;
-                if (!blackListContains(s) && (System.getProperty("whitelist") == null) ) {
+                if (!blackListContains(className) && (System.getProperty("whitelist") == null)) {
                     System.out.println("no whitelist given and going to execute EnterExit");
                     visitor = new EnterExitClassTracer(writer);
                     reader.accept(visitor, 0);
                     return writer.toByteArray();
-                }
-                // Use whitelist if it is defined as a property; otherwise rely on blacklist, whitelist will only be given if we want to run flakesync detector
-                //else if (System.getProperty("whitelist") != null ? whiteListContains(s) : !blackListContains(s)) {
-                else if ((System.getProperty("whitelist") != null) ? (whiteListContains(s)) : (!blackListContains(s))) {
+                } else if ((System.getProperty("whitelist") != null)
+                    ? whiteListContains(className) : !blackListContains(className)) {
+                    // Use whitelist if it is defined as a property,
+                    // otherwise rely on blacklist, whitelist will only be given if we want to run flakesync detector
                     System.out.println("whitelist check true");
-                    //ClassTracer visitor = new ClassTracer(writer);
-                    // If the concurrentmethods option is not set (meaning we do not know what the concurrent methods are, use the EnterExitClassTracer to find them
+                    // If the concurrentmethods option is not set (meaning we do not know what the concurrent methods are),
+                    // use the EnterExitClassTracer to find them
                     visitor = new RandomClassTracer(writer);
                     reader.accept(visitor, 0);
                     return writer.toByteArray();
@@ -145,7 +142,7 @@ public class Agent {
                             File omf = new File("./.flakesync/ResultMethods.txt");
                             FileWriter outputMethodsFile = new FileWriter(omf);
                             bfMethods = new BufferedWriter(outputMethodsFile);
-                            synchronized(Utility.methodsRunConcurrently) {
+                            synchronized (Utility.methodsRunConcurrently) {
                                 for (String meth : Utility.methodsRunConcurrently) {
                                     bfMethods.write(meth);
                                     bfMethods.newLine();
@@ -155,29 +152,9 @@ public class Agent {
                         } finally {
                             bfMethods.close();
                         }
-                    } else{
+                    } else {
                         System.out.println(":(");
                     }
-                    
-                    /*FileWriter outputConcurrentMethodsFile = new FileWriter("ResultMethods-1.txt");
-                    bfConcurrentMethodsPairs = new BufferedWriter(outputConcurrentMethodsFile);
-
-                    synchronized(Utility.concurrentMethodPairs) {
-                        for (Map.Entry<String, Stack<String>> entry : Utility.concurrentMethodPairs.entrySet()) {
-                            String allMethodsForAKey="";
-                            for (String otherMethod : entry.getValue()) {
-                                allMethodsForAKey=allMethodsForAKey +"," + otherMethod;
-                            }
-
-                            System.out.println("Shanto allMethodsForAKey="+allMethodsForAKey);
-                            String methodPair = entry.getKey() + ":" + allMethodsForAKey;
-                            System.out.println("*********MethodPair="+methodPair);
-                            bfConcurrentMethodsPairs.write(methodPair);
-                            bfConcurrentMethodsPairs.newLine();
-                         }
-                    }
-                    bfConcurrentMethodsPairs.flush();*/
-
 
                     if (RandomClassTracer.locations.size() > 0) {
                         File locsFile = new File("./.flakesync/Locations.txt");
@@ -193,35 +170,30 @@ public class Agent {
                     File otc = new File("./.flakesync/ThreadCountList.txt");
                     FileWriter outputThreadCount = new FileWriter(otc);
                     bfThreads = new BufferedWriter(outputThreadCount);
-                    
-                    int totalThreadCount = Utility.threadCountListFromUtility.size();
-                    String threadCountNo=Integer.toString(totalThreadCount);
-                    System.out.println(" Total # Thread Count = " + totalThreadCount);
-                    //System.out.println(Helper.threadCountList);
-                     bfThreads.write(threadCountNo);
-                     bfThreads.newLine();
-                     bfThreads.flush();
 
-                } catch (IOException e) {
+                    int totalThreadCount = Utility.threadCountListFromUtility.size();
+                    String threadCountNo = Integer.toString(totalThreadCount);
+                    System.out.println(" Total # Thread Count = " + totalThreadCount);
+                    bfThreads.write(threadCountNo);
+                    bfThreads.newLine();
+                    bfThreads.flush();
+                } catch (IOException ioe) {
                     System.out.println("An error occurred.");
-                    e.printStackTrace();
-                }
-                finally {
+                    ioe.printStackTrace();
+                } finally {
                     try {
                         bf.close();
                         bfTrap.close();
                         bfLocations.close();
                         bfThreads.close();
                         bfConcurrentMethodsPairs.close();
+                    } catch (Exception ex) {
+                        ex.printStackTrace();
                     }
-                    catch (Exception e) {
-                    }
-                    //System.out.println(Utility.resultInterception);
                 }
                 int size = conflictingListPair.size();
                 System.out.println(" Total # Conflicting items are = " + size);
                 System.out.println(conflictingListPair);
-                
             }
         };
         Runtime.getRuntime().addShutdownHook(hook);

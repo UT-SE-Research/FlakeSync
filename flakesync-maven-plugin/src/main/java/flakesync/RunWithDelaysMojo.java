@@ -29,6 +29,14 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 package flakesync;
 
+import flakesync.common.ConfigurationDefaults;
+import flakesync.common.Level;
+import flakesync.common.Logger;
+import org.apache.maven.plugin.MojoExecutionException;
+import org.apache.maven.plugin.MojoFailureException;
+import org.apache.maven.plugins.annotations.LifecyclePhase;
+import org.apache.maven.plugins.annotations.Mojo;
+import org.apache.maven.plugins.annotations.ResolutionScope;
 
 import java.io.BufferedWriter;
 import java.io.File;
@@ -40,18 +48,6 @@ import java.nio.file.Paths;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-
-
-import flakesync.common.ConfigurationDefaults;
-import flakesync.common.Level;
-import flakesync.common.Logger;
-
-
-import org.apache.maven.plugin.MojoExecutionException;
-import org.apache.maven.plugin.MojoFailureException;
-import org.apache.maven.plugins.annotations.LifecyclePhase;
-import org.apache.maven.plugins.annotations.Mojo;
-import org.apache.maven.plugins.annotations.ResolutionScope;
 
 @Mojo(name = "flakedelay", defaultPhase = LifecyclePhase.TEST, requiresDependencyResolution = ResolutionScope.TEST)
 public class RunWithDelaysMojo extends FlakeSyncAbstractMojo {
@@ -66,7 +62,7 @@ public class RunWithDelaysMojo extends FlakeSyncAbstractMojo {
 
         createWhiteList();
 
-        for(int i = 0; i < delays.length; i++) {
+        for (int i = 0; i < delays.length; i++) {
             CleanSurefireExecution cleanExec = new CleanSurefireExecution(
                     this.surefire, this.originalArgLine, this.mavenProject,
                     this.mavenSession, this.pluginManager,
@@ -74,7 +70,7 @@ public class RunWithDelaysMojo extends FlakeSyncAbstractMojo {
                     this.localRepository, this.testName, delays[i]);
             try {
                 this.executeSurefireExecution(null, cleanExec);
-            } catch(MojoExecutionException e) {
+            } catch (MojoExecutionException mee) {
                 break;
             }
         }
@@ -118,8 +114,8 @@ public class RunWithDelaysMojo extends FlakeSyncAbstractMojo {
                 }
                 bw.flush();
             }
-        } catch (IOException e) {
-            throw new RuntimeException(e);
+        } catch (IOException ioe) {
+            throw new RuntimeException(ioe);
         }
         return true;
     }

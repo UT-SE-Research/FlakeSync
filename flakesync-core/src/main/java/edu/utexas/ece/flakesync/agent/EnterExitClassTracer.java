@@ -39,11 +39,8 @@ public class EnterExitClassTracer extends ClassVisitor {
 
                 // At beginning of method, insert call to help record start of method
                 super.visitLdcInsn(methodName);
-                super.visitMethodInsn(Opcodes.INVOKESTATIC, "edu/utexas/ece/flakesync/agent/Utility", "recordMethodEntry", "(Ljava/lang/String;)V", false);
-
-                // TODO: Wrap a giant try-catch block to catch all exceptions around this method
-                //super.visitTryCatchBlock(start, end, end, "java/lang/Exception");
-                //super.visitLabel(start);
+                super.visitMethodInsn(Opcodes.INVOKESTATIC,
+                    "edu/utexas/ece/flakesync/agent/Utility", "recordMethodEntry", "(Ljava/lang/String;)V", false);
             }
 
             @Override
@@ -52,7 +49,8 @@ public class EnterExitClassTracer extends ClassVisitor {
                         || opcode == Opcodes.DRETURN || opcode == Opcodes.ARETURN || opcode == Opcodes.RETURN) {
                     // At trying to return from method (ignore exception for now), insert call to help record end of method
                     super.visitLdcInsn(methodName);
-                    super.visitMethodInsn(Opcodes.INVOKESTATIC, "edu/utexas/ece/flakesync/agent/Utility", "recordMethodExit", "(Ljava/lang/String;)V", false);
+                    super.visitMethodInsn(Opcodes.INVOKESTATIC,
+                        "edu/utexas/ece/flakesync/agent/Utility", "recordMethodExit", "(Ljava/lang/String;)V", false);
                 }
 
                 super.visitInsn(opcode);
@@ -60,12 +58,6 @@ public class EnterExitClassTracer extends ClassVisitor {
 
             @Override
             public void visitMaxs(int maxStack, int maxLocals) {
-                // TODO: Upon exception, insert call to help record end of method
-                //super.visitLabel(end);
-                //super.visitLdcInsn(methodName);
-                //super.visitMethodInsn(Opcodes.INVOKESTATIC, "edu/utexas/ece/flakesync/agent/Utility", "recordMethodExit", "(Ljava/lang/String;)V", false);
-                //super.visitInsn(Opcodes.ATHROW);
-
                 super.visitMaxs(maxStack, maxLocals);
             }
         };

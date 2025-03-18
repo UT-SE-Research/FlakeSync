@@ -30,9 +30,8 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 package flakesync;
 
 
-import flakesync.common.DeltaDebugger;
 import flakesync.common.ConfigurationDefaults;
-
+import flakesync.common.DeltaDebugger;
 import flakesync.common.Level;
 import flakesync.common.Logger;
 import org.apache.maven.execution.MavenSession;
@@ -45,7 +44,12 @@ import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.ResolutionScope;
 import org.apache.maven.project.MavenProject;
 
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
@@ -80,40 +84,39 @@ public class DeltaDebugMojo extends FlakeSyncAbstractMojo {
 
     }
 
-    private void writeLocationsToFile(List<String> locs){
-        File f = new File(this.mavenProject.getBasedir()+"/.flakesync/Locations_minimized.txt");
+    private void writeLocationsToFile(List<String> locs) {
+        File file = new File(this.mavenProject.getBasedir() + "/.flakesync/Locations_minimized.txt");
         try {
-            FileWriter outputLocationsFile = new FileWriter(f);
+            FileWriter outputLocationsFile = new FileWriter(file);
             BufferedWriter bw = new BufferedWriter(outputLocationsFile);
 
             for (String location : locs) {
                 bw.write(location);
-                bw.write("&"+this.delay);
+                bw.write("&" + this.delay);
                 bw.newLine();
             }
             bw.flush();
-        } catch (IOException e) {
-            e.printStackTrace();
+        } catch (IOException ioe) {
+            ioe.printStackTrace();
         }
     }
 
-    private int generateLocsList(List<String> locsList){
+    private int generateLocsList(List<String> locsList) {
         int delay = 0;
         try {
-            File f = new File(this.mavenProject.getBasedir()+"/.flakesync/Locations.txt");
-            BufferedReader reader = new BufferedReader(new FileReader(f));
+            File file = new File(this.mavenProject.getBasedir() + "/.flakesync/Locations.txt");
+            BufferedReader reader = new BufferedReader(new FileReader(file));
             String line = reader.readLine();
-            System.out.println(line);
             while (line != null) {
                 String data = line.split("&")[0];
                 delay = Integer.parseInt((line.split("&")[1]));
                 locsList.add(data);
-                // read next line
+                // Read next line
                 line = reader.readLine();
             }
             reader.close();
-        } catch (IOException e) {
-            e.printStackTrace();
+        } catch (IOException ioe) {
+            ioe.printStackTrace();
         }
         return delay;
     }
@@ -136,9 +139,8 @@ public class DeltaDebugMojo extends FlakeSyncAbstractMojo {
         protected int delay;
 
         private LocationsDeltaDebug(Plugin surefire, String argLine, MavenProject mavenProject,
-                                    MavenSession mavenSession, BuildPluginManager pluginManager,
-                                    File baseDir, String localRepository, String testName,
-                                    int delay){
+                MavenSession mavenSession, BuildPluginManager pluginManager,
+                File baseDir, String localRepository, String testName, int delay) {
             this.surefire = surefire;
             this.originalArgLine = argLine;
             this.mavenProject = mavenProject;
@@ -156,15 +158,16 @@ public class DeltaDebugMojo extends FlakeSyncAbstractMojo {
             System.out.println(elements);
             createTempFile(elements);
 
-            CleanSurefireExecution cleanExec = new CleanSurefireExecution(this.surefire, this.originalArgLine, this.mavenProject,
-                    this.mavenSession, this.pluginManager,
-                    Paths.get(this.baseDir.getAbsolutePath(), ConfigurationDefaults.DEFAULT_FLAKESYNC_DIR).toString(),
-                    this.localRepository, this.testName, this.delay, "./.flakesync/Locations_tmp.txt", 1);
+            CleanSurefireExecution cleanExec = new CleanSurefireExecution(this.surefire, this.originalArgLine,
+                this.mavenProject,
+                this.mavenSession, this.pluginManager,
+                Paths.get(this.baseDir.getAbsolutePath(), ConfigurationDefaults.DEFAULT_FLAKESYNC_DIR).toString(),
+                this.localRepository, this.testName, this.delay, "./.flakesync/Locations_tmp.txt", 1);
             return this.executeSurefireExecution(null, cleanExec);
         }
 
         private void createTempFile(List<String> elements) {
-            File locsFile = new File(this.mavenProject.getBasedir()+"/.flakesync/Locations_tmp.txt");
+            File locsFile = new File(this.mavenProject.getBasedir() + "/.flakesync/Locations_tmp.txt");
             try {
                 FileWriter outputLocationsFile = new FileWriter(locsFile);
                 BufferedWriter bw = new BufferedWriter(outputLocationsFile);
@@ -174,8 +177,8 @@ public class DeltaDebugMojo extends FlakeSyncAbstractMojo {
                     bw.newLine();
                 }
                 bw.flush();
-            } catch (IOException e) {
-                e.printStackTrace();
+            } catch (IOException ioe) {
+                ioe.printStackTrace();
             }
         }
 

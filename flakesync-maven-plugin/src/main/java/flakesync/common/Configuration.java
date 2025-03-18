@@ -29,7 +29,13 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 package flakesync.common;
 
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Collection;
@@ -60,12 +66,12 @@ public class Configuration {
     }
 
     public Configuration(String flakesyncDir,
-                         String flakesyncJarDir, String testName, String executionId, Level loggingLevel) {
+            String flakesyncJarDir, String testName, String executionId, Level loggingLevel) {
         this(flakesyncDir, flakesyncJarDir, testName, executionId, loggingLevel, false);
     }
 
     public Configuration(String flakesyncDir,
-                         String flakesyncJarDir, String testName, String executionId, Level loggingLevel, boolean printStackTrace) {
+            String flakesyncJarDir, String testName, String executionId, Level loggingLevel, boolean printStackTrace) {
         this.flakesyncDir = flakesyncDir;
         this.flakesyncJarDir = flakesyncDir;
         this.testName = testName;
@@ -88,11 +94,11 @@ public class Configuration {
     @Override
     public String toString() {
         String[] props = new String[] {
-                ConfigurationDefaults.PROPERTY_FLAKESYNC_DIR + "=" + this.flakesyncDir,
-                ConfigurationDefaults.PROPERTY_FLAKESYNC_JAR_DIR + "=" + this.flakesyncJarDir,
-                ConfigurationDefaults.PROPERTY_EXECUTION_ID + "=" + this.executionId,
-                ConfigurationDefaults.PROPERTY_LOGGING_LEVEL + "=" + this.loggingLevel,
-                "test=" + (this.testName == null ? "" : this.testName)};
+            ConfigurationDefaults.PROPERTY_FLAKESYNC_DIR + "=" + this.flakesyncDir,
+            ConfigurationDefaults.PROPERTY_FLAKESYNC_JAR_DIR + "=" + this.flakesyncJarDir,
+            ConfigurationDefaults.PROPERTY_EXECUTION_ID + "=" + this.executionId,
+            ConfigurationDefaults.PROPERTY_LOGGING_LEVEL + "=" + this.loggingLevel,
+            "test=" + (this.testName == null ? "" : this.testName)};
         return String.join(String.format("%n"), props);
     }
 

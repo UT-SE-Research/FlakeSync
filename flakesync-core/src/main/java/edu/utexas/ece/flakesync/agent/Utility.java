@@ -1,13 +1,29 @@
 package edu.utexas.ece.flakesync.agent;
 
-import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.Iterator;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Random;
+import java.util.Set;
+import java.util.Stack;
+import java.util.concurrent.ConcurrentHashMap;
 
-public class Utility{
+public class Utility {
+
+    // Map of threads to stack of currently executing methods
+    public static Map<Long, Stack<String>> threadToMethods = new ConcurrentHashMap<>();
+    public static List<Long> threadCountListFromUtility = new ArrayList(); // To collect thread count
+
+    // Set of methods found to have been run concurrently with other methods
+    public static Set<String> methodsRunConcurrently = new HashSet<>();
+    public static HashMap<String, Stack<String>> concurrentMethodPairs = new HashMap<>();
+
     private static Random rand = new Random(42);
 
     private static int delay;
@@ -15,28 +31,18 @@ public class Utility{
     static {
         try {
             delay = Integer.parseInt(System.getProperty("delay", "100"));
-            //System.out.println("delay = " + delay);
-        } catch (NumberFormatException e) {
+        } catch (NumberFormatException nfe) {
             delay = 100;
         }
     }
-    
-    public static void delay() {
-        /*long threadId = Thread.currentThread().getId();
-        if (! threadCountListFromUtility.contains(threadId)){
-            threadCountListFromUtility.add(threadId);
-        }*/
 
+    public static void delay() {
         try {
-            System.out.println("Inside delay method: calling Thread.sleep("+delay+")");
+            System.out.println("Inside delay method: calling Thread.sleep(" + delay + ")");
             Thread.sleep(delay);
-            /*for (StackTraceElement ste : Thread.currentThread().getStackTrace()) {
-                System.out.println(ste);
-            }*/
-        }
-        catch (InterruptedException e) {
-            System.out.println("Exception " );
-            e.printStackTrace();
+        } catch (InterruptedException ie) {
+            System.out.println("Exception");
+            ie.printStackTrace();
         }
     }
 
@@ -46,23 +52,17 @@ public class Utility{
             if (rand.nextInt(100) < 5) {   // 5% chance of delaying
                 Thread.sleep(rand.nextInt(100));
             }
-        } catch (InterruptedException e) {
-            e.printStackTrace();
+        } catch (InterruptedException ie) {
+            ie.printStackTrace();
         }
     }
 
-    // Map of threads to stack of currently executing methods
-    private static Map<Long, Stack<String>> threadToMethods = new ConcurrentHashMap<>();
-    public static List<Long> threadCountListFromUtility = new ArrayList(); // To collect thread count
-    // Set of methods found to have been run concurrently with other methods
-    public static Set<String> methodsRunConcurrently = new HashSet<>();
-    public static HashMap <String, Stack<String>> concurrentMethodPairs= new HashMap<String,Stack<String>>();
     // Helper method to handle when method has been started, so should be tracked
     public static void recordMethodEntry(String methodName) {
-        synchronized(methodsRunConcurrently) {
+        synchronized (methodsRunConcurrently) {
             Long threadId = Thread.currentThread().getId();
             //System.out.println("threadId="+threadId);
-            if (! threadCountListFromUtility.contains(threadId)){
+            if (!threadCountListFromUtility.contains(threadId)) {
                 threadCountListFromUtility.add(threadId);
             }
 
@@ -79,32 +79,17 @@ public class Utility{
                     continue;
                 }
                 for (String otherMethod : entry.getValue()) {
-                    methodsRunConcurrently.add(methodName);  // TODO: This is somewhat unoptimal as it is adding methodName to set multiple times, but somewhat works
+                    // TODO: This is somewhat unoptimal as it is adding methodName to set multiple times, but somewhat works
+                    methodsRunConcurrently.add(methodName);
                 }
             }
-
-            // To find concurrent method pairs, SHANTO
-            /*for (Map.Entry<Long, Stack<String>> entry : threadToMethods.entrySet()) {
-                if (entry.getKey() == threadId) {
-                    continue;
-                }
-                for (String otherMethod : entry.getValue()) {
-                    if (! concurrentMethodPairs.containsKey(methodName)) {
-                        System.out.println("from utility ="+methodName);
-                        concurrentMethodPairs.put(methodName, new Stack());
-                    }
-
-                    System.out.println("from utility, otherMethod ="+otherMethod);
-                    concurrentMethodPairs.get(methodName).add(otherMethod);
-                }
-            } */
 
         }
     }
 
     // Helper method to handle when method has finished, so should be removed from tracking
     public static void recordMethodExit(String methodName) {
-        synchronized(methodsRunConcurrently) {
+        synchronized (methodsRunConcurrently) {
             Long threadId = Thread.currentThread().getId();
             if (!threadToMethods.containsKey(threadId)) {
                 throw new RuntimeException("EXIT BEFORE ENTER?");
