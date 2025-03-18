@@ -81,6 +81,7 @@ public class CleanSurefireExecution {
         GET_STACK_TRACE,
         ROOT_METHOD_ANALYSIS,
         DELAY_INJECTION,
+        SEQUENTIAL_DEBUG,
         METHOD_END_LINE,
         DOWNWARD_MAVEN_EXEC,
         ADD_BARRIER_POINT,
@@ -158,6 +159,10 @@ public class CleanSurefireExecution {
             this.phase = PHASE.BARRIER_POINT_SEARCH;
             this.domNode = this.applyFlakeSyncConfig((Xpp3Dom) this.surefire.getConfiguration());
             this.setupArgline(TYPE.BARRIER_STACKTRACE);
+        } else if (generateStacktrace == 3) {
+            this.phase = PHASE.CRITICAL_POINT_SEARCH;
+            this.domNode = this.applyFlakeSyncConfig((Xpp3Dom) this.surefire.getConfiguration());
+            this.setupArgline(TYPE.SEQUENTIAL_DEBUG);
         }
     }
 
@@ -263,9 +268,6 @@ public class CleanSurefireExecution {
 
     public void run() throws MojoExecutionException {
         try {
-            //System.out.println("Running surefire execution" + this.surefire + " "
-            //+ this.mavenProject + " " + this.mavenSession + " " +
-            //        this.pluginManager);
             MojoExecutor.executeMojo(this.surefire, MojoExecutor.goal("test"), domNode,
                     MojoExecutor.executionEnvironment(this.mavenProject, this.mavenSession, this.pluginManager));
         } catch (MojoExecutionException mojoException) {
@@ -328,8 +330,6 @@ public class CleanSurefireExecution {
                     else node.getChild("concurrentmethods").setValue("./.flakesync/ResultMethods.txt");
                     if(node.getChild("whitelist") == null) node.addChild(this.makeNode("whitelist", "./.flakesync/whitelist.txt"));
                     else node.getChild("whitelist").setValue("./.flakesync/whitelist.txt");
-                    if (node.getChild("concurrentmethods") == null) node.addChild(this.makeNode("concurrentmethods", "./.flakesync/ResultMethods.txt"));
-                    else node.getChild("concurrentmethods").setValue("./.flakesync/ResultMethods.txt");
                     if (node.getChild("locations") == null) node.addChild(this.makeNode("locations", this.pathToLocations));
                     else node.getChild("locations").setValue(pathToLocations);
                 } else if(mode == TYPE.GET_STACK_TRACE) {
@@ -338,13 +338,18 @@ public class CleanSurefireExecution {
                 } else if(mode == TYPE.DELAY_INJECTION) {
                     if (node.getChild("locations") == null) node.addChild(this.makeNode("locations", this.pathToLocations));
                     else node.getChild("locations").setValue(this.pathToLocations);
-                    if (node.getChild("methodNameForDelayAtBegining") == null) node.addChild(this.makeNode("methodNameForDelayAtBeginning", this.methodName));
+                    if (node.getChild("methodNameForDelayAtBeginning") == null) node.addChild(this.makeNode("methodNameForDelayAtBeginning", this.methodName));
                     else node.getChild("methodNameForDelayAtBeginning").setValue(this.methodName);
                 } else if(mode == TYPE.ROOT_METHOD_ANALYSIS) {
-                    if (node.getChild("rootMethod") == null) node.addChild(this.makeNode("rootMethod", "./" + DEFAULT_FLAKESYNC_DIR + "/Locations/Root.txt"));
+                    if (node.getChild("rootMethod") == null)
+                        node.addChild(this.makeNode("rootMethod", "./" + DEFAULT_FLAKESYNC_DIR + "/Locations/Root.txt"));
                     else node.getChild("rootMethod").setValue("./" + DEFAULT_FLAKESYNC_DIR + "/Locations/Root.txt");
-                    if (node.getChild("methodOnly") == null) node.addChild(this.makeNode("methodOnly", this.methodName));
+                    if (node.getChild("methodOnly") == null)
+                        node.addChild(this.makeNode("methodOnly", this.methodName));
                     else node.getChild("methodOnly").setValue(this.methodName);
+                }else if (mode == TYPE.SEQUENTIAL_DEBUG){
+                    if (node.getChild("locations") == null) node.addChild(this.makeNode("locations", this.pathToLocations));
+                    else node.getChild("locations").setValue(this.pathToLocations);
                 } else if(mode == TYPE.DOWNWARD_MAVEN_EXEC) {
                     if(node.getChild("searchMethodEndLine") == null) node.addChild(this.makeNode("searchMethodEndLine", "search"));
                     else node.getChild("searchMethodEndLine").setValue("search");
@@ -377,7 +382,7 @@ public class CleanSurefireExecution {
                 }
             }
         }
-        if (!added) {
+        if (!(domNode.getChild("argLine") == null)) {
             Logger.getGlobal().log(Level.INFO, "Creating new argline for Surefire: *" + argLineToSet + "*");
             this.domNode.addChild(this.makeNode("argLine", argLineToSet));
         }

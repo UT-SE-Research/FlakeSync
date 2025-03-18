@@ -65,12 +65,14 @@ public class Agent {
             locationList = new ArrayList<>();
             try {
                 BufferedReader reader = new BufferedReader(new FileReader(new File(System.getProperty("locations"))));
+                System.out.println("Location arg is given: " + System.getProperty("locations"));
                 //else //if (System.getProperty("findRootOfRunMethod") != null)  // Needed to find root method of run(), because the stacktrace for this run() is hidden
                 //    reader = new BufferedReader(new FileReader(new File(System.getProperty("findRootOfRunMethod"))));
                 String line = reader.readLine();
                 while (line != null) {
                     String[] arr = line.split("#", 2);
                     String givenClassName = arr[0].replaceAll("[/]",".");
+                    System.out.println(givenClassName);
                     locationList.add(givenClassName);
                     // read next line
                     line = reader.readLine();
@@ -80,6 +82,7 @@ public class Agent {
                 e.printStackTrace();
             }
         }
+        //System.out.println(locationList);
         return locationList.contains(s);
     }
 
@@ -105,6 +108,7 @@ public class Agent {
                 e.printStackTrace();
             }
         }
+
         return classLineList.contains(s);
     }
     // White list consists of specific class names (not package prefixing as black list relies on)
@@ -130,6 +134,7 @@ public class Agent {
                 e.printStackTrace();
             }
         }
+        System.out.println(rootMethodList);
         return rootMethodList.contains(s);
     }
 
@@ -144,11 +149,13 @@ public class Agent {
                 //System.out.println(System.getProperty("locations"));
                 // Use locationlist if it is defined as a property; otherwise rely on:q
                 // blacklist
-                if (System.getProperty("rootMethod") != null && !blackListContains(s)){
-                    System.out.println("1. Trying to analyze root method");
+                if (System.getProperty("rootMethod") != null && !blackListContains(s) &&
+                        System.getProperty("methodNameForDelayAtBeginning") == null
+                        && System.getProperty("locations") == null) {
+                    System.out.println("1. Trying to analyze root method" + System.getProperty("rootMethod"));
                     //System.out.println("***s="+s);
                     boolean methodExists = rootMethodContains(s);
-                    if ( methodExists ){
+                    if ( methodExists ) {
                         System.out.println("2. Trying to analyze root method");
                       System.out.println("rootMethod From ASM");
                       final ClassReader reader = new ClassReader(bytes);
@@ -181,14 +188,14 @@ public class Agent {
                     reader.accept(visitor, 0);
                     return writer.toByteArray();
 
-                }
-
-                else if (System.getProperty("locations") != null) {
+                } else if (System.getProperty("locations") != null) {
+                    System.out.println(locationListContains(s) + " " + !blackListContains(s));
                     if (locationListContains(s) && !blackListContains(s)) {
                         final ClassReader reader = new ClassReader(bytes);
                         final ClassWriter writer = new ClassWriter(reader, ClassWriter.COMPUTE_FRAMES|ClassWriter.COMPUTE_MAXS );
-                        System.out.println("Location arg is given");
+                        System.out.println("2. Delay Injection");
                         if (System.getProperty("methodNameForDelayAtEnd") != null || System.getProperty("methodNameForDelayAtBeginning") !=null) {
+                            System.out.println("3. Delay Injection");
                             ClassVisitor visitor = new FunctionNameTracer(writer); 
                             reader.accept(visitor, 0);
                             return writer.toByteArray();
@@ -254,12 +261,14 @@ public class Agent {
                                     if (!alreadyWritten.contains(location)) {
                                         bfLocations.write("-");
                                         bfLocations.write(location);
-                                        bfLocations.write("#" + System.getProperty("methodOnly"));}
+                                        bfLocations.write("#" + System.getProperty("methodOnly"));
+                                        bfLocations.newLine();
+                                        firstElement=true;
+                                    }
                                 }
                             alreadyWritten.add(location);
                         }
-
-                        bfLocations.newLine();
+                        //bfLocations.newLine();
                         bfLocations.flush(); 
                     } catch (IOException e) {
                         System.out.println("An error occurred.");

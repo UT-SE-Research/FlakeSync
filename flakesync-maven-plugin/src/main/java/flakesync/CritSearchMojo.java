@@ -41,15 +41,15 @@ public class CritSearchMojo extends FlakeSyncAbstractMojo {
         //runs mvn-run-and-find-stack-trace.sh: mvn test -pl $module -Dtest=$4  -Ddelay=$3  -Dlocations=$7
 
         List<String> locations = new ArrayList<String>();
-        this.delay = generateLocsList(locations, this.mavenProject.getBasedir() + "/.flakesync/Locations.txt");
+        this.delay = generateLocsList(locations, this.mavenProject.getBasedir() + "/.flakesync/Locations_minimized.txt");
 
 
         CleanSurefireExecution cleanExec  = new CleanSurefireExecution(this.surefire, this.originalArgLine,
                 this.mavenProject, this.mavenSession, this.pluginManager,
                 Paths.get(this.baseDir.getAbsolutePath(), ConfigurationDefaults.DEFAULT_FLAKESYNC_DIR).toString(),
-                this.localRepository, this.testName, this.delay, "/.flakesync/Locations_tmp.txt", true);
+                this.localRepository, this.testName, this.delay, "./.flakesync/Locations_tmp.txt", 0);
 
-        if(!executeSurefireExecution(cleanExec)){ //Running this will create the stacktrace to be parsed later
+        if(!executeSurefireExecution(null, cleanExec)){ //Running this will create the stacktrace to be parsed later
             System.out.println("This minimized location is not a good one. Go back and run minimizer.");
             return;
         }
@@ -74,9 +74,13 @@ public class CritSearchMojo extends FlakeSyncAbstractMojo {
                 if(!visited.contains(itemLocation)) {
                     visited.add(itemLocation);
 
+                    File directory = new File(this.baseDir + "/.flakesync/Locations/Line/");
+                    System.out.println(directory.mkdirs() + " = whether dir creation worked");
                     String filePath = "/.flakesync/Locations/Line/loc-"+threadId+"-"+i+".txt";
                     try{
-                        FileWriter fw = new FileWriter(this.baseDir+filePath);
+                        File f = new File(this.baseDir + filePath);
+                        f.createNewFile();
+                        FileWriter fw = new FileWriter(f);
                         BufferedWriter bw = new BufferedWriter(fw);
 
                         bw.write(itemLocation+":"+this.testName);
@@ -89,7 +93,7 @@ public class CritSearchMojo extends FlakeSyncAbstractMojo {
                     cleanExec = new CleanSurefireExecution(this.surefire, this.originalArgLine, this.mavenProject,
                             this.mavenSession, this.pluginManager,
                             Paths.get(this.baseDir.getAbsolutePath(), ConfigurationDefaults.DEFAULT_FLAKESYNC_DIR).toString(),
-                            this.localRepository, this.testName, delay, filePath, true);
+                            this.localRepository, this.testName, delay, "."+filePath, 0);
 
                     int result = executeSurefireExecution(allExceptions, cleanExec, itemLocation, threadId);
 
@@ -105,8 +109,7 @@ public class CritSearchMojo extends FlakeSyncAbstractMojo {
                             cleanExec = new CleanSurefireExecution(this.surefire, this.originalArgLine, this.mavenProject,
                                     this.mavenSession, this.pluginManager,
                                     Paths.get(this.baseDir.getAbsolutePath(), ConfigurationDefaults.DEFAULT_FLAKESYNC_DIR).toString(),
-                                    this.localRepository, this.testName, delay, "/.flakesync/Locations_tmp.txt", true);
-
+                                    this.localRepository, this.testName, delay, "."+filePath, 0);
 
                             result = executeSurefireExecution(allExceptions, cleanExec, itemLocation, threadId);
                             if(result < 3) { //We got a failure, we can break
@@ -156,15 +159,13 @@ public class CritSearchMojo extends FlakeSyncAbstractMojo {
                 throw new RuntimeException(e);
             }
 
-            //Refactor into multiple constructors
-            //Get rid of STDOUT in Agent
-
             CleanSurefireExecution rootMethodAnalysisExecution =
                     new CleanSurefireExecution(this.surefire, this.originalArgLine, this.mavenProject,
                             this.mavenSession, this.pluginManager,
                             Paths.get(this.baseDir.getAbsolutePath(), ConfigurationDefaults.DEFAULT_FLAKESYNC_DIR).toString(),
                             this.localRepository, this.testName, delay, methodName);
-            executeSurefireExecution(rootMethodAnalysisExecution);
+
+            executeSurefireExecution(null, rootMethodAnalysisExecution);
 
 
 
@@ -192,8 +193,6 @@ public class CritSearchMojo extends FlakeSyncAbstractMojo {
                             System.out.println("Cluster with more than 1 element");
                             bw.write(clusters.get(i).get(0).trim() + "-" + clusters.get(i).get(clusters.get(i).size() - 1).trim() +
                                     "[" + delay + "]");
-                            //System.out.println(clusters.get(i).get(0) + "-" + clusters.get(i).get(clusters.get(i).size() - 1) +
-                                    //"[" + delay + "]");
                             bw.newLine();
                         } else {
                             System.out.println("Cluster with < 1 element");
@@ -203,8 +202,6 @@ public class CritSearchMojo extends FlakeSyncAbstractMojo {
                             }
                             bw.write(clusters.get(i).get(0) + "-" + clusters.get(i).get(0) +
                                     "[" + delay + "]");
-                            //System.out.println(clusters.get(i).get(0) + "-" + clusters.get(i).get(0) +
-                                    //"[" + delay + "]");
                             bw.newLine();
                         }
                     }
@@ -247,6 +244,8 @@ public class CritSearchMojo extends FlakeSyncAbstractMojo {
 
     private void createResultsFile1() {
         try {
+            File resultsDir = new File(mavenProject.getBasedir() + "/.flakesync/Results-Boundary/");
+            resultsDir.mkdirs();
             FileWriter outputLocationsFile = new FileWriter(this.mavenProject.getBasedir() +
                     "/.flakesync/Results-Boundary/" + testName + "Result.csv");
 
@@ -298,6 +297,7 @@ public class CritSearchMojo extends FlakeSyncAbstractMojo {
             }
             bw.flush();
             reader.close();
+            bw.close();
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -364,6 +364,7 @@ public class CritSearchMojo extends FlakeSyncAbstractMojo {
             String line = reader.readLine();
             while (line != null) {
                 //Parse method name from line
+                System.out.println("hahahah"+line);
                 String[] tmp = line.split("#");
                 String methodName = tmp[3];
                 String className = tmp[0];
@@ -388,7 +389,7 @@ public class CritSearchMojo extends FlakeSyncAbstractMojo {
                         this.localRepository, this.testName, this.delay, "./.flakesync/Locations/Root-" +
                         lowerLineNumber + ".txt", methodName, false);
 
-                beginningFail = executeSurefireExecution(execution);
+                beginningFail = executeSurefireExecution(null, execution);
 
                 if(beginningFail) {
                     beginningLineName = "";
@@ -413,16 +414,17 @@ public class CritSearchMojo extends FlakeSyncAbstractMojo {
     }
 
     private String sequentialDebug(String start) {
+        System.out.println("SEQUENTIAL DEBUGGING:    " + start);
         String upperBoundary = "";
         ArrayList<String> currentLines = new ArrayList<String>();
         if(start != null) currentLines.add(start);
-
         int cluster = 1;
         try {
             File lines = new File(this.mavenProject.getBasedir()+"/.flakesync/MethodStartAndEndLine.txt");
             BufferedReader reader = new BufferedReader(new FileReader(lines));
             String line = reader.readLine();
             while (line != null) {
+                System.out.println("huhuhuh"+line);
                 String[] tmp = line.split("#");
                 String className = tmp[0];
                 String lowerLineNumber = tmp[1].substring(0, tmp[1].indexOf('-'));
@@ -437,6 +439,7 @@ public class CritSearchMojo extends FlakeSyncAbstractMojo {
 
                     File rootFile = new File(this.mavenProject.getBasedir()+"/.flakesync/Locations/Root-" +
                             i + ".txt");
+                    rootFile.createNewFile();
                     BufferedWriter writer = new BufferedWriter(new FileWriter(rootFile));
                     writer.write(className + "#" + i);
                     writer.newLine();
@@ -445,10 +448,10 @@ public class CritSearchMojo extends FlakeSyncAbstractMojo {
                     CleanSurefireExecution execution = new CleanSurefireExecution(this.surefire, this.originalArgLine, this.mavenProject,
                             this.mavenSession, this.pluginManager,
                             Paths.get(this.baseDir.getAbsolutePath(), ConfigurationDefaults.DEFAULT_FLAKESYNC_DIR).toString(),
-                            this.localRepository, this.testName, this.delay, "/.flakesync/Locations/Root-" + i
-                            + ".txt");
+                            this.localRepository, this.testName, this.delay, "./.flakesync/Locations/Root-" + i
+                            + ".txt", 3);
 
-                    boolean failed = executeSurefireExecution(execution);
+                    boolean failed = executeSurefireExecution(null, execution);
 
                     if(failed) {
                         String lineName = "";
@@ -500,11 +503,13 @@ public class CritSearchMojo extends FlakeSyncAbstractMojo {
         return 3;
     }
 
-    private boolean executeSurefireExecution(CleanSurefireExecution execution) {
+    private boolean executeSurefireExecution(MojoExecutionException allExceptions,
+                                                            CleanSurefireExecution execution) {
         try {
             execution.run();
         } catch (MojoExecutionException ex) {
-            return true;
+           Utils.linkException(ex, allExceptions);
+           return true;
         }
         return false;
     }
