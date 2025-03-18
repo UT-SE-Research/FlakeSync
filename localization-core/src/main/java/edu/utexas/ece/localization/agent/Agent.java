@@ -145,8 +145,8 @@ public class Agent {
                 System.out.println("PREMAIN****" + System.getProperty("rootMethod") + " " + System.getProperty("locations")
                     + " " + System.getProperty("methodNameForDelayAtBeginning"));
                 // Use locationlist if it is defined as a property; otherwise rely on blacklist
-                if (System.getProperty("rootMethod") != null && !blackListContains(s) &&
-                        System.getProperty("methodNameForDelayAtBeginning").equals("null")
+                if (System.getProperty("rootMethod") != null && !blackListContains(className)
+                        && System.getProperty("methodNameForDelayAtBeginning").equals("null")
                         && System.getProperty("locations").equals("null")) {
                     System.out.println("1. Trying to analyze root method");
                     boolean methodExists = rootMethodContains(className);
@@ -262,7 +262,7 @@ public class Agent {
                         }
 
                         //bfLocations.newLine();
-                        bfLocations.flush(); 
+                        bfLocations.flush();
                     } catch (IOException ioe) {
                         System.out.println("An error occurred.");
                         ioe.printStackTrace();

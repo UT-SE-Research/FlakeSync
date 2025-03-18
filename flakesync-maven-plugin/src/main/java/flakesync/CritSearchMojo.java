@@ -78,11 +78,11 @@ public class CritSearchMojo extends FlakeSyncAbstractMojo {
 
                     File directory = new File(this.baseDir + "/.flakesync/Locations/Line/");
                     System.out.println(directory.mkdirs() + " = whether dir creation worked");
-                    String filePath = "/.flakesync/Locations/Line/loc-" + threadId+"-" + i + ".txt";
+                    String filePath = "/.flakesync/Locations/Line/loc-" + threadId + "-" + i + ".txt";
                     try {
-                        File f = new File(this.baseDir + filePath);
-                        f.createNewFile();
-                        FileWriter fw = new FileWriter(f);
+                        File file = new File(this.baseDir + filePath);
+                        file.createNewFile();
+                        FileWriter fw = new FileWriter(file);
                         BufferedWriter bw = new BufferedWriter(fw);
 
                         bw.write(itemLocation + ":" + this.testName);
@@ -110,7 +110,8 @@ public class CritSearchMojo extends FlakeSyncAbstractMojo {
 
                             cleanExec = new CleanSurefireExecution(this.surefire, this.originalArgLine, this.mavenProject,
                                 this.mavenSession, this.pluginManager,
-                                Paths.get(this.baseDir.getAbsolutePath(), ConfigurationDefaults.DEFAULT_FLAKESYNC_DIR).toString(),
+                                Paths.get(this.baseDir.getAbsolutePath(),
+                                    ConfigurationDefaults.DEFAULT_FLAKESYNC_DIR).toString(),
                                 this.localRepository, this.testName, delay, "." + filePath, 0);
 
                             result = executeSurefireExecution(allExceptions, cleanExec, itemLocation, threadId);
@@ -365,8 +366,8 @@ public class CritSearchMojo extends FlakeSyncAbstractMojo {
             BufferedReader reader = new BufferedReader(new FileReader(lines));
             String line = reader.readLine();
             while (line != null) {
-                //Parse method name from line
-                System.out.println("hahahah"+line);
+                // Parse method name from line
+                System.out.println("hahahah" + line);
                 String[] tmp = line.split("#");
                 String methodName = tmp[3];
                 String className = tmp[0];
@@ -429,7 +430,7 @@ public class CritSearchMojo extends FlakeSyncAbstractMojo {
             BufferedReader reader = new BufferedReader(new FileReader(lines));
             String line = reader.readLine();
             while (line != null) {
-                System.out.println("huhuhuh"+line);
+                System.out.println("huhuhuh" + line);
                 String[] tmp = line.split("#");
                 String className = tmp[0];
                 String lowerLineNumber = tmp[1].substring(0, tmp[1].indexOf('-'));
@@ -504,8 +505,8 @@ public class CritSearchMojo extends FlakeSyncAbstractMojo {
         try {
             execution.run();
         } catch (MojoExecutionException ex) {
-           Utils.linkException(ex, allExceptions);
-           return true;
+            Utils.linkException(ex, allExceptions);
+            return true;
         }
         return false;
     }
