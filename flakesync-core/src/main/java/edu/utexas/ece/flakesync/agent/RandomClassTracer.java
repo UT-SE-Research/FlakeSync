@@ -25,11 +25,13 @@ public class RandomClassTracer extends ClassVisitor {
     public static Set<String> providedLocations = new HashSet<>();
 
     static {
+        System.out.println("************ " + System.getProperty("locations") + " ******************");
         if (System.getProperty("locations") != null) {
             try {
                 BufferedReader reader = new BufferedReader(new FileReader(new File(System.getProperty("locations"))));
                 String line = reader.readLine();
                 while (line != null) {
+                    System.out.println(line);
                     providedLocations.add(line);
                     // read next line
                     line = reader.readLine();
@@ -64,6 +66,22 @@ public class RandomClassTracer extends ClassVisitor {
 
     public RandomClassTracer(ClassVisitor cv) {
         super(Opcodes.ASM9, cv);
+        System.out.println("************ " + System.getProperty("locations") + " ******************");
+        if (System.getProperty("locations") != null) {
+            try {
+                BufferedReader reader = new BufferedReader(new FileReader(new File(System.getProperty("locations"))));
+                String line = reader.readLine();
+                while (line != null) {
+                    System.out.println(line);
+                    providedLocations.add(line);
+                    // read next line
+                    line = reader.readLine();
+                }
+                reader.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
     }
 
     @Override
@@ -89,21 +107,25 @@ public class RandomClassTracer extends ClassVisitor {
             public void visitMethodInsn(int opcode, String owner, String name, String desc, boolean itf) {
                 String methodName = owner + "." + name + desc;
 
-                String location = cn + "#" + lineNumber + "&" + System.getProperty("delay");
+                String location = cn + "#" + lineNumber;
+                System.out.println("in visitMethodInst: " + location);
 
                 // If locations are provided, delay only at those locations
                 if (System.getProperty("locations") != null) {
+                    System.out.println("A");
                     if (providedLocations.contains(location)) {
+                        System.out.println("B");
                         super.visitMethodInsn(Opcodes.INVOKESTATIC, "edu/utexas/ece/flakesync/agent/Utility", "delay", "()V", false);
                     }
                 }
 
                 // Insert some random delay call right before invoking the method, with some probability
                 else if (whiteListContains(containingMethod)) {
+                    System.out.println("C");
                     locations.add(location);
                     super.visitMethodInsn(Opcodes.INVOKESTATIC, "edu/utexas/ece/flakesync/agent/Utility", "delay", "()V", false);
                 }
-
+                System.out.println("D");
                 super.visitMethodInsn(opcode, owner, name, desc, itf);
             }
         };

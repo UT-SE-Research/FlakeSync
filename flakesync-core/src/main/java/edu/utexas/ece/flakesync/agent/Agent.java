@@ -91,11 +91,11 @@ public class Agent {
                 final ClassReader reader = new ClassReader(bytes);
                 final ClassWriter writer = new ClassWriter(reader, ClassWriter.COMPUTE_FRAMES|ClassWriter.COMPUTE_MAXS );
 
-                //System.out.println("whitelist: "+System.getProperty("whitelist"));
+                System.out.println("whitelist: "+System.getProperty("whitelist"));
 
                 ClassVisitor visitor;
                 if (!blackListContains(s) && (System.getProperty("whitelist") == null) ) {
-                    //System.out.println("no whitelist given and going to execute EnterExit");
+                    System.out.println("no whitelist given and going to execute EnterExit");
                     visitor = new EnterExitClassTracer(writer);
                     reader.accept(visitor, 0);
                     return writer.toByteArray();
