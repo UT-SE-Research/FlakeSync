@@ -1,0 +1,164 @@
+/*
+The MIT License (MIT)
+Copyright (c) 2015 Alex Gyori
+Copyright (c) 2022 Kaiyao Ke
+Copyright (c) 2015 Owolabi Legunsen
+Copyright (c) 2015 Darko Marinov
+Copyright (c) 2015 August Shi
+
+
+Permission is hereby granted, free of charge, to any person obtaining
+a copy of this software and associated documentation files (the
+"Software"), to deal in the Software without restriction, including
+without limitation the rights to use, copy, modify, merge, publish,
+distribute, sublicense, and/or sell copies of the Software, and to
+permit persons to whom the Software is furnished to do so, subject to
+the following conditions:
+
+The above copyright notice and this permission notice shall be
+included in all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
+LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
+OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
+WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+*/
+
+package flakesync;
+
+
+import java.io.*;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
+
+import flakesync.common.ConfigurationDefaults;
+import flakesync.common.Level;
+import flakesync.common.Logger;
+
+
+import flakesync.DelayedSurefireExecution;
+import org.apache.maven.plugin.MojoExecutionException;
+import org.apache.maven.plugin.MojoFailureException;
+import org.apache.maven.plugins.annotations.LifecyclePhase;
+import org.apache.maven.plugins.annotations.Mojo;
+import org.apache.maven.plugins.annotations.ResolutionScope;
+
+@Mojo(name = "barrierpointsearch", defaultPhase = LifecyclePhase.TEST, requiresDependencyResolution = ResolutionScope.TEST)
+public class BarrierPointMojo extends FlakeSyncAbstractMojo {
+
+    @Override
+    public void execute() throws MojoExecutionException, MojoFailureException {
+        super.execute();
+        Logger.getGlobal().log(Level.INFO, ("Running BarrierPointSearchMojo"));
+
+        //Setup
+        try {
+            FileWriter barrierResults = new FileWriter(".flakesync/Results-Barrier/Results.csv");
+            BufferedWriter bw = new BufferedWriter(barrierResults);
+
+            bw.write("Test-Name,Boundary-Point,Barrier-Point,Threshold,Time");
+            bw.newLine();
+
+            FileReader boundaryResults = new FileReader(".flakesync/Results-Boundary/" + testName + "Result.csv");
+            BufferedReader br = new BufferedReader(boundaryResults);
+
+            String line = br.readLine();
+            while (line != null) {
+                //Debugging
+                System.out.println(line);
+
+                String firstLoc = line.split("-")[0];
+                String endLoc = line.split("-")[1].split("\\[")[0];
+                int delay = Integer.parseInt(line.split("\\[")[1].substring(0, line.split("\\[")[1].length()-1));
+
+                if(firstLoc.contains("Test")) {
+                    System.out.println("It appears that the boundary exists in the test code");
+                    //  bash $currentDir/downward_mvn_run.sh $module $testName ${upper_boundary} $currentDir $line $delay 1
+                }
+
+                // bash "$currentDir/collect_stacktrace.sh" $module $testName $delay $currentDir $upper_boundary &> "$logs_dir/stacktrce_log_${testName}"
+                // #Adding delay within boundary to observe failure and collect stacktrace.
+
+                // bash $currentDir/run_mvn_test_with_yield_and_cut.sh
+                // "$Yielding_dir/$testName" $module $testName ${upper_boundary} $currentDir $line $delay 1
+
+
+
+
+
+
+
+            }
+
+
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+
+
+        for(int i = 0; i < delays.length; i++) {
+            DelayedSurefireExecution cleanExec = new DelayedSurefireExecution(
+                    this.surefire, this.originalArgLine, this.mavenProject,
+                    this.mavenSession, this.pluginManager,
+                    Paths.get(this.baseDir.getAbsolutePath(), ConfigurationDefaults.DEFAULT_FLAKESYNC_DIR).toString(),
+                    this.localRepository, this.testName, delays[i]);
+            try {
+                this.executeSurefireExecution(null, cleanExec);
+            } catch(MojoExecutionException e) {
+                break;
+            }
+        }
+    }
+
+
+    private MojoExecutionException executeSurefireExecution(MojoExecutionException allExceptions,
+                                                            DelayedSurefireExecution execution) throws MojoExecutionException {
+        execution.run();
+        return allExceptions;
+    }
+
+    public void setTestName(String testName) {
+        this.testName = testName;
+    }
+
+    private boolean createWhiteList() {
+        System.out.println("Inside createWhiteList");
+        File whitelist = new File(this.mavenProject.getBasedir() + "/.flakesync/whitelist.txt");
+        File outputDir = new File(this.mavenProject.getBuild().getOutputDirectory());
+
+        try {
+            whitelist.createNewFile();
+            FileWriter outputLocationsFile = new FileWriter(whitelist);
+            BufferedWriter bw = new BufferedWriter(outputLocationsFile);
+
+            try (Stream<Path> paths = Files.walk(Paths.get(outputDir.toURI()))) {
+                List<String> classNames = paths
+                        .filter(Files::isRegularFile)
+                        .filter(path -> path.toString().endsWith(".class"))
+                        .filter(path -> !path.toString().contains("Tests"))
+                        .map(path -> path.toString()
+                                .replaceFirst(".*target/classes/", "")
+                                .replace("/", ".")
+                                .replace(".class", ""))
+                        .collect(Collectors.toList());
+
+                for (String location : classNames) {
+                    bw.write(location);
+                    bw.newLine();
+                }
+                bw.flush();
+            }
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+        return true;
+    }
+}

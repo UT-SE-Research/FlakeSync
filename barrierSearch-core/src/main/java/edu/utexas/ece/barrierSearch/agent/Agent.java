@@ -60,20 +60,18 @@ public class Agent {
                 if (s == null) return null;
                 s = s.replaceAll("[/]",".");
                 String codeToIntroduceVariable = System.getProperty("CodeToIntroduceVariable");
-                //System.out.println("code to introduce variable="+codeToIntroduceVariable);
                 String codeUnderTest=codeToIntroduceVariable.split("#")[0]; // code-undet-test class
                 final ClassReader reader = new ClassReader(bytes);
                 final ClassWriter writer = new ClassWriter(reader, ClassWriter.COMPUTE_FRAMES|ClassWriter.COMPUTE_MAXS );
                 ClassVisitor visitor;
 
-                System.out.println(System.getProperty("executionMonitor") + "******");
                 if (!blackListContains(s) && System.getProperty("stackTraceCollect").equals("true")) { // Going to add delay and collect the stacktrace
                     System.out.println("FROM STACKTRACE ***************************"+codeToIntroduceVariable);
                     visitor = new StackTraceTracer(writer, codeToIntroduceVariable);
                     reader.accept(visitor, 0);
                     return writer.toByteArray();
                 }
-                else if (!blackListContains(s) && System.getProperty("executionMonitor") != null) {
+                else if (!blackListContains(s) && System.getProperty("executionMonitor").equals("flag")) {
                     //synchronized (edu.utexas.ece.edu.utexas.ece.barrierSearch.agent.Utility.class) {
                     System.out.println("Starting execution monitor steps");
                     visitor = new ExecutionMonitorTracer(writer, codeToIntroduceVariable);
@@ -81,7 +79,7 @@ public class Agent {
                     //}
                     return writer.toByteArray();
                 }
-                else if (!blackListContains(s) && System.getProperty("searchMethodEndLine") != null) {
+                else if (!blackListContains(s) && System.getProperty("searchMethodEndLine").equals("search")) {
                     //synchronized (edu.utexas.ece.edu.utexas.ece.barrierSearch.agent.Utility.class) {
                     visitor = new MethodEndLineTracer(writer, codeToIntroduceVariable);
                     reader.accept(visitor, 0);
@@ -91,8 +89,7 @@ public class Agent {
                 else {
                     String yieldPointInfo = System.getProperty("YieldingPoint"); // YIELDING_POINT may or may not be a test_method's location
                     String tcls=yieldPointInfo.split("#")[0]; // test-class
-                    //System.out.println(s + " vs " + codeUnderTest);
-                    //System.out.println(s + " vs " + tcls);
+                    if(!blackListContains(s)) System.out.println("ALLOWED CLASS="+s +",yieldPointInfo="+tcls+",codeUnderTest="+codeUnderTest);
                     if (!blackListContains(s) && (s.equals(codeUnderTest) || s.equals(tcls)) ) {  // Need substring match, test-class name is not coming here
                         System.out.println("ELSE****ALLOWED CLASS="+s +",yieldPointInfo="+tcls+",codeUnderTest="+codeUnderTest);
                         visitor = new RandomClassTracer(writer, yieldPointInfo, codeToIntroduceVariable);

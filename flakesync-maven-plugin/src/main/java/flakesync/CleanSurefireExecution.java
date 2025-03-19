@@ -327,18 +327,24 @@ public class CleanSurefireExecution {
                     if(node.getChild("CodeToIntroduceVariable") == null) node.addChild(this.makeNode("CodeToIntroduceVariable", this.startLine));
                     else node.getChild("CodeToIntroduceVariable").setValue(this.startLine);
                 } else if(mode == TYPE.ADD_BARRIER_POINT) {
+                    System.out.println(this.executionId);
+                    if (node.getChild("executionMonitor") == null) node.addChild(this.makeNode("executionMonitor", "null"));
+                    else node.getChild("executionMonitor").setValue("null");
                     if(node.getChild("CodeToIntroduceVariable") == null) node.addChild(this.makeNode("CodeToIntroduceVariable", this.startLine));
                     else node.getChild("CodeToIntroduceVariable").setValue(this.startLine);
                     if(node.getChild("YieldingPoint") == null) node.addChild(this.makeNode("YieldingPoint", this.yieldingPoint));
                     else node.getChild("YieldingPoint").setValue(this.yieldingPoint);
                     if(node.getChild("threshold") == null) node.addChild(this.makeNode("threshold", this.threshold + ""));
                     else node.getChild("threshold").setValue(this.threshold + "");
+                    if(node.getChild("stackTraceCollect") == null) node.addChild(this.makeNode("stackTraceCollect", "false"));
+                    else node.getChild("stackTraceCollect").setValue("false");
                 } else if(mode == TYPE.BARRIER_STACKTRACE) {
                     if(node.getChild("CodeToIntroduceVariable") == null) node.addChild(this.makeNode("CodeToIntroduceVariable", this.pathToLocations));
                     else node.getChild("CodeToIntroduceVariable").setValue(this.pathToLocations);
                     if(node.getChild("stackTraceCollect") == null) node.addChild(this.makeNode("stackTraceCollect", "true"));
                     else node.getChild("stackTraceCollect").setValue("true");
                 }else if(mode == TYPE.ADD_BARRIER_POINT_2) {
+                    System.out.println(this.executionId);
                     if(node.getChild("searchForMethodName") == null) node.addChild(this.makeNode("searchForMethodName", "search"));
                     else node.getChild("searchForMethodName").setValue("search");
                     if (node.getChild("CodeToIntroduceVariable") == null) node.addChild(this.makeNode("CodeToIntroduceVariable", this.startLine));
@@ -348,7 +354,6 @@ public class CleanSurefireExecution {
                     if(node.getChild("stackTraceCollect") == null) node.addChild(this.makeNode("stackTraceCollect", "false"));
                     else node.getChild("stackTraceCollect").setValue("false");
                 }else if(mode == TYPE.EXECUTION_MONITOR) {
-                    System.out.println(this.executionId);
                     if (node.getChild("CodeToIntroduceVariable") == null) node.addChild(this.makeNode("CodeToIntroduceVariable", this.startLine));
                     else node.getChild("CodeToIntroduceVariable").setValue(this.startLine);
                     if (node.getChild("YieldingPoint") == null) node.addChild(this.makeNode("YieldingPoint", ""));

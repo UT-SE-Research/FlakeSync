@@ -72,7 +72,7 @@ public class RandomClassTracer extends ClassVisitor {
                 }
                 if (System.getProperty("searchForMethodName") != null &&  testClassInfo.equals(classLine)) {
                     methodAndLine=methName+"#"+methodStartLineNum;
-                    //System.out.println("visitLineNumber,methodAndLine="+methodAndLine);
+                    System.out.println("visitLineNumber,methodAndLine="+methodAndLine);
                 }
 
                 //System.out.println("Outside visitLineNumber,lineNumber"+lineNumber+",cn_dot=" + cn_dot);
