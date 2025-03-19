@@ -1,7 +1,6 @@
-package barrierSearch.agent;
+package edu.utexas.ece.barrierSearch.agent;
 
 import org.objectweb.asm.ClassVisitor;
-import org.objectweb.asm.FieldVisitor;
 import org.objectweb.asm.Label;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
@@ -80,15 +79,15 @@ public class RandomClassTracer extends ClassVisitor {
 
                 if ( isMatchWithSpecialTests ) { // Because oneline may contain lots of byte-code ins, we will only inject delay when all the instruction of that line will be finished; update must be happened after delay
                     if (System.getProperty("searchForMethodName") == null && lineNumber > (failure_reproducing_point + 1) &&  !updateFlag && delayed) {
-                        //System.out.println("I am special match *****");
+                        System.out.println("I am special match *****");
                         super.visitMethodInsn(Opcodes.INVOKESTATIC, "edu/utexas/ece/barrierSearch/agent/Utility", "update", "()V", false); // Updating after the line
-                        //System.out.println("visitLineNumber Updating =,lineNumber"+lineNumber+",cn_dot=" + cn_dot);
+                        System.out.println("visitLineNumber Updating =,lineNumber"+lineNumber+",cn_dot=" + cn_dot);
                         updateFlag=true;
                     }
                 }
                 else if (System.getProperty("searchForMethodName") == null && lineNumber > failure_reproducing_point &&  !updateFlag && delayed) { // Because oneline may contain lots of byte-code ins, we will only inject delay when all the instruction of that line will be finished; update must be happened after delay
                     super.visitMethodInsn(Opcodes.INVOKESTATIC, "edu/utexas/ece/barrierSearch/agent/Utility", "update", "()V", false); // Updating after the line
-                    //System.out.println("visitLineNumber Updating =,lineNumber"+lineNumber+",cn_dot=" + cn_dot);
+                    System.out.println("visitLineNumber Updating =,lineNumber"+lineNumber+",cn_dot=" + cn_dot);
                     updateFlag=true;
                 }
                 super.visitLineNumber(line, start);
@@ -103,13 +102,13 @@ public class RandomClassTracer extends ClassVisitor {
                     //System.out.println("****visitMethodInsn,location="+location);
 
                     if (cn_dot.equals(codeUnderTestClassName) && lineNumber == failure_reproducing_point && System.getProperty("OverheadCalculate") == null) { // for code under test, First we need to add delay;
-                        //System.out.println("visitMethodInsn,Delaying,cn_dot="+cn_dot + ", failure_reproducing_point="+failure_reproducing_point + ",delayed="+delayed);
+                        System.out.println("visitMethodInsn,Delaying,cn_dot="+cn_dot + ", failure_reproducing_point="+failure_reproducing_point + ",delayed="+delayed);
                         super.visitMethodInsn(Opcodes.INVOKESTATIC, "edu/utexas/ece/barrierSearch/agent/Utility", "delay", "()V", false);
                         delayed=true;
                         super.visitMethodInsn(opcode, owner, name, desc, itf);
                     }
                     else if (location.equals(testClassInfo) && !yieldEntered ) { // for testClassInfo full param
-                        //System.out.println("Yielding FROM RANDOMTRACER........=,location="+location +",testClassInfo="+testClassInfo);
+                        System.out.println("Yielding FROM RANDOMTRACER........=,location="+location +",testClassInfo="+testClassInfo);
                         super.visitMethodInsn(Opcodes.INVOKESTATIC, "edu/utexas/ece/barrierSearch/agent/Utility", "yield", "()V", false);
                         yieldEntered=true;
                         super.visitMethodInsn(opcode, owner, name, desc, itf);
@@ -127,22 +126,22 @@ public class RandomClassTracer extends ClassVisitor {
             public void visitInsn(int opcode){ //The lines which are non-methodcall, Not sure yet, may add this later
                 String location = cn_dot + "#" + lineNumber;
                 if (System.getProperty("searchForMethodName") == null) {
-                    //System.out.println("visitLineNumber,***," + testClassInfo + ",location="+location + ", yieldEntered="+yieldEntered);
+                    System.out.println("visitLineNumber,***," + testClassInfo + ",location="+location + ", yieldEntered="+yieldEntered);
                     if (cn_dot.equals(codeUnderTestClassName) && lineNumber == failure_reproducing_point && System.getProperty("OverheadCalculate") == null) { // for code under test, First we need to add delay
-                        //System.out.println("visitInsn,Delaying,cn_dot="+cn_dot + ", failure_reproducing_point="+failure_reproducing_point + ",delayed="+delayed);
+                        System.out.println("visitInsn,Delaying,cn_dot="+cn_dot + ", failure_reproducing_point="+failure_reproducing_point + ",delayed="+delayed);
                         super.visitMethodInsn(Opcodes.INVOKESTATIC, "edu/utexas/ece/barrierSearch/agent/Utility", "delay", "()V", false);
                         delayed=true;
                         super.visitInsn(opcode);
                     }
                     else if (location.equals(testClassInfo) && !yieldEntered) { // for testClassInfo full param
-                        //System.out.println("visitInsn Yielding......., opcode="+opcode);
+                        System.out.println("visitInsn Yielding......., opcode="+opcode);
                         super.visitMethodInsn(Opcodes.INVOKESTATIC, "edu/utexas/ece/barrierSearch/agent/Utility", "yield", "()V", false);
                         yieldEntered=true;
                         super.visitInsn(opcode);
-                        //System.out.println("visitInsn, after Yielding......., lineNumber=" + lineNumber + ", testLine="+testLine);
+                        System.out.println("visitInsn, after Yielding......., lineNumber=" + lineNumber + ", testLine="+testLine);
                     }
                     else {
-                        //System.out.println("I am else");
+                        System.out.println("I am else");
                         super.visitInsn(opcode);
                     }
                 }

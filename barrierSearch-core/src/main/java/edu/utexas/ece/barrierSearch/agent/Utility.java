@@ -1,4 +1,4 @@
-package barrierSearch.agent;
+package edu.utexas.ece.barrierSearch.agent;
 
 public class Utility {
     private static int delay;
