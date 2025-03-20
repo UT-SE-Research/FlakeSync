@@ -187,11 +187,11 @@ public class CleanSurefireExecution {
     //MOJO BarrierPointMojo: Downward Maven
     public CleanSurefireExecution(Plugin surefire, String originalArgLine, MavenProject mavenProject,
                                   MavenSession mavenSession, BuildPluginManager pluginManager, String flakesyncDir, String localRepository,
-                                  String testName, int delay, String startLine, boolean threshold) {
+                                  String testName, int delay, String startLine, boolean execMon) {
         this(surefire, originalArgLine, "clean_" + Utils.getFreshExecutionId(), mavenProject, mavenSession, pluginManager,
                 flakesyncDir, testName, localRepository);
 
-        if(!threshold) {
+        if(!execMon) {
             this.phase = PHASE.BARRIER_POINT_SEARCH;
 
             this.delay = delay;
@@ -273,13 +273,16 @@ public class CleanSurefireExecution {
         String properties = (!checkSysPropsDeprecated()) ? ("systemPropertyVariables") : ("systemProperties");
         System.out.println(properties + "******************");
 
-        boolean added = false;
+        boolean addedTimeout = false;
         for (Xpp3Dom node : this.domNode.getChildren()) {
             if ("argLine".equals(node.getName()) && !node.getValue().contains(argLineToSet)) {
                 Logger.getGlobal().log(Level.INFO, "Adding argLine to existing argLine specified by the project");
                 String current = sanitizeAndRemoveEnvironmentVars(node.getValue());
                 node.setValue(argLineToSet + " " + current);
-                added = true;
+            }
+            if(mode == TYPE.ADD_BARRIER_POINT_2 && "forkedProcessExitTimeoutInSeconds".equals(node.getName())){
+                node.setValue(180+"");
+                addedTimeout = true;
             }
 
             if(properties.equals(node.getName())){
@@ -328,16 +331,15 @@ public class CleanSurefireExecution {
                     else node.getChild("CodeToIntroduceVariable").setValue(this.startLine);
                 } else if(mode == TYPE.ADD_BARRIER_POINT) {
                     System.out.println(this.executionId);
-                    if (node.getChild("executionMonitor") == null) node.addChild(this.makeNode("executionMonitor", "null"));
-                    else node.getChild("executionMonitor").setValue("null");
+                    if (node.getChild("executionMonitor") != null) node.getChild("executionMonitor").setValue("null");
                     if(node.getChild("CodeToIntroduceVariable") == null) node.addChild(this.makeNode("CodeToIntroduceVariable", this.startLine));
                     else node.getChild("CodeToIntroduceVariable").setValue(this.startLine);
                     if(node.getChild("YieldingPoint") == null) node.addChild(this.makeNode("YieldingPoint", this.yieldingPoint));
                     else node.getChild("YieldingPoint").setValue(this.yieldingPoint);
                     if(node.getChild("threshold") == null) node.addChild(this.makeNode("threshold", this.threshold + ""));
                     else node.getChild("threshold").setValue(this.threshold + "");
-                    if(node.getChild("stackTraceCollect") == null) node.addChild(this.makeNode("stackTraceCollect", "false"));
-                    else node.getChild("stackTraceCollect").setValue("false");
+                    if(node.getChild("stackTraceCollect") != null) node.getChild("stackTraceCollect").setValue("false");
+                    if(node.getChild("searchForMethodName") != null) node.getChild("searchForMethodName").setValue("null");
                 } else if(mode == TYPE.BARRIER_STACKTRACE) {
                     if(node.getChild("CodeToIntroduceVariable") == null) node.addChild(this.makeNode("CodeToIntroduceVariable", this.pathToLocations));
                     else node.getChild("CodeToIntroduceVariable").setValue(this.pathToLocations);
@@ -351,8 +353,7 @@ public class CleanSurefireExecution {
                     else node.getChild("CodeToIntroduceVariable").setValue(this.startLine);
                     if (node.getChild("YieldingPoint") == null) node.addChild(this.makeNode("YieldingPoint", this.yieldingPoint));
                     else node.getChild("YieldingPoint").setValue(this.yieldingPoint);
-                    if(node.getChild("stackTraceCollect") == null) node.addChild(this.makeNode("stackTraceCollect", "false"));
-                    else node.getChild("stackTraceCollect").setValue("false");
+                    if(node.getChild("stackTraceCollect") != null) node.getChild("stackTraceCollect").setValue("false");
                 }else if(mode == TYPE.EXECUTION_MONITOR) {
                     if (node.getChild("CodeToIntroduceVariable") == null) node.addChild(this.makeNode("CodeToIntroduceVariable", this.startLine));
                     else node.getChild("CodeToIntroduceVariable").setValue(this.startLine);
@@ -370,6 +371,9 @@ public class CleanSurefireExecution {
             this.domNode.addChild(this.makeNode("argLine", argLineToSet));
         }
 
+        if(mode == TYPE.ADD_BARRIER_POINT_2 && !addedTimeout) {
+            this.domNode.addChild(this.makeNode("forkedProcessExitTimeoutInSeconds", 180 + ""));
+        }
         // originalArgLine is the argLine set from Maven, not through the surefire config
         // if such an argLine exists, we modify that one also
         this.mavenProject.getProperties().setProperty("argLine",

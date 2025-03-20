@@ -17,13 +17,13 @@ public class Utility {
     }
 
     public static void yield() {
-        //System.out.println("Utility yielding.., threshold="+threshold + ",testVarCount= "+testVarCount);
+        System.out.println("Utility yielding.., threshold="+threshold + ",testVarCount= "+testVarCount);
         while (testVarCount < threshold) {
-            //System.out.println(" Within while loop testVarCount="+testVarCount+ ",threshold="+threshold);
+            System.out.println(" Within while loop testVarCount="+testVarCount+ ",threshold="+threshold);
             Thread.yield();
         }
         testVarCount=0;
-        //System.out.println("Yielding from Utility..");
+        System.out.println("Yielding from Utility..");
     }
 
     public static void update(){

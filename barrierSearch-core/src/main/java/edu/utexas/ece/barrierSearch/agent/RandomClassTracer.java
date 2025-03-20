@@ -97,17 +97,20 @@ public class RandomClassTracer extends ClassVisitor {
             public void visitMethodInsn(int opcode, String owner, String name, String desc, boolean itf) {
                 String methodName = owner + "." + name + desc;
                 String location = cn_dot + "#" + lineNumber;
-                if (System.getProperty("searchForMethodName") == null) {
+                System.out.println("100. location="+location + " " + yieldEntered);
+                if (System.getProperty("searchForMethodName") == null || !System.getProperty("searchForMethodName").equals("search")) {
                     //These 2 brances should be mutually exclusive
-                    //System.out.println("****visitMethodInsn,location="+location);
+                    System.out.println("****visitMethodInsn,location="+location + "testCLassInfo=" + testClassInfo);
 
                     if (cn_dot.equals(codeUnderTestClassName) && lineNumber == failure_reproducing_point && System.getProperty("OverheadCalculate") == null) { // for code under test, First we need to add delay;
                         System.out.println("visitMethodInsn,Delaying,cn_dot="+cn_dot + ", failure_reproducing_point="+failure_reproducing_point + ",delayed="+delayed);
                         super.visitMethodInsn(Opcodes.INVOKESTATIC, "edu/utexas/ece/barrierSearch/agent/Utility", "delay", "()V", false);
                         delayed=true;
                         super.visitMethodInsn(opcode, owner, name, desc, itf);
+                        super.visitMethodInsn(Opcodes.INVOKESTATIC, "edu/utexas/ece/barrierSearch/agent/Utility", "update", "()V", false); // Updating after the line
+                        updateFlag=true;
                     }
-                    else if (location.equals(testClassInfo) && !yieldEntered ) { // for testClassInfo full param
+                    else if (location.equals(testClassInfo) && !yieldEntered) { // for testClassInfo full param
                         System.out.println("Yielding FROM RANDOMTRACER........=,location="+location +",testClassInfo="+testClassInfo);
                         super.visitMethodInsn(Opcodes.INVOKESTATIC, "edu/utexas/ece/barrierSearch/agent/Utility", "yield", "()V", false);
                         yieldEntered=true;
@@ -125,13 +128,16 @@ public class RandomClassTracer extends ClassVisitor {
             @Override
             public void visitInsn(int opcode){ //The lines which are non-methodcall, Not sure yet, may add this later
                 String location = cn_dot + "#" + lineNumber;
-                if (System.getProperty("searchForMethodName") == null) {
+                if (System.getProperty("searchForMethodName") == null || !System.getProperty("searchForMethodName").equals("search")) {
+
                     System.out.println("visitLineNumber,***," + testClassInfo + ",location="+location + ", yieldEntered="+yieldEntered);
                     if (cn_dot.equals(codeUnderTestClassName) && lineNumber == failure_reproducing_point && System.getProperty("OverheadCalculate") == null) { // for code under test, First we need to add delay
                         System.out.println("visitInsn,Delaying,cn_dot="+cn_dot + ", failure_reproducing_point="+failure_reproducing_point + ",delayed="+delayed);
                         super.visitMethodInsn(Opcodes.INVOKESTATIC, "edu/utexas/ece/barrierSearch/agent/Utility", "delay", "()V", false);
                         delayed=true;
                         super.visitInsn(opcode);
+                        super.visitMethodInsn(Opcodes.INVOKESTATIC, "edu/utexas/ece/barrierSearch/agent/Utility", "update", "()V", false); // Updating after the line
+                        updateFlag=true;
                     }
                     else if (location.equals(testClassInfo) && !yieldEntered) { // for testClassInfo full param
                         System.out.println("visitInsn Yielding......., opcode="+opcode);
@@ -149,14 +155,15 @@ public class RandomClassTracer extends ClassVisitor {
                     super.visitInsn(opcode);
                 }
             }
-            @Override
+            /*@Override
             public void visitEnd() { // This one is mainly needed for update
-                if (System.getProperty("searchForMethodName") == null && cn_dot.equals(codeUnderTestClassName) && lineNumber > failure_reproducing_point && !updateFlag && delayed) {
+                if ((System.getProperty("searchForMethodName") == null || !System.getProperty("searchForMethodName").equals("search")) && cn_dot.equals(codeUnderTestClassName) && lineNumber > failure_reproducing_point && !updateFlag && delayed) {
+                    System.out.println("Trying to update the test code.........");
                     super.visitMethodInsn(Opcodes.INVOKESTATIC, "edu/utexas/ece/barrierSearch/agent/Utility", "update", "()V", false); // Updating after the line
                     updateFlag=true;
                 }
                 super.visitEnd();
-            }
+            }*/
         };
     }
 }

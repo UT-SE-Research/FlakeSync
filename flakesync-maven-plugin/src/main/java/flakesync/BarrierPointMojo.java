@@ -144,6 +144,7 @@ public class BarrierPointMojo extends FlakeSyncAbstractMojo {
                                     this.mavenProject, this.mavenSession, this.pluginManager,
                                     Paths.get(this.baseDir.getAbsolutePath(), ConfigurationDefaults.DEFAULT_FLAKESYNC_DIR).toString(),
                                     this.localRepository, this.testName, delay, endLoc, yieldPoint, true);
+
                             executeSurefireExecution(null, barrierPoint);
 
                             //Result file is SearchedMethodEndLine.txt --> parse for starting boundary and end line
@@ -153,8 +154,11 @@ public class BarrierPointMojo extends FlakeSyncAbstractMojo {
                             //Between these lines get <class>#<line> and pass to timeout 3m mvn test -pl $module -Dtest="$testName" -Ddelay=$delay -DCodeToIntroduceVariable=$starting_boundary -DYieldingPoint="$each_line_of_yield_item" -Dthreshold="$threshold"
                             int beginning = Integer.parseInt(beginLine.split("#")[1]);//parse from file
                             System.out.println("Going through lines: " + beginning + " to " + Integer.parseInt(endLoc.split("#")[1]));
-                            for(int ln = Integer.parseInt(endLoc.split("#")[1]); ln >= beginning; ln--) {
+                            for(int ln = Integer.parseInt(yieldPoint.split("#")[1]); ln >= beginning; ln--) {
                                 String yieldingPoint = classN+"#"+ln; //<class>#<ln>
+
+                                //test inputs
+
                                 barrierPoint = new CleanSurefireExecution(this.surefire, this.originalArgLine,
                                         this.mavenProject, this.mavenSession, this.pluginManager,
                                         Paths.get(this.baseDir.getAbsolutePath(), ConfigurationDefaults.DEFAULT_FLAKESYNC_DIR).toString(),
@@ -167,22 +171,22 @@ public class BarrierPointMojo extends FlakeSyncAbstractMojo {
                                     addBarrierPointToResults(bw, line, yieldingPoint, 1);
                                 } else {
                                     //If method fails --> mvn test $JMVNOPTIONS  -pl $module -Dtest="$testName" -DexecutionMonitor="flag" -Ddelay=$delay -DCodeToIntroduceVariable=$upper_boundary -DYieldingPoint=""
+                                    checkValidPass();
                                     System.out.println("EPIC FAIL: " + yieldingPoint + " " + endLoc);
                                     CleanSurefireExecution execMon = new CleanSurefireExecution(this.surefire, this.originalArgLine,
                                             this.mavenProject, this.mavenSession, this.pluginManager,
                                             Paths.get(this.baseDir.getAbsolutePath(), ConfigurationDefaults.DEFAULT_FLAKESYNC_DIR).toString(),
-                                            this.localRepository, this.testName, delay, endLoc.replace("/", "."), true);
+                                            this.localRepository, this.testName, delay, endLoc, true);
                                     executeSurefireExecution(null, execMon);
 
                                     File execsFile = new File(this.mavenProject.getBasedir() + "/.flakesync/ExecutionMonitor.txt");
                                     reader = new BufferedReader(new FileReader(execsFile));
                                     int numExecutions = Integer.parseInt(reader.readLine().split("=")[1]); //parse from file --> new threshold
-
+                                    System.out.println("WE HAVE A NEW THRESHOLD: " + numExecutions);
                                     barrierPoint = new CleanSurefireExecution(this.surefire, this.originalArgLine,
                                             this.mavenProject, this.mavenSession, this.pluginManager,
                                             Paths.get(this.baseDir.getAbsolutePath(), ConfigurationDefaults.DEFAULT_FLAKESYNC_DIR).toString(),
-                                            this.localRepository, this.testName, delay, endLoc.replace("/", "."),
-                                            yieldingPoint, numExecutions);
+                                            this.localRepository, this.testName, delay, endLoc, yieldingPoint, numExecutions);
 
                                     fail = executeSurefireExecution(null, barrierPoint);
 
@@ -191,7 +195,8 @@ public class BarrierPointMojo extends FlakeSyncAbstractMojo {
                                         addBarrierPointToResults(bw, line, yieldingPoint, numExecutions);
                                     } else {
                                         //This barrier point does not work
-                                        System.out.println("EPIC FAIL: " + yieldingPoint + " " + numExecutions);
+                                        checkValidPass();
+                                        System.out.println("FAIL: " + yieldingPoint + " " + numExecutions);
                                     }
                                 }
                             }
@@ -239,7 +244,6 @@ public class BarrierPointMojo extends FlakeSyncAbstractMojo {
             flagLine = reader.readLine();
         }
         if(hitscriteria) {
-            System.out.println("We've actually got one!!!!!!!!!!!!!!!!!!!!!!!!!!!");
             return true;
         }
         return false;
