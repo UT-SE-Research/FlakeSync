@@ -49,6 +49,11 @@
       <groupId>org.twdata.maven</groupId>
       <artifactId>mojo-executor</artifactId>
     </dependency>
+    <dependency>
+      <groupId>jakarta.xml.bind</groupId>
+      <artifactId>jakarta.xml.bind-api</artifactId>
+      <version>4.0.2</version>
+    </dependency>
   </dependencies>
 
 </project>

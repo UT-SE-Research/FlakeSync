@@ -499,6 +499,10 @@ public class CleanSurefireExecution {
         return setReportOutputDirectory(configNode);
     }
 
+    public String getExecID() {
+        return this.executionId;
+    }
+
     protected Xpp3Dom setReportOutputDirectory(Xpp3Dom configNode) {
         configNode = this.addAttributeToConfig(configNode, "reportsDirectory",
                 this.configuration.getExecutionDir().toString());
