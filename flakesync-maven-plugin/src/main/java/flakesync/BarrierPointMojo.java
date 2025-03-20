@@ -1,4 +1,4 @@
-package flakesync;
+/*package flakesync;
 
 import flakesync.common.ConfigurationDefaults;
 import flakesync.common.Level;
@@ -25,7 +25,8 @@ import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-@Mojo(name = "barrierpointsearch", defaultPhase = LifecyclePhase.TEST, requiresDependencyResolution = ResolutionScope.TEST)
+@Mojo(name = "barrierpointsearch", defaultPhase = LifecyclePhase.TEST,
+requiresDependencyResolution = ResolutionScope.TEST)
 public class BarrierPointMojo extends FlakeSyncAbstractMojo {
 
     @Override
@@ -42,7 +43,8 @@ public class BarrierPointMojo extends FlakeSyncAbstractMojo {
             bw.write("Test-Name,Boundary-Point,Barrier-Point,Threshold,Time");
             bw.newLine();
 
-            FileReader boundaryResults = new FileReader(".flakesync/Results-Boundary/" + testName + "Result.csv");
+            FileReader boundaryResults = new FileReader(".flakesync/Results-Boundary/" +
+            testName + "Result.csv");
             BufferedReader br = new BufferedReader(boundaryResults);
 
             String line = br.readLine();
@@ -57,11 +59,14 @@ public class BarrierPointMojo extends FlakeSyncAbstractMojo {
                 if (firstLoc.contains("Test")) {
                     System.out.println("It appears that the boundary exists in the test code");
                     // bash $currentDir/downward_mvn_run.sh $module $testName ${upper_boundary} $currentDir $line $delay 1
-                    // mvn test -pl $module -Dtest="$testName" -DsearchMethodEndLine="search" -DCodeToIntroduceVariable="$starting_boundary"
+                    // mvn test -pl $module -Dtest="$testName" -DsearchMethodEndLine="search"
+                    //-DCodeToIntroduceVariable="$starting_boundary"
 
-                    CleanSurefireExecution downwardMvnExecution = new CleanSurefireExecution(this.surefire, this.originalArgLine,
+                    CleanSurefireExecution downwardMvnExecution = new CleanSurefireExecution(this.surefire,
+                        this.originalArgLine,
                         this.mavenProject, this.mavenSession, this.pluginManager,
-                        Paths.get(this.baseDir.getAbsolutePath(), ConfigurationDefaults.DEFAULT_FLAKESYNC_DIR).toString(),
+                        Paths.get(this.baseDir.getAbsolutePath(),
+                        ConfigurationDefaults.DEFAULT_FLAKESYNC_DIR).toString(),
                         this.localRepository, this.testName, delay, firstLoc, 1);
 
                     executeSurefireExecution(null, downwardMvnExecution);
@@ -70,7 +75,9 @@ public class BarrierPointMojo extends FlakeSyncAbstractMojo {
                     File endLineFile = new File(this.mavenProject.getBasedir() + "/.flakesync/SearchedMethodEndLine.txt");
                     BufferedReader reader = new BufferedReader(new FileReader(endLineFile));
 
-                    //Between these lines get <class>#<line> and pass to timeout 3m mvn test -pl $module -Dtest="$testName" -Ddelay=$delay -DCodeToIntroduceVariable=$starting_boundary -DYieldingPoint="$each_line_of_yield_item" -Dthreshold="$threshold"
+                    //Between these lines get <class>#<line> and pass to timeout 3m mvn test -pl
+                    //$module -Dtest="$testName" -Ddelay=$delay -DCodeToIntroduceVariable=$starting_boundary
+                    //-DYieldingPoint="$each_line_of_yield_item" -Dthreshold="$threshold"
                     String yieldingPoint = ""; //<class>#<line>
                     downwardMvnExecution = new CleanSurefireExecution(this.surefire, this.originalArgLine,
                         this.mavenProject, this.mavenSession, this.pluginManager,
@@ -78,19 +85,24 @@ public class BarrierPointMojo extends FlakeSyncAbstractMojo {
                         this.localRepository, this.testName, delay, firstLoc, yieldingPoint, 1);
 
                     executeSurefireExecution(null, downwardMvnExecution);
-                    //Result file is FlagDelayANDUpdateANDYielding.txt --> make sure delay, update, and yield happen --> delay_update_yield flag = 1
-                    File barrierResultFile = new File(this.mavenProject.getBasedir() + "/.flakesync/FlagDelayANDUpdateANDYielding.txt");
+                    //Result file is FlagDelayANDUpdateANDYielding.txt --> make sure delay, update,
+                    //and yield happen --> delay_update_yield flag = 1
+                    File barrierResultFile = new File(this.mavenProject.getBasedir() +
+                        "/.flakesync/FlagDelayANDUpdateANDYielding.txt");
                     reader = new BufferedReader(new FileReader(barrierResultFile));
 
                     // If test passed add to results file
                 } else {
-                    // bash "$currentDir/collect_stacktrace.sh" $module $testName $delay $currentDir $upper_boundary &> "$logs_dir/stacktrace_log_${testName}"
+                    // bash "$currentDir/collect_stacktrace.sh" $module $testName $delay $currentDir
+                    //$upper_boundary &> "$logs_dir/stacktrace_log_${testName}"
                     // #Adding delay within boundary to observe failure and collect stacktrace.
 
-                    // mvn test -pl $module -Dtest="$testName" -DstackTraceCollect="flag" -Ddelay=$delay -DCodeToIntroduceVariable=$upper_boundary
+                    // mvn test -pl $module -Dtest="$testName" -DstackTraceCollect="flag"
+                    //-Ddelay=$delay -DCodeToIntroduceVariable=$upper_boundary
                     CleanSurefireExecution stackTraceExec = new CleanSurefireExecution(this.surefire, this.originalArgLine,
                             this.mavenProject, this.mavenSession, this.pluginManager,
-                            Paths.get(this.baseDir.getAbsolutePath(), ConfigurationDefaults.DEFAULT_FLAKESYNC_DIR).toString(),
+                            Paths.get(this.baseDir.getAbsolutePath(),
+                            ConfigurationDefaults.DEFAULT_FLAKESYNC_DIR).toString(),
                             this.localRepository, this.testName, delay, firstLoc, 2);
                     //need to programmatically parse stack trace
                     File directory = new File( this.mavenProject.getBasedir() + "/target/surefire-reports/");
@@ -118,12 +130,15 @@ public class BarrierPointMojo extends FlakeSyncAbstractMojo {
                     }
 
                     // bash $currentDir/run_mvn_test_with_yield_and_cut.sh
-                    // Iterate over yielding points --> mvn test -pl $module -Dtest="$testName" -DsearchForMethodName="search" -DCodeToIntroduceVariable="$upper_boundary" -DYieldingPoint="$yield_item"
+                    // Iterate over yielding points --> mvn test -pl $module -Dtest="$testName"
+                    //-DsearchForMethodName="search" -DCodeToIntroduceVariable="$upper_boundary"
+                    //-DYieldingPoint="$yield_item"
                     HashSet<String> visited = new HashSet<String>();
                     for (String classN: classes.keySet()) {
                         String yieldPoint = classN + "#" + classes.get(classN);
                         if (!visited.contains(classN + "#" + classes.get(classN))) {
-                            CleanSurefireExecution barrierP = new CleanSurefireExecution(this.surefire, this.originalArgLine,
+                            CleanSurefireExecution barrierP = new CleanSurefireExecution(this.surefire,
+                                this.originalArgLine,
                                 this.mavenProject, this.mavenSession, this.pluginManager,
                                 Paths.get(this.baseDir.getAbsolutePath(),
                                     ConfigurationDefaults.DEFAULT_FLAKESYNC_DIR).toString(),
@@ -136,7 +151,9 @@ public class BarrierPointMojo extends FlakeSyncAbstractMojo {
                     File startLineFile = new File(this.mavenProject.getBasedir() + "/.flakesync/SearchedMethodANDLine.txt");
                     reader = new BufferedReader(new FileReader(startLineFile));
 
-                    // Between these lines get <class>#<line> and pass to timeout 3m mvn test -pl $module -Dtest="$testName" -Ddelay=$delay -DCodeToIntroduceVariable=$starting_boundary -DYieldingPoint="$each_line_of_yield_item" -Dthreshold="$threshold"
+                    // Between these lines get <class>#<line> and pass to timeout 3m mvn test -pl $module
+                    //-Dtest="$testName" -Ddelay=$delay -DCodeToIntroduceVariable=$starting_boundary
+                    //-DYieldingPoint="$each_line_of_yield_item" -Dthreshold="$threshold"
                     int beginning = 0; //parse from file
                     for (int ln = Integer.parseInt(endLoc); ln >= beginning; ln--) {
                         String yieldingPoint = ""; //<class>#<ln>
@@ -152,19 +169,24 @@ public class BarrierPointMojo extends FlakeSyncAbstractMojo {
                             + "/.flakesync/FlagDelayANDUpdateANDYielding.txt");
                         reader = new BufferedReader(new FileReader(barrierResultFile));
 
-                        // Result file is FlagDelayANDUpdateANDYielding.txt --> make sure delay, update, and yield happen --> delay_update_yield flag = 1
+                        // Result file is FlagDelayANDUpdateANDYielding.txt --> make sure delay, update,
+                        //and yield happen --> delay_update_yield flag = 1
                         if (pass) {
                             // If test passed, barrier point worked, and add to results file
                         } else {
-                            //If method fails --> mvn test $JMVNOPTIONS  -pl $module -Dtest="$testName" -DexecutionMonitor="flag" -Ddelay=$delay -DCodeToIntroduceVariable=$upper_boundary -DYieldingPoint=""
-                            CleanSurefireExecution execMon = new CleanSurefireExecution(this.surefire, this.originalArgLine,
+                            //If method fails --> mvn test $JMVNOPTIONS  -pl $module -Dtest="$testName"
+                            //-DexecutionMonitor="flag" -Ddelay=$delay -DCodeToIntroduceVariable=$upper_boundary
+                            //-DYieldingPoint=""
+                            CleanSurefireExecution execMon = new CleanSurefireExecution(this.surefire,
+                                this.originalArgLine,
                                 this.mavenProject, this.mavenSession, this.pluginManager,
                                 Paths.get(this.baseDir.getAbsolutePath(),
                                     ConfigurationDefaults.DEFAULT_FLAKESYNC_DIR).toString(),
                                 this.localRepository, this.testName, delay, Integer.parseInt(endLoc));
                             executeSurefireExecution(null, execMon);
 
-                            File execsFile = new File(this.mavenProject.getBasedir() + "/.flakesync/ExecutionMonitor.txt");
+                            File execsFile = new File(this.mavenProject.getBasedir() +
+                            "/.flakesync/ExecutionMonitor.txt");
                             reader = new BufferedReader(new FileReader(execsFile));
                             int numExecutions = 0; //parse from file --> new threshold
 
@@ -172,7 +194,8 @@ public class BarrierPointMojo extends FlakeSyncAbstractMojo {
                                 this.mavenProject, this.mavenSession, this.pluginManager,
                                 Paths.get(this.baseDir.getAbsolutePath(),
                                     ConfigurationDefaults.DEFAULT_FLAKESYNC_DIR).toString(),
-                                this.localRepository, this.testName, delay, endLoc, yieldingPoint, numExecutions);
+                                this.localRepository, this.testName, delay, endLoc, yieldingPoint,
+                                    numExecutions);
 
                             pass = executeSurefireExecution(null, barrierP);
 
@@ -219,4 +242,4 @@ public class BarrierPointMojo extends FlakeSyncAbstractMojo {
     public void setTestName(String testName) {
         this.testName = testName;
     }
-}
+}*/
