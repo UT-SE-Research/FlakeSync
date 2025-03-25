@@ -76,6 +76,17 @@ public class CritSearchMojo extends FlakeSyncAbstractMojo {
                 if (!visited.contains(itemLocation)) {
                     visited.add(itemLocation);
 
+                    System.out.println(itemLocation);
+                    String className = itemLocation.split("#")[0];
+                    if (className.contains("$")) {
+                        itemLocation = itemLocation.split("$")[0];
+                    }
+
+                    File checkInSource = new File(this.baseDir + "./src/main/" + className + ".java");
+                    if (!checkInSource.exists()) {
+                        continue;
+                    }
+
                     File directory = new File(this.baseDir + "/.flakesync/Locations/Line/");
                     System.out.println(directory.mkdirs() + " = whether dir creation worked");
                     String filePath = "/.flakesync/Locations/Line/loc-" + threadId + "-" + i + ".txt";
