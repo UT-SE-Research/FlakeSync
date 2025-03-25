@@ -1,4 +1,4 @@
-package barriersearch.agent;
+package edu.utexas.ece.barriersearch.agent;
 
 public class Utility {
 

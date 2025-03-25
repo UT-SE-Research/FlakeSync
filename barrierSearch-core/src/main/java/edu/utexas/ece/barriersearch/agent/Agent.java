@@ -1,4 +1,4 @@
-package edu.utexas.ece.barrierSearch.agent;
+package edu.utexas.ece.barriersearch.agent;
 
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
@@ -97,13 +97,13 @@ public class Agent {
                     //RandomClassTracer.updateFlag = false;
                     if ((s.equals(codeUnderTest) || s.equals(tcls)) && !blackListContains(s)) {  // Need substring match, test-class name is not coming here
                         if(s.equals(tcls)) System.out.println("ELSE****ALLOWED CLASS="+s +",yieldPointInfo="+tcls+",codeUnderTest="+codeUnderTest);
-                        visitor = new edu.utexas.ece.barrierSearch.agent.RandomClassTracer(writer, yieldPointInfo, codeToIntroduceVariable);
+                        visitor = new RandomClassTracer(writer, yieldPointInfo, codeToIntroduceVariable);
                         reader.accept(visitor, 0);
 
-                        if (edu.utexas.ece.barrierSearch.agent.RandomClassTracer.methodAndLine != null) {
+                        if (RandomClassTracer.methodAndLine != null) {
                             try {
                                 java.io.BufferedWriter bf = new java.io.BufferedWriter(new java.io.FileWriter("./.flakesync/SearchedMethodANDLine.txt"));
-                                bf.write(edu.utexas.ece.barrierSearch.agent.RandomClassTracer.methodAndLine +"\n");
+                                bf.write(RandomClassTracer.methodAndLine +"\n");
                                 bf.flush();
                             } catch (Exception ex) {}
 
@@ -111,9 +111,9 @@ public class Agent {
 
                         try{
                             java.io.BufferedWriter bfFlag = new java.io.BufferedWriter(new java.io.FileWriter("./.flakesync/FlagDelayANDUpdateANDYielding.txt"));
-                            bfFlag.write("Delay="+ edu.utexas.ece.barrierSearch.agent.RandomClassTracer.delayed +"\n");
-                            bfFlag.write("Update="+ edu.utexas.ece.barrierSearch.agent.RandomClassTracer.updateFlag +"\n");
-                            bfFlag.write("Yield="+ edu.utexas.ece.barrierSearch.agent.RandomClassTracer.yieldEntered +"\n");
+                            bfFlag.write("Delay="+ RandomClassTracer.delayed +"\n");
+                            bfFlag.write("Update="+ RandomClassTracer.updateFlag +"\n");
+                            bfFlag.write("Yield="+ RandomClassTracer.yieldEntered +"\n");
                             bfFlag.flush();
 
                         } catch (Exception ex) {}
