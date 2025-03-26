@@ -1,31 +1,3 @@
-/*The MIT License (MIT)
-Copyright (c) 2015 Alex Gyori
-Copyright (c) 2022 Kaiyao Ke
-Copyright (c) 2015 Owolabi Legunsen
-Copyright (c) 2015 Darko Marinov
-Copyright (c) 2015 August Shi
-
-
-Permission is hereby granted, free of charge, to any person obtaining
-a copy of this software and associated documentation files (the
-"Software"), to deal in the Software without restriction, including
-without limitation the rights to use, copy, modify, merge, publish,
-distribute, sublicense, and/or sell copies of the Software, and to
-permit persons to whom the Software is furnished to do so, subject to
-the following conditions:
-
-The above copyright notice and this permission notice shall be
-included in all copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
-EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
-MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
-NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
-LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
-OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
-WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.*/
-
-
 package flakesync;
 
 import flakesync.common.Configuration;
@@ -129,6 +101,7 @@ public class CleanSurefireExecution {
     public CleanSurefireExecution(Plugin surefire, String originalArgLine, MavenProject mavenProject,
             MavenSession mavenSession, BuildPluginManager pluginManager, String flakesyncDir, String localRepository,
             String testName, int delay) {
+
         this(surefire, originalArgLine, "clean_" + Utils.getFreshExecutionId(), mavenProject, mavenSession, pluginManager,
             flakesyncDir, testName, localRepository);
 
@@ -309,13 +282,11 @@ public class CleanSurefireExecution {
         String properties = (!checkSysPropsDeprecated()) ? ("systemPropertyVariables") : ("systemProperties");
         System.out.println(properties + "******************");
 
-        boolean added = false;
         for (Xpp3Dom node : this.domNode.getChildren()) {
             if ("argLine".equals(node.getName()) && !node.getValue().contains(argLineToSet)) {
                 Logger.getGlobal().log(Level.INFO, "Adding argLine to existing argLine specified by the project");
                 String current = sanitizeAndRemoveEnvironmentVars(node.getValue());
                 node.setValue(argLineToSet + " " + current);
-                added = true;
             }
 
             if (properties.equals(node.getName())) {
@@ -434,6 +405,18 @@ public class CleanSurefireExecution {
                     } else {
                         node.getChild("threshold").setValue(this.threshold + "");
                     }
+
+                    if (node.getChild("executionMonitor") != null) {
+                        node.getChild("executionMonitor").setValue("null");
+                    }
+
+                    if (node.getChild("stackTraceCollect") != null) {
+                        node.getChild("stackTraceCollect").setValue("false");
+                    }
+
+                    if (node.getChild("searchForMethodName") != null) {
+                        node.getChild("searchForMethodName").setValue("null");
+                    }
                 } else if (mode == TYPE.BARRIER_STACKTRACE) {
                     if (node.getChild("CodeToIntroduceVariable") == null) {
                         node.addChild(this.makeNode("CodeToIntroduceVariable", this.pathToLocations));
@@ -446,7 +429,13 @@ public class CleanSurefireExecution {
                     } else {
                         node.getChild("stackTraceCollect").setValue("true");
                     }
-                } else if (mode == TYPE.ADD_BARRIER_POINT) {
+                } else if (mode == TYPE.ADD_BARRIER_POINT_2) {
+                    if (node.getChild("searchForMethodName") == null) {
+                        node.addChild(this.makeNode("searchForMethodName", "search"));
+                    } else {
+                        node.getChild("searchForMethodName").setValue("search");
+                    }
+
                     if (node.getChild("CodeToIntroduceVariable") == null) {
                         node.addChild(this.makeNode("CodeToIntroduceVariable", this.startLine));
                     } else {
@@ -457,6 +446,10 @@ public class CleanSurefireExecution {
                         node.addChild(this.makeNode("YieldingPoint", this.yieldingPoint));
                     } else {
                         node.getChild("YieldingPoint").setValue(this.yieldingPoint);
+                    }
+
+                    if (node.getChild("stackTraceCollect") != null) {
+                        node.getChild("stackTraceCollect").setValue("false");
                     }
                 } else if (mode == TYPE.EXECUTION_MONITOR) {
                     if (node.getChild("CodeToIntroduceVariable") == null) {
@@ -475,6 +468,10 @@ public class CleanSurefireExecution {
                         node.addChild(this.makeNode("YieldingPoint", "flag"));
                     } else {
                         node.getChild("executionMonitor").setValue("flag");
+                    }
+
+                    if (node.getChild("stackTraceCollect") != null) {
+                        node.getChild("stackTraceCollect").setValue("false");
                     }
                 }
             }
