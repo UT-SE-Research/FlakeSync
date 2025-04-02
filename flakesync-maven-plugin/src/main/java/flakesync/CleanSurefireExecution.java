@@ -190,17 +190,27 @@ public class CleanSurefireExecution {
     // MOJO BarrierPointMojo: Downward Maven
     public CleanSurefireExecution(Plugin surefire, String originalArgLine, MavenProject mavenProject,
             MavenSession mavenSession, BuildPluginManager pluginManager, String flakesyncDir, String localRepository,
-            String testName, int delay, String startLine, boolean threshold) {
+            String testName, int delay, String startLine, boolean execMon) {
         this(surefire, originalArgLine, "clean_" + Utils.getFreshExecutionId(), mavenProject, mavenSession, pluginManager,
             flakesyncDir, testName, localRepository);
 
-        this.phase = PHASE.BARRIER_POINT_SEARCH;
+        if (!execMon) {
+            this.phase = PHASE.BARRIER_POINT_SEARCH;
 
-        this.delay = delay;
-        this.startLine = startLine;
+            this.delay = delay;
+            this.startLine = startLine;
 
-        this.domNode = this.applyFlakeSyncConfig((Xpp3Dom) this.surefire.getConfiguration());
-        this.setupArgline(TYPE.DOWNWARD_MAVEN_EXEC);
+            this.domNode = this.applyFlakeSyncConfig((Xpp3Dom) this.surefire.getConfiguration());
+            this.setupArgline(TYPE.DOWNWARD_MAVEN_EXEC);
+        } else {
+            this.phase = PHASE.BARRIER_POINT_SEARCH;
+
+            this.delay = delay;
+            this.startLine = startLine;
+
+            this.domNode = this.applyFlakeSyncConfig((Xpp3Dom) this.surefire.getConfiguration());
+            this.setupArgline(TYPE.EXECUTION_MONITOR);
+        }
     }
 
     // MOJO BarrierPointMojo: Instrument/add barrier point
@@ -219,22 +229,6 @@ public class CleanSurefireExecution {
 
         this.domNode = this.applyFlakeSyncConfig((Xpp3Dom) this.surefire.getConfiguration());
         this.setupArgline(TYPE.ADD_BARRIER_POINT);
-    }
-
-    // MOJO BarrierPointMojo: Execution Monitor
-    public CleanSurefireExecution(Plugin surefire, String originalArgLine, MavenProject mavenProject,
-            MavenSession mavenSession, BuildPluginManager pluginManager, String flakesyncDir, String localRepository,
-            String testName, int delay, int upperBoundary) {
-        this(surefire, originalArgLine, "clean_" + Utils.getFreshExecutionId(), mavenProject, mavenSession, pluginManager,
-            flakesyncDir, testName, localRepository);
-
-        this.phase = PHASE.BARRIER_POINT_SEARCH;
-
-        this.delay = delay;
-        this.startLine = upperBoundary + "";
-
-        this.domNode = this.applyFlakeSyncConfig((Xpp3Dom) this.surefire.getConfiguration());
-        this.setupArgline(TYPE.EXECUTION_MONITOR);
     }
 
     public Configuration getConfiguration() {
@@ -458,14 +452,12 @@ public class CleanSurefireExecution {
                         node.getChild("CodeToIntroduceVariable").setValue(this.startLine);
                     }
 
-                    if (node.getChild("YieldingPoint") == null) {
-                        node.addChild(this.makeNode("YieldingPoint", ""));
-                    } else {
+                    if (node.getChild("YieldingPoint") != null) {
                         node.getChild("YieldingPoint").setValue("");
                     }
 
                     if (node.getChild("executionMonitor") == null) {
-                        node.addChild(this.makeNode("YieldingPoint", "flag"));
+                        node.addChild(this.makeNode("executionMonitor", "flag"));
                     } else {
                         node.getChild("executionMonitor").setValue("flag");
                     }

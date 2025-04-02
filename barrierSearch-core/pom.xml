@@ -49,7 +49,7 @@
         <configuration>
           <archive>
             <manifestEntries>
-              <Premain-Class>edu.utexas.ece.barriersearch.agent.Agent</Premain-Class>
+              <Premain-Class>edu.utexas.ece.barrierSearch.agent.Agent</Premain-Class>
               <Can-Retransform-Classes>true</Can-Retransform-Classes>
             </manifestEntries>
           </archive>

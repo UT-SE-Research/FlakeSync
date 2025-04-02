@@ -1,4 +1,4 @@
-package edu.utexas.ece.barriersearch.agent;
+package edu.utexas.ece.barrierSearch.agent;
 
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
@@ -61,14 +61,14 @@ public class Agent {
                 s = s.replaceAll("[/]",".");
 
                 String codeToIntroduceVariable = System.getProperty("CodeToIntroduceVariable");
-                System.out.println(s);
+                //System.out.println(s);
                 String codeUnderTest=codeToIntroduceVariable.split("#")[0]; // code-undet-test class
                 final ClassReader reader = new ClassReader(bytes);
                 final ClassWriter writer = new ClassWriter(reader, ClassWriter.COMPUTE_FRAMES|ClassWriter.COMPUTE_MAXS );
                 ClassVisitor visitor;
 
                 if (System.getProperty("stackTraceCollect") != null && System.getProperty("stackTraceCollect").equals("true") && !blackListContains(s)) { // Going to add delay and collect the stacktrace
-                    System.out.println("FROM STACKTRACE ***************************"+codeToIntroduceVariable);
+                    //System.out.println("FROM STACKTRACE ***************************"+codeToIntroduceVariable);
                     visitor = new StackTraceTracer(writer, codeToIntroduceVariable);
                     reader.accept(visitor, 0);
                     return writer.toByteArray();
@@ -120,7 +120,7 @@ public class Agent {
                         //System.out.println("FROM AGENT="+RandomClassTracer.methodAndLine);
                         return writer.toByteArray();
                     }
-                    //System.out.println("Not doing anything right now");
+                    System.out.println("Not doing anything right now");
                 }
                 return null;
 

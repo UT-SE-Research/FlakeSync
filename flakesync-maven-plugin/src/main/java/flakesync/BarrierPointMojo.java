@@ -117,11 +117,11 @@ public class BarrierPointMojo extends FlakeSyncAbstractMojo {
                     String trace = reader.readLine();
                     while (trace != null) {
                         if (trace.contains(".java:")) {
-                            System.out.println(trace);
+                            //System.out.println(trace);
                             String className = trace.split("at ")[1].split("\\(")[0];
                             className = className.substring(0, className.lastIndexOf("."));
                             String lineNum = trace.split("\\(")[1].split(":")[1].split("\\)")[0];
-                            System.out.println(className + " " + lineNum);
+                            //System.out.println(className + " " + lineNum);
                             if (!inBlackList(className)) {
                                 System.out.println(trace);
                                 classes.put(className, lineNum);
@@ -172,6 +172,7 @@ public class BarrierPointMojo extends FlakeSyncAbstractMojo {
                                 if (!fail && checkValidPass()) {
                                     addBarrierPointToResults(bw, line, yieldingPoint, 1);
                                 } else {
+
                                     System.out.println("FAIL: " + yieldingPoint + " " + endLoc);
                                     CleanSurefireExecution execMon = new CleanSurefireExecution(this.surefire,
                                             this.originalArgLine, this.mavenProject, this.mavenSession,
