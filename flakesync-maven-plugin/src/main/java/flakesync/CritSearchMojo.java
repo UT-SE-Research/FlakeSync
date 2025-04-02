@@ -50,7 +50,7 @@ public class CritSearchMojo extends FlakeSyncAbstractMojo {
         CleanSurefireExecution cleanExec  = new CleanSurefireExecution(this.surefire, this.originalArgLine,
             this.mavenProject, this.mavenSession, this.pluginManager,
             Paths.get(this.baseDir.getAbsolutePath(), ConfigurationDefaults.DEFAULT_FLAKESYNC_DIR).toString(),
-            this.localRepository, this.testName, this.delay, "/.flakesync/Locations_tmp.txt", true);
+            this.localRepository, this.testName, this.delay, "./.flakesync/Locations_tmp.txt", 0);
 
         if (!executeSurefireExecution(null, cleanExec)) { // Running this will create the stacktrace to be parsed later
             System.out.println("This minimized location is not a good one. Go back and run minimizer.");
@@ -82,10 +82,10 @@ public class CritSearchMojo extends FlakeSyncAbstractMojo {
                         itemLocation = itemLocation.split("$")[0];
                     }
 
-                    File checkInSource = new File(this.baseDir + "./src/main/" + className + ".java");
+                    /*File checkInSource = new File(this.baseDir + "./src/main/" + className + ".java");
                     if (!checkInSource.exists()) {
                         continue;
-                    }
+                    }*/
 
                     File directory = new File(this.baseDir + "/.flakesync/Locations/Line/");
                     System.out.println(directory.mkdirs() + " = whether dir creation worked");
