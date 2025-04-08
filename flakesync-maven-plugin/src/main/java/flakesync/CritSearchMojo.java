@@ -155,6 +155,15 @@ public class CritSearchMojo extends FlakeSyncAbstractMojo {
             roots = rootsFromFile;
         }
 
+        FileWriter resultsFile = null;
+        try {
+            resultsFile = new FileWriter(mavenProject.getBasedir() + "/.flakesync/Results-Boundary/Boundary-"
+                    + testName + "-Result.csv");
+        } catch (IOException exception) {
+            throw new RuntimeException(exception);
+        }
+        BufferedWriter bw = new BufferedWriter(resultsFile);
+
         for (String root : roots) {
             System.out.println("Root String: " + root);
             String tmp = root.split(",")[1].split("\\(")[0];
@@ -194,12 +203,7 @@ public class CritSearchMojo extends FlakeSyncAbstractMojo {
             }
             System.out.println("HERE ARE THE RESULTS OF SEQUENTIAL DEBUG: " + clusters.size());
 
-            FileWriter resultsFile = null;
             try {
-                resultsFile = new FileWriter(mavenProject.getBasedir() + "/.flakesync/Results-Boundary/Boundary-"
-                    + testName + "-Result.csv");
-                BufferedWriter bw = new BufferedWriter(resultsFile);
-
                 if (!clusters.keySet().isEmpty()) {
                     System.out.println("Cluster keyset " + clusters.keySet() );
                     for (int i = 1; i <= clusters.size(); i++) {
@@ -253,8 +257,8 @@ public class CritSearchMojo extends FlakeSyncAbstractMojo {
                 }
                 line = reader.readLine();
             }
-        } catch (Exception ex) {
-            throw new RuntimeException(ex);
+        } catch (Exception exception) {
+            throw new RuntimeException(exception);
         }
 
         return roots;
