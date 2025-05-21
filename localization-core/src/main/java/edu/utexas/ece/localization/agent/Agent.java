@@ -69,8 +69,8 @@ public class Agent {
         if (locationList.isEmpty()) {
             locationList = new ArrayList<>();
             try {
-                BufferedReader reader = new BufferedReader(new FileReader(new File(System.getProperty("locations"))));
                 System.out.println("Location arg is given: " + System.getProperty("locations"));
+                BufferedReader reader = new BufferedReader(new FileReader(new File(System.getProperty("locations"))));
                 String line = reader.readLine();
                 while (line != null) {
                     String[] arr = line.split("#", 2);
@@ -142,17 +142,13 @@ public class Agent {
             public byte[] transform(ClassLoader classLoader, String className, Class<?> classBeingRedefined,
                     ProtectionDomain protectionDomain, byte[] bytes) throws IllegalClassFormatException {
                 className = className.replaceAll("[/]",".");
-                System.out.println("PREMAIN****" + System.getProperty("rootMethod") + " " + System.getProperty("locations")
-                    + " " + System.getProperty("methodNameForDelayAtBeginning"));
+
                 // Use locationlist if it is defined as a property; otherwise rely on blacklist
                 if (System.getProperty("rootMethod") != null && !blackListContains(className)
                         && System.getProperty("methodNameForDelayAtBeginning").equals("null")
                         && System.getProperty("locations").equals("null")) {
-                    System.out.println("1. Trying to analyze root method");
                     boolean methodExists = rootMethodContains(className);
                     if (methodExists) {
-                        System.out.println("2. Trying to analyze root method");
-                        System.out.println("rootMethod From ASM");
                         final ClassReader reader = new ClassReader(bytes);
                         final ClassWriter writer = new ClassWriter(reader,
                             ClassWriter.COMPUTE_FRAMES | ClassWriter.COMPUTE_MAXS);
@@ -162,10 +158,8 @@ public class Agent {
                     }
 
                 } else if (System.getProperty("searchForMethodName") != null && !blackListContains(className)) {
-                    System.out.println("Agent Get method, className=" + className);
                     boolean methodExists = rootClassLineContains(className);
                     if (methodExists) {
-                        System.out.println("Class FOUND Agent Get method, className=" + className);
                         final ClassReader reader = new ClassReader(bytes);
                         final ClassWriter writer = new ClassWriter(reader,
                             ClassWriter.COMPUTE_FRAMES | ClassWriter.COMPUTE_MAXS);
@@ -181,16 +175,13 @@ public class Agent {
                     ClassVisitor visitor = new FunctionNameTracer(writer);
                     reader.accept(visitor, 0);
                     return writer.toByteArray();
-                } else if (System.getProperty("locations") != null) {
-                    System.out.println(locationListContains(className) + " " + !blackListContains(className));
+                } else if (!System.getProperty("locations").equals("null")) {
                     if (locationListContains(className) && !blackListContains(className)) {
                         final ClassReader reader = new ClassReader(bytes);
                         final ClassWriter writer = new ClassWriter(reader,
                             ClassWriter.COMPUTE_FRAMES | ClassWriter.COMPUTE_MAXS);
-                        System.out.println("2. Delay Injection");
                         if (System.getProperty("methodNameForDelayAtEnd") != null
                                 || System.getProperty("methodNameForDelayAtBeginning") != null) {
-                            System.out.println("3. Delay Injection");
                             ClassVisitor visitor = new FunctionNameTracer(writer);
                             reader.accept(visitor, 0);
                             return writer.toByteArray();

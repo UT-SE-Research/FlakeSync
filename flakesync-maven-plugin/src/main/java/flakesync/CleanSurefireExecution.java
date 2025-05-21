@@ -7,10 +7,13 @@ import org.apache.maven.execution.MavenSession;
 import org.apache.maven.model.Plugin;
 import org.apache.maven.plugin.BuildPluginManager;
 import org.apache.maven.plugin.MojoExecutionException;
+import org.apache.maven.plugin.PluginExecutionException;
 import org.apache.maven.project.MavenProject;
 import org.codehaus.plexus.util.xml.Xpp3Dom;
 import org.twdata.maven.mojoexecutor.MojoExecutor;
 
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -107,7 +110,6 @@ public class CleanSurefireExecution {
 
         this.delay = delay;
         this.phase = PHASE.LOCATIONS_MINIMIZER;
-
         this.domNode = this.applyFlakeSyncConfig((Xpp3Dom) this.surefire.getConfiguration());
         this.setupArgline(TYPE.ALL_LOCATIONS);
 
@@ -235,14 +237,19 @@ public class CleanSurefireExecution {
         return this.configuration;
     }
 
-    public void run() throws MojoExecutionException {
+    public void run() throws Throwable {
         try {
+            //System.out.println(domNode);
             MojoExecutor.executeMojo(this.surefire, MojoExecutor.goal("test"), domNode,
                 MojoExecutor.executionEnvironment(this.mavenProject, this.mavenSession, this.pluginManager));
         } catch (MojoExecutionException mojoException) {
-            Logger.getGlobal().log(Level.INFO, "Surefire failed when running tests for " + this.configuration.executionId
-                + " with delay: " + this.delay);
-            throw new MojoExecutionException("escalating");
+            if (mojoException.getCause() instanceof PluginExecutionException) {
+                throw mojoException.getCause();
+            } else {
+                Logger.getGlobal().log(Level.INFO, "Surefire failed when running tests for " + this.configuration.executionId
+                        + " with delay: " + this.delay);
+                throw new MojoExecutionException("escalating");
+            }
         }
     }
 
@@ -283,194 +290,31 @@ public class CleanSurefireExecution {
                 node.setValue(argLineToSet + " " + current);
             }
 
+            //if (mode == TYPE.ADD_BARRIER_POINT || mode == TYPE.ADD_BARRIER_POINT_2) {
+            if ("forkedProcessTimeoutInSeconds".equals(node.getName())) {
+                node.setValue(70 + "");
+            }
+            //}
+
             if (properties.equals(node.getName())) {
-                if (mode != TYPE.CONCURRENT_METHODS) {
-                    if (node.getChild("delay") == null) {
-                        node.addChild(this.makeNode("delay", delay + ""));
-                    } else {
-                        node.getChild("delay").setValue(this.delay + "");
-                    }
-                }
-                if (mode == TYPE.ALL_LOCATIONS) {
-                    if (node.getChild("concurrentmethods") == null) {
-                        node.addChild(this.makeNode("concurrentmethods", "./.flakesync/ResultMethods.txt"));
-                    } else {
-                        node.getChild("concurrentmethods").setValue("./.flakesync/ResultMethods.txt");
-                    }
-
-                    if (node.getChild("whitelist") == null) {
-                        node.addChild(this.makeNode("whitelist", "./.flakesync/whitelist.txt"));
-                    } else {
-                        node.getChild("whitelist").setValue("./.flakesync/whitelist.txt");
-                    }
-                } else if (mode == TYPE.DELTA_DEBUG) {
-                    if (node.getChild("concurrentmethods") == null) {
-                        node.addChild(this.makeNode("concurrentmethods", "./.flakesync/ResultMethods.txt"));
-                    } else {
-                        node.getChild("concurrentmethods").setValue("./.flakesync/ResultMethods.txt");
-                    }
-
-                    if (node.getChild("whitelist") == null) {
-                        node.addChild(this.makeNode("whitelist", "./.flakesync/whitelist.txt"));
-                    } else {
-                        node.getChild("whitelist").setValue("./.flakesync/whitelist.txt");
-                    }
-
-                    if (node.getChild("locations") == null) {
-                        node.addChild(this.makeNode("locations", this.pathToLocations));
-                    } else {
-                        node.getChild("locations").setValue(pathToLocations);
-                    }
-                } else if (mode == TYPE.GET_STACK_TRACE) {
-                    if (node.getChild("locations") == null) {
-                        node.addChild(this.makeNode("locations", this.pathToLocations));
-                    } else {
-                        node.getChild("locations").setValue(this.pathToLocations);
-                    }
-                } else if (mode == TYPE.DELAY_INJECTION) {
-                    if (node.getChild("locations") == null) {
-                        node.addChild(this.makeNode("locations", this.pathToLocations));
-                    } else {
-                        node.getChild("locations").setValue(this.pathToLocations);
-                    }
-
-                    if (node.getChild("methodNameForDelayAtBeginning") == null) {
-                        node.addChild(this.makeNode("methodNameForDelayAtBeginning", this.methodName));
-                    } else {
-                        node.getChild("methodNameForDelayAtBeginning").setValue(this.methodName);
-                    }
-                } else if (mode == TYPE.ROOT_METHOD_ANALYSIS) {
-                    if (node.getChild("locations") == null) {
-                        node.addChild(this.makeNode("locations", "null"));
-                    } else {
-                        node.getChild("locations").setValue("null");
-                    }
-
-                    if (node.getChild("methodNameForDelayAtBeginning") == null) {
-                        node.addChild(this.makeNode("methodNameForDelayAtBeginning", "null"));
-                    } else {
-                        node.getChild("methodNameForDelayAtBeginning").setValue("null");
-                    }
-
-                    if (node.getChild("rootMethod") == null) {
-                        node.addChild(this.makeNode("rootMethod", "./" + DEFAULT_FLAKESYNC_DIR + "/Locations/Root.txt"));
-                    } else {
-                        node.getChild("rootMethod").setValue("./" + DEFAULT_FLAKESYNC_DIR + "/Locations/Root.txt");
-                    }
-
-                    if (node.getChild("methodOnly") == null) {
-                        node.addChild(this.makeNode("methodOnly", this.methodName));
-                    } else {
-                        node.getChild("methodOnly").setValue(this.methodName);
-                    }
-                } else if (mode == TYPE.SEQUENTIAL_DEBUG) {
-                    if (node.getChild("locations") == null) {
-                        node.addChild(this.makeNode("locations", this.pathToLocations));
-                    } else {
-                        node.getChild("locations").setValue(this.pathToLocations);
-                    }
-                } else if (mode == TYPE.DOWNWARD_MAVEN_EXEC) {
-                    if (node.getChild("searchMethodEndLine") == null) {
-                        node.addChild(this.makeNode("searchMethodEndLine", "search"));
-                    } else {
-                        node.getChild("searchMethodEndLine").setValue("search");
-                    }
-
-                    if (node.getChild("CodeToIntroduceVariable") == null) {
-                        node.addChild(this.makeNode("CodeToIntroduceVariable", this.startLine));
-                    } else {
-                        node.getChild("CodeToIntroduceVariable").setValue(this.startLine);
-                    }
-                } else if (mode == TYPE.ADD_BARRIER_POINT) {
-                    if (node.getChild("CodeToIntroduceVariable") == null) {
-                        node.addChild(this.makeNode("CodeToIntroduceVariable", this.startLine));
-                    } else {
-                        node.getChild("CodeToIntroduceVariable").setValue(this.startLine);
-                    }
-
-                    if (node.getChild("YieldingPoint") == null) {
-                        node.addChild(this.makeNode("YieldingPoint", this.yieldingPoint));
-                    } else {
-                        node.getChild("YieldingPoint").setValue(this.yieldingPoint);
-                    }
-
-                    if (node.getChild("threshold") == null) {
-                        node.addChild(this.makeNode("threshold", this.threshold + ""));
-                    } else {
-                        node.getChild("threshold").setValue(this.threshold + "");
-                    }
-
-                    if (node.getChild("executionMonitor") != null) {
-                        node.getChild("executionMonitor").setValue("null");
-                    }
-
-                    if (node.getChild("stackTraceCollect") != null) {
-                        node.getChild("stackTraceCollect").setValue("false");
-                    }
-
-                    if (node.getChild("searchForMethodName") != null) {
-                        node.getChild("searchForMethodName").setValue("null");
-                    }
-                } else if (mode == TYPE.BARRIER_STACKTRACE) {
-                    if (node.getChild("CodeToIntroduceVariable") == null) {
-                        node.addChild(this.makeNode("CodeToIntroduceVariable", this.pathToLocations));
-                    } else {
-                        node.getChild("CodeToIntroduceVariable").setValue(this.pathToLocations);
-                    }
-
-                    if (node.getChild("stackTraceCollect") == null) {
-                        node.addChild(this.makeNode("stackTraceCollect", "true"));
-                    } else {
-                        node.getChild("stackTraceCollect").setValue("true");
-                    }
-                } else if (mode == TYPE.ADD_BARRIER_POINT_2) {
-                    if (node.getChild("searchForMethodName") == null) {
-                        node.addChild(this.makeNode("searchForMethodName", "search"));
-                    } else {
-                        node.getChild("searchForMethodName").setValue("search");
-                    }
-
-                    if (node.getChild("CodeToIntroduceVariable") == null) {
-                        node.addChild(this.makeNode("CodeToIntroduceVariable", this.startLine));
-                    } else {
-                        node.getChild("CodeToIntroduceVariable").setValue(this.startLine);
-                    }
-
-                    if (node.getChild("YieldingPoint") == null) {
-                        node.addChild(this.makeNode("YieldingPoint", this.yieldingPoint));
-                    } else {
-                        node.getChild("YieldingPoint").setValue(this.yieldingPoint);
-                    }
-
-                    if (node.getChild("stackTraceCollect") != null) {
-                        node.getChild("stackTraceCollect").setValue("false");
-                    }
-                } else if (mode == TYPE.EXECUTION_MONITOR) {
-                    if (node.getChild("CodeToIntroduceVariable") == null) {
-                        node.addChild(this.makeNode("CodeToIntroduceVariable", this.startLine));
-                    } else {
-                        node.getChild("CodeToIntroduceVariable").setValue(this.startLine);
-                    }
-
-                    if (node.getChild("YieldingPoint") != null) {
-                        node.getChild("YieldingPoint").setValue("");
-                    }
-
-                    if (node.getChild("executionMonitor") == null) {
-                        node.addChild(this.makeNode("executionMonitor", "flag"));
-                    } else {
-                        node.getChild("executionMonitor").setValue("flag");
-                    }
-
-                    if (node.getChild("stackTraceCollect") != null) {
-                        node.getChild("stackTraceCollect").setValue("false");
-                    }
-                }
+                addPropVars(mode, node);
             }
         }
-        if (!(domNode.getChild("argLine") == null)) {
+
+        if ((domNode.getChild("forkedProcessTimeoutInSeconds") == null) /*&& (mode == TYPE.ADD_BARRIER_POINT
+                || mode == TYPE.ADD_BARRIER_POINT_2)*/) {
+            this.domNode.addChild(this.makeNode("forkedProcessTimeoutInSeconds", 70 + ""));
+
+        }
+
+        if (domNode.getChild("argLine") == null) {
             Logger.getGlobal().log(Level.INFO, "Creating new argline for Surefire: *" + argLineToSet + "*");
             this.domNode.addChild(this.makeNode("argLine", argLineToSet));
+        }
+
+        if (domNode.getChild(properties) == null) {
+            domNode.addChild(this.makeNode(properties, ""));
+            addPropVars(mode, domNode.getChild(properties));
         }
 
         // originalArgLine is the argLine set from Maven, not through the surefire config
@@ -479,8 +323,196 @@ public class CleanSurefireExecution {
                 this.originalArgLine + " " + argLineToSet);
     }
 
+    private void addPropVars(TYPE mode, Xpp3Dom node) {
+        if (mode != TYPE.CONCURRENT_METHODS) {
+            if (node.getChild("delay") == null) {
+                node.addChild(this.makeNode("delay", delay + ""));
+            } else {
+                node.getChild("delay").setValue(this.delay + "");
+            }
+        }
+        if (mode == TYPE.ALL_LOCATIONS) {
+            if (node.getChild("concurrentmethods") == null) {
+                node.addChild(this.makeNode("concurrentmethods", "./.flakesync/ResultMethods.txt"));
+            } else {
+                node.getChild("concurrentmethods").setValue("./.flakesync/ResultMethods.txt");
+            }
+
+            if (node.getChild("whitelist") == null) {
+                node.addChild(this.makeNode("whitelist", "./.flakesync/whitelist.txt"));
+            } else {
+                node.getChild("whitelist").setValue("./.flakesync/whitelist.txt");
+            }
+        } else if (mode == TYPE.DELTA_DEBUG) {
+            if (node.getChild("concurrentmethods") == null) {
+                node.addChild(this.makeNode("concurrentmethods", "./.flakesync/ResultMethods.txt"));
+            } else {
+                node.getChild("concurrentmethods").setValue("./.flakesync/ResultMethods.txt");
+            }
+
+            if (node.getChild("whitelist") == null) {
+                node.addChild(this.makeNode("whitelist", "./.flakesync/whitelist.txt"));
+            } else {
+                node.getChild("whitelist").setValue("./.flakesync/whitelist.txt");
+            }
+
+            if (node.getChild("locations") == null) {
+                node.addChild(this.makeNode("locations", this.pathToLocations));
+            } else {
+                node.getChild("locations").setValue(pathToLocations);
+            }
+        } else if (mode == TYPE.GET_STACK_TRACE) {
+            if (node.getChild("locations") == null) {
+                node.addChild(this.makeNode("locations", this.pathToLocations));
+            } else {
+                node.getChild("locations").setValue(this.pathToLocations);
+            }
+        } else if (mode == TYPE.DELAY_INJECTION) {
+            if (node.getChild("locations") == null) {
+                node.addChild(this.makeNode("locations", this.pathToLocations));
+            } else {
+                node.getChild("locations").setValue(this.pathToLocations);
+            }
+
+            if (node.getChild("methodNameForDelayAtBeginning") == null) {
+                node.addChild(this.makeNode("methodNameForDelayAtBeginning", this.methodName));
+            } else {
+                node.getChild("methodNameForDelayAtBeginning").setValue(this.methodName);
+            }
+        } else if (mode == TYPE.ROOT_METHOD_ANALYSIS) {
+            if (node.getChild("locations") == null) {
+                node.addChild(this.makeNode("locations", "null"));
+            } else {
+                node.getChild("locations").setValue("null");
+            }
+
+            if (node.getChild("methodNameForDelayAtBeginning") == null) {
+                node.addChild(this.makeNode("methodNameForDelayAtBeginning", "null"));
+            } else {
+                node.getChild("methodNameForDelayAtBeginning").setValue("null");
+            }
+
+            if (node.getChild("rootMethod") == null) {
+                node.addChild(this.makeNode("rootMethod", "./" + DEFAULT_FLAKESYNC_DIR + "/Locations/Root.txt"));
+            } else {
+                node.getChild("rootMethod").setValue("./" + DEFAULT_FLAKESYNC_DIR + "/Locations/Root.txt");
+            }
+
+            if (node.getChild("methodOnly") == null) {
+                node.addChild(this.makeNode("methodOnly", this.methodName));
+            } else {
+                node.getChild("methodOnly").setValue(this.methodName);
+            }
+
+            System.out.println(node);
+        } else if (mode == TYPE.SEQUENTIAL_DEBUG) {
+            if (node.getChild("locations") == null) {
+                node.addChild(this.makeNode("locations", this.pathToLocations));
+            } else {
+                node.getChild("locations").setValue(this.pathToLocations);
+            }
+        } else if (mode == TYPE.DOWNWARD_MAVEN_EXEC) {
+            if (node.getChild("searchMethodEndLine") == null) {
+                node.addChild(this.makeNode("searchMethodEndLine", "search"));
+            } else {
+                node.getChild("searchMethodEndLine").setValue("search");
+            }
+
+            if (node.getChild("CodeToIntroduceVariable") == null) {
+                node.addChild(this.makeNode("CodeToIntroduceVariable", this.startLine));
+            } else {
+                node.getChild("CodeToIntroduceVariable").setValue(this.startLine);
+            }
+        } else if (mode == TYPE.ADD_BARRIER_POINT) {
+            if (node.getChild("CodeToIntroduceVariable") == null) {
+                node.addChild(this.makeNode("CodeToIntroduceVariable", this.startLine));
+            } else {
+                node.getChild("CodeToIntroduceVariable").setValue(this.startLine);
+            }
+
+            if (node.getChild("YieldingPoint") == null) {
+                node.addChild(this.makeNode("YieldingPoint", this.yieldingPoint));
+            } else {
+                node.getChild("YieldingPoint").setValue(this.yieldingPoint);
+            }
+
+            if (node.getChild("threshold") == null) {
+                node.addChild(this.makeNode("threshold", this.threshold + ""));
+            } else {
+                node.getChild("threshold").setValue(this.threshold + "");
+            }
+
+            if (node.getChild("executionMonitor") != null) {
+                node.getChild("executionMonitor").setValue("null");
+            }
+
+            if (node.getChild("stackTraceCollect") != null) {
+                node.getChild("stackTraceCollect").setValue("false");
+            }
+
+            if (node.getChild("searchForMethodName") != null) {
+                node.getChild("searchForMethodName").setValue("null");
+            }
+        } else if (mode == TYPE.BARRIER_STACKTRACE) {
+            if (node.getChild("CodeToIntroduceVariable") == null) {
+                node.addChild(this.makeNode("CodeToIntroduceVariable", this.pathToLocations));
+            } else {
+                node.getChild("CodeToIntroduceVariable").setValue(this.pathToLocations);
+            }
+
+            if (node.getChild("stackTraceCollect") == null) {
+                node.addChild(this.makeNode("stackTraceCollect", "true"));
+            } else {
+                node.getChild("stackTraceCollect").setValue("true");
+            }
+        } else if (mode == TYPE.ADD_BARRIER_POINT_2) {
+            if (node.getChild("searchForMethodName") == null) {
+                node.addChild(this.makeNode("searchForMethodName", "search"));
+            } else {
+                node.getChild("searchForMethodName").setValue("search");
+            }
+
+            if (node.getChild("CodeToIntroduceVariable") == null) {
+                node.addChild(this.makeNode("CodeToIntroduceVariable", this.startLine));
+            } else {
+                node.getChild("CodeToIntroduceVariable").setValue(this.startLine);
+            }
+
+            if (node.getChild("YieldingPoint") == null) {
+                node.addChild(this.makeNode("YieldingPoint", this.yieldingPoint));
+            } else {
+                node.getChild("YieldingPoint").setValue(this.yieldingPoint);
+            }
+
+            if (node.getChild("stackTraceCollect") != null) {
+                node.getChild("stackTraceCollect").setValue("false");
+            }
+        } else if (mode == TYPE.EXECUTION_MONITOR) {
+            if (node.getChild("CodeToIntroduceVariable") == null) {
+                node.addChild(this.makeNode("CodeToIntroduceVariable", this.startLine));
+            } else {
+                node.getChild("CodeToIntroduceVariable").setValue(this.startLine);
+            }
+
+            if (node.getChild("YieldingPoint") != null) {
+                node.getChild("YieldingPoint").setValue("");
+            }
+
+            if (node.getChild("executionMonitor") == null) {
+                node.addChild(this.makeNode("executionMonitor", "flag"));
+            } else {
+                node.getChild("executionMonitor").setValue("flag");
+            }
+
+            if (node.getChild("stackTraceCollect") != null) {
+                node.getChild("stackTraceCollect").setValue("false");
+            }
+        }
+    }
+
     protected Xpp3Dom applyFlakeSyncConfig(Xpp3Dom configuration) {
-        Xpp3Dom configNode = configuration;
+        //Xpp3Dom configNode = configuration;
+        Xpp3Dom configNode = null;
         if (configNode == null) {
             configNode = new Xpp3Dom("configuration");
         }

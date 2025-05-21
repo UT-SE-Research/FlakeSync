@@ -163,7 +163,13 @@ public class DeltaDebugMojo extends FlakeSyncAbstractMojo {
                 this.mavenSession, this.pluginManager,
                 Paths.get(this.baseDir.getAbsolutePath(), ConfigurationDefaults.DEFAULT_FLAKESYNC_DIR).toString(),
                 this.localRepository, this.testName, this.delay, "./.flakesync/Locations_tmp.txt", 1);
-            return this.executeSurefireExecution(null, cleanExec);
+
+            try {
+                return this.executeSurefireExecution(null, cleanExec);
+            } catch (Throwable exception) {
+                System.out.println(exception);
+                throw new RuntimeException();
+            }
         }
 
         private void createTempFile(List<String> elements) {
@@ -183,7 +189,8 @@ public class DeltaDebugMojo extends FlakeSyncAbstractMojo {
         }
 
         private boolean executeSurefireExecution(MojoExecutionException allExceptions,
-                                                                CleanSurefireExecution execution) {
+                                                                CleanSurefireExecution execution)
+                                                                throws Throwable {
             try {
                 execution.run();
             } catch (Exception ex) {

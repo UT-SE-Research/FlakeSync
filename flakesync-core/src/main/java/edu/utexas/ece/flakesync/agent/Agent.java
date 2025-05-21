@@ -182,11 +182,13 @@ public class Agent {
                     ioe.printStackTrace();
                 } finally {
                     try {
-                        bf.close();
-                        bfTrap.close();
-                        bfLocations.close();
-                        bfThreads.close();
-                        bfConcurrentMethodsPairs.close();
+                        if (bf != null) {
+                            bf.close();
+                            bfTrap.close();
+                            bfLocations.close();
+                            bfThreads.close();
+                            bfConcurrentMethodsPairs.close();
+                        }
                     } catch (Exception ex) {
                         ex.printStackTrace();
                     }

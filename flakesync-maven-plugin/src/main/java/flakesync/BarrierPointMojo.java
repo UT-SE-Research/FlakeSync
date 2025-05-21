@@ -5,6 +5,7 @@ import flakesync.common.Level;
 import flakesync.common.Logger;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
+import org.apache.maven.plugin.PluginExecutionException;
 import org.apache.maven.plugins.annotations.LifecyclePhase;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.ResolutionScope;
@@ -171,6 +172,7 @@ public class BarrierPointMojo extends FlakeSyncAbstractMojo {
 
                                 if (!fail && checkValidPass()) {
                                     addBarrierPointToResults(bw, line, yieldingPoint, 1);
+                                    break;
                                 } else {
 
                                     System.out.println("FAIL: " + yieldingPoint + " " + endLoc);
@@ -198,6 +200,7 @@ public class BarrierPointMojo extends FlakeSyncAbstractMojo {
                                     if (!fail && checkValidPass()) {
                                         // If test passed, barrier point worked, and add to results file
                                         addBarrierPointToResults(bw, line, yieldingPoint, numExecutions);
+                                        break;
                                     } else {
                                         //This barrier point does not work
                                         checkValidPass();
@@ -206,13 +209,15 @@ public class BarrierPointMojo extends FlakeSyncAbstractMojo {
                                 }
                             }
                         }
-                        break;
                     }
                 }
                 line = br.readLine();
             }
         } catch (IOException exception) {
             throw new RuntimeException(exception);
+        } catch (Throwable exception) {
+            System.out.println(exception);
+            throw new RuntimeException();
         }
 
     }
@@ -259,7 +264,7 @@ public class BarrierPointMojo extends FlakeSyncAbstractMojo {
 
     private boolean executeSurefireExecution(MojoExecutionException allExceptions,
                                              CleanSurefireExecution execution)
-            throws MojoExecutionException {
+            throws Throwable {
         try {
             execution.run();
         } catch (MojoExecutionException exception) {

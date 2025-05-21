@@ -1,6 +1,6 @@
-apache/incubator-uniffle,a2b9c17b,common,org.apache.uniffle.common.rpc.GrpcServerTest#testGrpcExecutorPool
+#apache/incubator-uniffle,a2b9c17b,common,org.apache.uniffle.common.rpc.GrpcServerTest#testGrpcExecutorPool
 #Accenture/mercury,8586dc79f8bf75a929896f0aac03fe95824d9578,system/platform-core,org.platformlambda.core.MulticastTest#routingTest
-#Alluxio/alluxio,78c063ae181279d81cbc0808a684864a8c8b311c,.,tachyon.DataServerTest#readTest
+Alluxio/alluxio,78c063ae181279d81cbc0808a684864a8c8b311c,.,tachyon.DataServerTest#readTest
 #Alluxio/alluxio,78c063ae181279d81cbc0808a684864a8c8b311c,.,tachyon.WorkerServiceHandlerTest#evictionTest
 #Alluxio/alluxio,78c063ae181279d81cbc0808a684864a8c8b311c,.,tachyon.client.TachyonFSTest#deleteFileTest
 #Alluxio/alluxio,78c063ae181279d81cbc0808a684864a8c8b311c,.,tachyon.client.TachyonFSTest#lockBlockTest1

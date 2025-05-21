@@ -161,4 +161,20 @@ Reach out to shanto for repo version
 
 --Try these refactorings in order to clean this up
 
+org/apache/uniffle/common/rpc/GrpcServer$GrpcThreadPoolExecutor#142-org/apache/uniffle/common/rpc/GrpcServer$GrpcThreadPoolExecutor#145[200],org.apache.uniffle.common.rpc.GrpcServerTest#76
 
+
+--Make a final results file with critical point and barrier point pairs
+
+
+--Replace printStopStartTimes with three different runnables for each function
+    --Make it more readable--> branching logic all in one place
+    --Refactor names to make them more readable
+--More explicit ways to call specific functions of the Agents
+
+
+Create a list of subjects tested + characteristics of running them (2 so far: uniffle, tomcat)
+
+Logger for Agent --> write to file
+
+Store a copy of the original configuration and restore each time a surefire execution runs

@@ -72,13 +72,17 @@ public class RunWithDelaysMojo extends FlakeSyncAbstractMojo {
                 this.executeSurefireExecution(null, cleanExec);
             } catch (MojoExecutionException mee) {
                 break;
+            } catch (Throwable exception) {
+                System.out.println(exception);
+                throw new RuntimeException();
             }
         }
     }
 
 
     private MojoExecutionException executeSurefireExecution(MojoExecutionException allExceptions,
-                                                            CleanSurefireExecution execution) throws MojoExecutionException {
+                                                            CleanSurefireExecution execution) throws MojoExecutionException,
+            Throwable {
         execution.run();
         return allExceptions;
     }
