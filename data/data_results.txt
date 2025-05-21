@@ -1,0 +1,4 @@
+Tests Run:
+inclubator/uniffle,org.apache.uniffle.common.rpc.GrpcServerTest#testGrpcExecutorPool, RESULTS: CORRECT
+nlighten/tomcat_exporter,nl.nlighten.prometheus.tomcat.TomcatServletMetricsFilterTest#testServletRequestMetrics, RESULTS: CORRECT
+    -Changes made for correct behavior: Reset domNode after every surefire execution
