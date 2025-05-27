@@ -57,6 +57,19 @@ public class Agent {
             ioe.printStackTrace();
         }
 
+    }
+
+    public static boolean blackListContains(String name) {
+        for (String prefix : blackList) {
+            if (name.startsWith(prefix)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    // White list consists of specific class names (not package prefixing as black list relies on)
+    public static boolean whiteListContains(String className) {
         //Set up the whitelist
         if (whiteList.isEmpty() && System.getProperty("whitelist") != null) {
             whiteList = new ArrayList<>();
@@ -73,19 +86,6 @@ public class Agent {
                 ioe.printStackTrace();
             }
         }
-    }
-
-    public static boolean blackListContains(String name) {
-        for (String prefix : blackList) {
-            if (name.startsWith(prefix)) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    // White list consists of specific class names (not package prefixing as black list relies on)
-    public static boolean whiteListContains(String className) {
         return whiteList.contains(className);
     }
 
