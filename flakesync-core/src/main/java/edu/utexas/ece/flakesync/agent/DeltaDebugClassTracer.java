@@ -14,7 +14,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-public class RandomClassTracer extends ClassVisitor {
+public class DeltaDebugClassTracer extends ClassVisitor {
 
     public static Set<String> locations = new HashSet<>();
 
@@ -25,7 +25,6 @@ public class RandomClassTracer extends ClassVisitor {
     private String className;
 
     static {
-        System.out.println("************ " + System.getProperty("locations") + " ******************");
         if (System.getProperty("locations") != null) {
             try {
                 BufferedReader reader = new BufferedReader(new FileReader(new File(System.getProperty("locations"))));
@@ -41,36 +40,12 @@ public class RandomClassTracer extends ClassVisitor {
                 ioe.printStackTrace();
             }
         }
-    }
 
-    public RandomClassTracer(ClassVisitor cv) {
-        super(Opcodes.ASM9, cv);
-        System.out.println("************ " + System.getProperty("locations") + " ******************");
-        if (System.getProperty("locations") != null) {
-            try {
-                BufferedReader reader = new BufferedReader(new FileReader(new File(System.getProperty("locations"))));
-                String line = reader.readLine();
-                while (line != null) {
-                    System.out.println(line);
-                    providedLocations.add(line);
-                    // read next line
-                    line = reader.readLine();
-                }
-                reader.close();
-            } catch (IOException ioe) {
-                ioe.printStackTrace();
-            }
-        }
-    }
-
-    // White list consists of specific class names, same format as outputted by the EnterExitClassTracer logic
-    public static boolean whiteListContains(String name) {
-        System.out.println("Checking if whitelist exists: " + System.getProperty("whitelist"));
         if (whiteList.isEmpty()) {
             whiteList = new ArrayList<>();
             try {
                 BufferedReader reader = new BufferedReader(
-                    new FileReader(new File(System.getProperty("whitelist"))));
+                        new FileReader(new File(System.getProperty("concurrentmethods"))));
                 String line = reader.readLine();
                 while (line != null) {
                     whiteList.add(line);
@@ -82,6 +57,14 @@ public class RandomClassTracer extends ClassVisitor {
                 ioe.printStackTrace();
             }
         }
+    }
+
+    public DeltaDebugClassTracer(ClassVisitor cv) {
+        super(Opcodes.ASM9, cv);
+    }
+
+    // White list consists of specific class names, same format as outputted by the EnterExitClassTracer logic
+    public static boolean whiteListContains(String name) {
         return whiteList.contains(name);
     }
 
@@ -109,24 +92,14 @@ public class RandomClassTracer extends ClassVisitor {
                 String methodName = owner + "." + name + desc;
 
                 String location = cn + "#" + lineNumber;
-                System.out.println("in visitMethodInst: " + location);
 
                 // If locations are provided, delay only at those locations
                 if (System.getProperty("locations") != null) {
-                    System.out.println("A");
                     if (providedLocations.contains(location)) {
-                        System.out.println("B");
                         super.visitMethodInsn(Opcodes.INVOKESTATIC,
                             "edu/utexas/ece/flakesync/agent/Utility", "delay", "()V", false);
                     }
-                } else if (whiteListContains(containingMethod)) {
-                    // Insert some random delay call right before invoking the method, with some probability
-                    System.out.println("C");
-                    locations.add(location);
-                    super.visitMethodInsn(Opcodes.INVOKESTATIC,
-                        "edu/utexas/ece/flakesync/agent/Utility", "delay", "()V", false);
                 }
-                System.out.println("D");
                 super.visitMethodInsn(opcode, owner, name, desc, itf);
             }
         };

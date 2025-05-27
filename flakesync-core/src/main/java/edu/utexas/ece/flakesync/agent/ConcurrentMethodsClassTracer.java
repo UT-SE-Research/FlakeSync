@@ -5,11 +5,11 @@ import org.objectweb.asm.Label;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
 
-public class EnterExitClassTracer extends ClassVisitor {
+public class ConcurrentMethodsClassTracer extends ClassVisitor {
 
     private String className;
 
-    public EnterExitClassTracer(ClassVisitor cv) {
+    public ConcurrentMethodsClassTracer(ClassVisitor cv) {
         super(Opcodes.ASM9, cv);
     }
 
@@ -52,13 +52,7 @@ public class EnterExitClassTracer extends ClassVisitor {
                     super.visitMethodInsn(Opcodes.INVOKESTATIC,
                         "edu/utexas/ece/flakesync/agent/Utility", "recordMethodExit", "(Ljava/lang/String;)V", false);
                 }
-
                 super.visitInsn(opcode);
-            }
-
-            @Override
-            public void visitMaxs(int maxStack, int maxLocals) {
-                super.visitMaxs(maxStack, maxLocals);
             }
         };
     }

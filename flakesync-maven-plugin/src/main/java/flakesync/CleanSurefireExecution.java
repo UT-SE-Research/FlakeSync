@@ -324,6 +324,7 @@ public class CleanSurefireExecution {
     }
 
     private void addPropVars(TYPE mode, Xpp3Dom node) {
+        node.addChild(this.makeNode("agentmode", mode.name()));
         if (mode != TYPE.CONCURRENT_METHODS) {
             if (node.getChild("delay") == null) {
                 node.addChild(this.makeNode("delay", delay + ""));

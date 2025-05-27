@@ -16,6 +16,7 @@ import java.lang.instrument.ClassFileTransformer;
 import java.lang.instrument.IllegalClassFormatException;
 import java.lang.instrument.Instrumentation;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.ProtectionDomain;
 import java.util.ArrayList;
@@ -26,7 +27,13 @@ public class Agent {
     private static List<String> blackList;
     private static List<String> whiteList = new ArrayList<>();
 
+    private static String OUTPUT_DIR_NAME = ".flakesync";
+    private static String CONCURRENT_METHODS = "ResultMethods.txt";
+    private static String LOCATIONS = "Locations.txt";
+
+
     static {
+        //Set up the blacklist
         blackList = new ArrayList<>();
         try {
             // get the file url, not working in JAR file.
@@ -49,20 +56,9 @@ public class Agent {
         } catch (IOException ioe) {
             ioe.printStackTrace();
         }
-    }
 
-    public static boolean blackListContains(String name) {
-        for (String prefix : blackList) {
-            if (name.startsWith(prefix)) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    // White list consists of specific class names (not package prefixing as black list relies on)
-    public static boolean whiteListContains(String className) {
-        if (whiteList.isEmpty()) {
+        //Set up the whitelist
+        if (whiteList.isEmpty() && System.getProperty("whitelist") != null) {
             whiteList = new ArrayList<>();
             try {
                 BufferedReader reader = new BufferedReader(new FileReader(new File(System.getProperty("whitelist"))));
@@ -77,6 +73,19 @@ public class Agent {
                 ioe.printStackTrace();
             }
         }
+    }
+
+    public static boolean blackListContains(String name) {
+        for (String prefix : blackList) {
+            if (name.startsWith(prefix)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    // White list consists of specific class names (not package prefixing as black list relies on)
+    public static boolean whiteListContains(String className) {
         return whiteList.contains(className);
     }
 
@@ -91,41 +100,34 @@ public class Agent {
                 final ClassWriter writer = new ClassWriter(reader, ClassWriter.COMPUTE_FRAMES | ClassWriter.COMPUTE_MAXS);
 
                 ClassVisitor visitor;
-                if (!blackListContains(className) && (System.getProperty("whitelist") == null)) {
-                    System.out.println("no whitelist given and going to execute EnterExit");
-                    visitor = new EnterExitClassTracer(writer);
-                    reader.accept(visitor, 0);
-                    return writer.toByteArray();
-                } else if ((System.getProperty("whitelist") != null)
-                    ? whiteListContains(className) : !blackListContains(className)) {
-                    // Use whitelist if it is defined as a property,
-                    // otherwise rely on blacklist, whitelist will only be given if we want to run flakesync detector
-                    System.out.println("whitelist check true");
-                    // If the concurrentmethods option is not set (meaning we do not know what the concurrent methods are),
-                    // use the EnterExitClassTracer to find them
-                    visitor = new RandomClassTracer(writer);
-                    reader.accept(visitor, 0);
-                    return writer.toByteArray();
+                if (!blackListContains(className)) {
+                    if ( System.getProperty("agentmode").equals("CONCURRENT_METHODS")) {
+                        visitor = new ConcurrentMethodsClassTracer(writer);
+                        reader.accept(visitor, 0);
+                        return writer.toByteArray();
+                    } else if ( whiteListContains(className) ) {
+                        if ( System.getProperty("agentmode").equals("ALL_LOCATIONS")) {
+                            visitor = new InjectDelayClassTracer(writer);
+                            reader.accept(visitor, 0);
+                            return writer.toByteArray();
+                        } else if ( System.getProperty("agentmode").equals("DELTA_DEBUG")) {
+                            visitor = new DeltaDebugClassTracer(writer);
+                            reader.accept(visitor, 0);
+                            return writer.toByteArray();
+                        }
+                    }
                 }
                 return null;
             }
         });
-        Paths.get(".flakesync").toFile().mkdirs();
-        printStartStopTimes();
+        Paths.get(OUTPUT_DIR_NAME).toFile().mkdirs();
+        writeResultsToFile();
     }
 
-    private static void printStartStopTimes() {
-        final long start = System.currentTimeMillis();
+    private static void writeResultsToFile() {
         Thread hook = new Thread() {
             @Override
             public void run() {
-                List<String> conflictingListPair = new ArrayList();
-                List<String> trapListPair = new ArrayList();
-                long timePassed = System.currentTimeMillis() - start;
-                System.err.println("Stop at ............................. " );
-                //int size = Utility.resultInterception.size();
-                //System.out.println(" Total # Conflicting items are = " + size);
-                //System.out.println();
                 BufferedWriter bf = null;
                 BufferedWriter bfTrap = null;
                 BufferedWriter bfLocations = null;
@@ -133,13 +135,12 @@ public class Agent {
                 BufferedWriter bfConcurrentMethodsPairs = null;
 
                 try {
-                    //When are the files being overwritten???? Check the execution to see where this is happening
-                    System.out.println("Found AGENT PRINT****");
                     if (edu.utexas.ece.flakesync.agent.Utility.methodsRunConcurrently.size() > 0) {
                         BufferedWriter bfMethods = null;
                         try {
-                            System.out.println("Found CONCURRENT****");
-                            File omf = new File("./.flakesync/ResultMethods.txt");
+                            Paths.get(OUTPUT_DIR_NAME, CONCURRENT_METHODS).toFile().createNewFile();
+                            Path fp = Paths.get(OUTPUT_DIR_NAME, CONCURRENT_METHODS);
+                            File omf = new File(fp.toUri());
                             FileWriter outputMethodsFile = new FileWriter(omf);
                             bfMethods = new BufferedWriter(outputMethodsFile);
                             synchronized (Utility.methodsRunConcurrently) {
@@ -152,31 +153,21 @@ public class Agent {
                         } finally {
                             bfMethods.close();
                         }
-                    } else {
-                        System.out.println(":(");
                     }
 
-                    if (RandomClassTracer.locations.size() > 0) {
-                        File locsFile = new File("./.flakesync/Locations.txt");
+                    if (InjectDelayClassTracer.locations.size() > 0) {
+                        Paths.get(OUTPUT_DIR_NAME, LOCATIONS).toFile().createNewFile();
+                        Path fp = Paths.get(OUTPUT_DIR_NAME, LOCATIONS);
+                        File locsFile = new File(fp.toUri());
                         FileWriter outputLocationsFile = new FileWriter(locsFile);
                         bfLocations = new BufferedWriter(outputLocationsFile);
 
-                        for (String location : RandomClassTracer.locations) {
+                        for (String location : InjectDelayClassTracer.locations) {
                             bfLocations.write(location + "&" + System.getProperty("delay"));
                             bfLocations.newLine();
                         }
                         bfLocations.flush();
                     }
-                    File otc = new File("./.flakesync/ThreadCountList.txt");
-                    FileWriter outputThreadCount = new FileWriter(otc);
-                    bfThreads = new BufferedWriter(outputThreadCount);
-
-                    int totalThreadCount = Utility.threadCountListFromUtility.size();
-                    String threadCountNo = Integer.toString(totalThreadCount);
-                    System.out.println(" Total # Thread Count = " + totalThreadCount);
-                    bfThreads.write(threadCountNo);
-                    bfThreads.newLine();
-                    bfThreads.flush();
                 } catch (IOException ioe) {
                     System.out.println("An error occurred.");
                     ioe.printStackTrace();
@@ -193,9 +184,6 @@ public class Agent {
                         ex.printStackTrace();
                     }
                 }
-                int size = conflictingListPair.size();
-                System.out.println(" Total # Conflicting items are = " + size);
-                System.out.println(conflictingListPair);
             }
         };
         Runtime.getRuntime().addShutdownHook(hook);
