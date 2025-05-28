@@ -69,8 +69,6 @@ public class InjectDelayClassTracer extends ClassVisitor {
 
             @Override
             public void visitMethodInsn(int opcode, String owner, String name, String desc, boolean itf) {
-                String methodName = owner + "." + name + desc;
-
                 String location = cn + "#" + lineNumber;
 
                 if (whiteListContains(containingMethod)) {

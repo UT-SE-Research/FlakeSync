@@ -1,3 +1,4 @@
+/* Put the license back with different names and current year*/
 package edu.utexas.ece.flakesync.agent;
 
 import org.objectweb.asm.ClassReader;
@@ -27,6 +28,7 @@ public class Agent {
     private static List<String> blackList;
     private static List<String> whiteList = new ArrayList<>();
 
+    //Pass these as property variables instead of hard-coding them here
     private static String OUTPUT_DIR_NAME = ".flakesync";
     private static String CONCURRENT_METHODS = "ResultMethods.txt";
     private static String LOCATIONS = "Locations.txt";
@@ -101,18 +103,18 @@ public class Agent {
 
                 ClassVisitor visitor;
                 if (!blackListContains(className)) {
-                    if ( System.getProperty("agentmode").equals("CONCURRENT_METHODS")) {
+                    if (System.getProperty("agentmode").equals("CONCURRENT_METHODS")) {
                         visitor = new ConcurrentMethodsClassTracer(writer);
                         reader.accept(visitor, 0);
                         return writer.toByteArray();
-                    } else if ( whiteListContains(className) ) {
-                        if ( System.getProperty("agentmode").equals("ALL_LOCATIONS")) {
-                            System.out.println(System.getProperty("concurrentmethods"));
-                            System.out.println(System.getProperty("whitelist"));
+                    } else if (whiteListContains(className)) {
+                        if (System.getProperty("agentmode").equals("ALL_LOCATIONS")) {
+                            //System.out.println(System.getProperty("concurrentmethods"));
+                            //System.out.println(System.getProperty("whitelist"));
                             visitor = new InjectDelayClassTracer(writer);
                             reader.accept(visitor, 0);
                             return writer.toByteArray();
-                        } else if ( System.getProperty("agentmode").equals("DELTA_DEBUG")) {
+                        } else if (System.getProperty("agentmode").equals("DELTA_DEBUG")) {
                             visitor = new DeltaDebugClassTracer(writer);
                             reader.accept(visitor, 0);
                             return writer.toByteArray();
@@ -123,22 +125,19 @@ public class Agent {
             }
         });
         Paths.get(OUTPUT_DIR_NAME).toFile().mkdirs();
-        writeResultsToFile();
+        setupShutdownWriter();
     }
 
-    private static void writeResultsToFile() {
+    private static void setupShutdownWriter() {
         Thread hook = new Thread() {
             @Override
             public void run() {
-                BufferedWriter bf = null;
-                BufferedWriter bfTrap = null;
+
+                BufferedWriter bfMethods = null;
                 BufferedWriter bfLocations = null;
-                BufferedWriter bfThreads = null;
-                BufferedWriter bfConcurrentMethodsPairs = null;
 
                 try {
-                    if (edu.utexas.ece.flakesync.agent.Utility.methodsRunConcurrently.size() > 0) {
-                        BufferedWriter bfMethods = null;
+                    if (System.getProperty("agentmode").equals("CONCURRENT_METHODS")) {
                         try {
                             Paths.get(OUTPUT_DIR_NAME, CONCURRENT_METHODS).toFile().createNewFile();
                             Path fp = Paths.get(OUTPUT_DIR_NAME, CONCURRENT_METHODS);
@@ -155,18 +154,18 @@ public class Agent {
                         } finally {
                             bfMethods.close();
                         }
-                    }
-
-                    if (InjectDelayClassTracer.locations.size() > 0) {
+                    } else if (System.getProperty("agentmode").equals("ALL_LOCATIONS")) {
                         Paths.get(OUTPUT_DIR_NAME, LOCATIONS).toFile().createNewFile();
                         Path fp = Paths.get(OUTPUT_DIR_NAME, LOCATIONS);
                         File locsFile = new File(fp.toUri());
                         FileWriter outputLocationsFile = new FileWriter(locsFile);
                         bfLocations = new BufferedWriter(outputLocationsFile);
 
-                        for (String location : InjectDelayClassTracer.locations) {
-                            bfLocations.write(location + "&" + System.getProperty("delay"));
-                            bfLocations.newLine();
+                        synchronized (InjectDelayClassTracer.locations) {
+                            for (String location : InjectDelayClassTracer.locations) {
+                                bfLocations.write(location + "&" + System.getProperty("delay"));
+                                bfLocations.newLine();
+                            }
                         }
                         bfLocations.flush();
                     }
@@ -175,13 +174,8 @@ public class Agent {
                     ioe.printStackTrace();
                 } finally {
                     try {
-                        if (bf != null) {
-                            bf.close();
-                            bfTrap.close();
-                            bfLocations.close();
-                            bfThreads.close();
-                            bfConcurrentMethodsPairs.close();
-                        }
+                        bfLocations.close();
+
                     } catch (Exception ex) {
                         ex.printStackTrace();
                     }
