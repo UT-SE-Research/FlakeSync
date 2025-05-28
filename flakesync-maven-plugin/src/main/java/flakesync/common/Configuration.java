@@ -28,14 +28,6 @@ public class Configuration {
 
     public final Level loggingLevel;
 
-    private Integer invoCount = null;
-    private Set<String> failedTests = null;
-
-    protected Configuration(String executionId) {
-        this(ConfigurationDefaults.DEFAULT_FLAKESYNC_DIR,
-                ConfigurationDefaults.DEFAULT_FLAKESYNC_JAR_DIR, null, executionId, Level.CONFIG);
-    }
-
     public Configuration(String flakesyncDir,
             String flakesyncJarDir, String testName, String executionId, Level loggingLevel) {
         this(flakesyncDir, flakesyncJarDir, testName, executionId, loggingLevel, false);
@@ -44,7 +36,7 @@ public class Configuration {
     public Configuration(String flakesyncDir,
             String flakesyncJarDir, String testName, String executionId, Level loggingLevel, boolean printStackTrace) {
         this.flakesyncDir = flakesyncDir;
-        this.flakesyncJarDir = flakesyncDir;
+        this.flakesyncJarDir = flakesyncJarDir;
         this.testName = testName;
         this.executionId = executionId;
         this.shouldPrintStackTrace = printStackTrace;
@@ -77,38 +69,19 @@ public class Configuration {
         Paths.get(this.flakesyncDir, this.executionId).toFile().mkdirs();
     }
 
-    public Path getFlakesyncDir() {
-        return Paths.get(this.flakesyncDir);
-    }
-
     public Path getExecutionDir() {
         return Paths.get(this.flakesyncDir, this.executionId);
     }
 
     public Path getResultMethodsFile() {
-        return Paths.get(this.flakesyncJarDir, ConfigurationDefaults.CONCURRENT_METHODS_FILE);
+        return Paths.get(".", this.flakesyncDir, ConfigurationDefaults.CONCURRENT_METHODS_FILE);
     }
 
     public Path fullLocationsFile() {
-        return Paths.get(this.flakesyncJarDir, ConfigurationDefaults.LOCATIONS_FILE);
+        return Paths.get(".", this.flakesyncDir, ConfigurationDefaults.LOCATIONS_FILE);
     }
 
     public Path whitelistFile() {
-        return Paths.get(this.flakesyncJarDir, ConfigurationDefaults.WHITELIST_FILE);
-    }
-
-    private void printFailuresToFile(Collection<String> failedTestsInExecution) {
-        File failed = Paths.get(this.flakesyncDir, this.executionId, ConfigurationDefaults.FAILURES_FILE)
-                .toFile();
-
-        try (BufferedWriter bw = new BufferedWriter(new FileWriter(failed))) {
-            for (String test : failedTestsInExecution) {
-                bw.write(test + String.format("%n"));
-            }
-        } catch (FileNotFoundException fne) {
-            Logger.getGlobal().log(Level.FINEST, "File Not Found. Probably no test failed in this run.");
-        } catch (IOException ioe) {
-            Logger.getGlobal().log(Level.WARNING, "Exception reading failures file.", ioe);
-        }
+        return Paths.get(".", this.flakesyncDir, ConfigurationDefaults.WHITELIST_FILE);
     }
 }

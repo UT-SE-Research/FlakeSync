@@ -108,6 +108,8 @@ public class Agent {
                         return writer.toByteArray();
                     } else if ( whiteListContains(className) ) {
                         if ( System.getProperty("agentmode").equals("ALL_LOCATIONS")) {
+                            System.out.println(System.getProperty("concurrentmethods"));
+                            System.out.println(System.getProperty("whitelist"));
                             visitor = new InjectDelayClassTracer(writer);
                             reader.accept(visitor, 0);
                             return writer.toByteArray();

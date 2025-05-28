@@ -21,10 +21,6 @@ public class ConfigurationDefaults {
     public static final String PROPERTY_FLAKESYNC_JAR_DIR = "flakesyncJarDir";
     public static final String DEFAULT_FLAKESYNC_JAR_DIR = ".flakesync";
 
-    public static final String FAILURES_FILE = "failures";
-    public static final String INVOCATIONS_FILE = "invocations";
-    public static final String DEBUG_FILE = "debug";
-    public static final String CONFIGURATION_FILE = "config";
 
     public static final int SEED_FACTOR = 0xA1e4;
 

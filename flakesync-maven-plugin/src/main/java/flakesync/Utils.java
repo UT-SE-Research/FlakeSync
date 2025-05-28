@@ -28,24 +28,6 @@ public class Utils {
         return pastSupressedException;
     }
 
-    public static Properties openPropertiesFrom(Path path) {
-        Properties props = new Properties();
-        try {
-            props.load(new FileInputStream(path.toFile()));
-        } catch (IOException ioe) {
-            Logger.getGlobal().log(Level.CONFIG, "Cannot open properties file!", ioe);
-        }
-        return props;
-    }
-
-    public static int computeIthSeed(int ithSeed, boolean rerun, int seed) {
-        if (rerun) {
-            return seed;
-        } else {
-            return seed + ithSeed * ConfigurationDefaults.SEED_FACTOR;
-        }
-    }
-
     public static String getFreshExecutionId() {
         try {
             // TODO(gyori): Fix to check that the id was not used before in the

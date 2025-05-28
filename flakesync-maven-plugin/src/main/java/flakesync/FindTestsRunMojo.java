@@ -27,7 +27,8 @@ public class FindTestsRunMojo extends FlakeSyncAbstractMojo {
             CleanSurefireExecution cleanExec = new CleanSurefireExecution(
                     this.surefire, this.originalArgLine, this.mavenProject,
                     this.mavenSession, this.pluginManager,
-                    Paths.get(this.baseDir.getAbsolutePath(), ConfigurationDefaults.DEFAULT_FLAKESYNC_DIR).toString(),
+                    Paths.get(this.baseDir.getAbsolutePath(),
+                            ConfigurationDefaults.DEFAULT_FLAKESYNC_DIR).toString(),
                     this.testName, this.localRepository);
             this.executeSurefireExecution(null, cleanExec);
         } catch (Throwable exception) {

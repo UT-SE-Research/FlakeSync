@@ -69,7 +69,7 @@ public class CleanSurefireExecution {
 
     protected CleanSurefireExecution(Plugin surefire, String originalArgLine, String executionId,
                                      MavenProject mavenProject, MavenSession mavenSession, BuildPluginManager pluginManager,
-                                     String nondexDir, String testName, String localRepository) {
+                                     String flakesyncDir, String testName, String localRepository) {
         this.executionId = executionId;
         this.surefire = surefire;
         this.testName = testName;
@@ -77,7 +77,7 @@ public class CleanSurefireExecution {
         this.mavenProject = mavenProject;
         this.mavenSession = mavenSession;
         this.pluginManager = pluginManager;
-        this.configuration = new Configuration(executionId, nondexDir, testName);
+        this.configuration = new Configuration(executionId, flakesyncDir, testName);
         this.localRepository = localRepository;
 
     }
@@ -236,7 +236,7 @@ public class CleanSurefireExecution {
 
     public void run() throws Throwable {
         try {
-            //System.out.println(domNode);
+            System.out.println(domNode);
             MojoExecutor.executeMojo(this.surefire, MojoExecutor.goal("test"), domNode,
                 MojoExecutor.executionEnvironment(this.mavenProject, this.mavenSession, this.pluginManager));
         } catch (MojoExecutionException mojoException) {
@@ -330,20 +330,26 @@ public class CleanSurefireExecution {
             }
         }
         if (mode == TYPE.ALL_LOCATIONS) {
+            System.out.println(this.configuration.getResultMethodsFile());
+            System.out.println(this.configuration.whitelistFile());
             if (node.getChild("concurrentmethods") == null) {
                 node.addChild(this.makeNode("concurrentmethods",
-                        this.configuration.getResultMethodsFile().toString()));
+                        //this.configuration.getResultMethodsFile().toString()));
+                        "./.flakesync/ResultMethods.txt"));
             } else {
                 node.getChild("concurrentmethods").setValue(
-                        this.configuration.getResultMethodsFile().toString());
+                        //this.configuration.getResultMethodsFile().toString());
+                        "./.flakesync/ResultMethods.txt");
             }
 
             if (node.getChild("whitelist") == null) {
                 node.addChild(this.makeNode("whitelist",
-                        this.configuration.whitelistFile().toString()));
+                        //this.configuration.whitelistFile().toString()));
+                        "./.flakesync/whitelist.txt"));
             } else {
                 node.getChild("whitelist").setValue(
-                        this.configuration.whitelistFile().toString());
+                        //this.configuration.whitelistFile().toString());
+                        "./.flakesync/whitelist.txt");
             }
         } else if (mode == TYPE.DELTA_DEBUG) {
             if (node.getChild("concurrentmethods") == null) {
