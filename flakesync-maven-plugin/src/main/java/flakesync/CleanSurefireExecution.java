@@ -22,6 +22,7 @@ import static flakesync.common.ConfigurationDefaults.DEFAULT_FLAKESYNC_DIR;
 
 public class CleanSurefireExecution {
 
+    protected Xpp3Dom domNode;
     protected Configuration configuration;
     protected final String executionId;
 
@@ -65,8 +66,6 @@ public class CleanSurefireExecution {
         ADD_BARRIER_POINT_2,
         EXECUTION_MONITOR
     }
-
-    protected Xpp3Dom domNode;
 
     protected CleanSurefireExecution(Plugin surefire, String originalArgLine, String executionId,
                                      MavenProject mavenProject, MavenSession mavenSession, BuildPluginManager pluginManager,
@@ -332,15 +331,19 @@ public class CleanSurefireExecution {
         }
         if (mode == TYPE.ALL_LOCATIONS) {
             if (node.getChild("concurrentmethods") == null) {
-                node.addChild(this.makeNode("concurrentmethods", "./.flakesync/ResultMethods.txt"));
+                node.addChild(this.makeNode("concurrentmethods",
+                        this.configuration.getResultMethodsFile().toString()));
             } else {
-                node.getChild("concurrentmethods").setValue("./.flakesync/ResultMethods.txt");
+                node.getChild("concurrentmethods").setValue(
+                        this.configuration.getResultMethodsFile().toString());
             }
 
             if (node.getChild("whitelist") == null) {
-                node.addChild(this.makeNode("whitelist", "./.flakesync/whitelist.txt"));
+                node.addChild(this.makeNode("whitelist",
+                        this.configuration.whitelistFile().toString()));
             } else {
-                node.getChild("whitelist").setValue("./.flakesync/whitelist.txt");
+                node.getChild("whitelist").setValue(
+                        this.configuration.whitelistFile().toString());
             }
         } else if (mode == TYPE.DELTA_DEBUG) {
             if (node.getChild("concurrentmethods") == null) {

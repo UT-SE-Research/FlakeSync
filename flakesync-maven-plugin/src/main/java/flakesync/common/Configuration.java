@@ -77,69 +77,24 @@ public class Configuration {
         Paths.get(this.flakesyncDir, this.executionId).toFile().mkdirs();
     }
 
-    public Path getflakesyncDir() {
-        return Paths.get(this.flakesyncDir, this.executionId);
+    public Path getFlakesyncDir() {
+        return Paths.get(this.flakesyncDir);
     }
 
     public Path getExecutionDir() {
         return Paths.get(this.flakesyncDir, this.executionId);
     }
 
-    public Path getFailuresPath() {
-        return Paths.get(this.flakesyncDir, this.executionId, ConfigurationDefaults.FAILURES_FILE);
+    public Path getResultMethodsFile() {
+        return Paths.get(this.flakesyncJarDir, ConfigurationDefaults.CONCURRENT_METHODS_FILE);
     }
 
-    public Path getInvocationsPath() {
-        return Paths.get(this.flakesyncDir, this.executionId, ConfigurationDefaults.INVOCATIONS_FILE);
+    public Path fullLocationsFile() {
+        return Paths.get(this.flakesyncJarDir, ConfigurationDefaults.LOCATIONS_FILE);
     }
 
-    public Path getDebugPath() {
-        return Paths.get(this.flakesyncDir, this.executionId, ConfigurationDefaults.DEBUG_FILE);
-    }
-
-    public Path getConfigPath() {
-        return Paths.get(this.flakesyncDir, this.executionId, ConfigurationDefaults.CONFIGURATION_FILE);
-    }
-
-    public Path getRunFilePath() {
-        return Paths.get(this.flakesyncDir, this.executionId + ".run");
-    }
-
-    public Path getLatestRunFilePath() {
-        return Paths.get(this.flakesyncDir, ConfigurationDefaults.LATEST_RUN_ID);
-    }
-
-    public int getInvocationCount() {
-        if (this.invoCount == null) {
-            File failed = Paths.get(this.flakesyncDir, this.executionId,
-                    ConfigurationDefaults.INVOCATIONS_FILE).toFile();
-
-            try (BufferedReader br = new BufferedReader(new FileReader(failed))) {
-                String line;
-                while ((line = br.readLine()) != null) {
-                    if (line.startsWith("SHUFFLES:")) {
-                        this.invoCount = new Integer(line.substring("SHUFFLES: ".length() - 1));
-                    }
-                }
-            } catch (FileNotFoundException fne) {
-                Logger.getGlobal().log(Level.FINEST, "File Not Found. Probably no test failed in this run.");
-            } catch (IOException ioe) {
-                Logger.getGlobal().log(Level.WARNING, "Exception reading failures file.", ioe);
-            } catch (Throwable thr) {
-                Logger.getGlobal().log(Level.SEVERE, "Some big error", thr);
-            }
-        }
-        return this.invoCount;
-    }
-
-    public void filterTests(Collection<String> failedInClean) {
-        Collection<String> failedTestsInExecution = this.getFailedTests();
-
-        failedTestsInExecution = new LinkedHashSet<String>(failedTestsInExecution);
-        failedTestsInExecution.removeAll(failedInClean);
-
-        this.printFailuresToFile(failedTestsInExecution);
-        this.failedTests = null;
+    public Path whitelistFile() {
+        return Paths.get(this.flakesyncJarDir, ConfigurationDefaults.WHITELIST_FILE);
     }
 
     private void printFailuresToFile(Collection<String> failedTestsInExecution) {
@@ -155,29 +110,5 @@ public class Configuration {
         } catch (IOException ioe) {
             Logger.getGlobal().log(Level.WARNING, "Exception reading failures file.", ioe);
         }
-    }
-
-    public Collection<String> getFailedTests() {
-        if (this.failedTests == null) {
-            this.failedTests = new LinkedHashSet<>();
-            File failed = Paths.get(this.flakesyncDir, this.executionId, ConfigurationDefaults.FAILURES_FILE)
-                    .toFile();
-
-            try (BufferedReader br = new BufferedReader(new FileReader(failed))) {
-                String line;
-                while ((line = br.readLine()) != null) {
-                    this.failedTests.add(line.trim());
-                }
-            } catch (FileNotFoundException fne) {
-                Logger.getGlobal().log(Level.FINEST, "File Not Found. Probably no test failed in this run.");
-            } catch (IOException ioe) {
-                Logger.getGlobal().log(Level.WARNING, "Exception reading failures file.", ioe);
-            }
-        }
-        return Collections.unmodifiableCollection(this.failedTests);
-    }
-
-    public void setFailures(Set<String> failingTests) {
-        this.printFailuresToFile(failingTests);
     }
 }
