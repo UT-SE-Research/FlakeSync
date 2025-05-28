@@ -1,4 +1,3 @@
-/* Put the license back with different names and current year*/
 package edu.utexas.ece.flakesync.agent;
 
 import org.objectweb.asm.ClassReader;
