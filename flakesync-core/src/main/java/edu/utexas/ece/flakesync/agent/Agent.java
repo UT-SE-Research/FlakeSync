@@ -57,6 +57,20 @@ public class Agent {
             ioe.printStackTrace();
         }
 
+    }
+
+    public static boolean blackListContains(String name) {
+        for (String prefix : blackList) {
+            if (name.startsWith(prefix)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    // White list consists of specific class names (not package prefixing as black list relies on)
+    public static boolean whiteListContains(String className) {
+        //Set up the whitelist
         if (whiteList.isEmpty() && System.getProperty("whitelist") != null) {
             whiteList = new ArrayList<>();
             try {
@@ -72,21 +86,6 @@ public class Agent {
                 ioe.printStackTrace();
             }
         }
-
-    }
-
-    public static boolean blackListContains(String name) {
-        for (String prefix : blackList) {
-            if (name.startsWith(prefix)) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    // White list consists of specific class names (not package prefixing as black list relies on)
-    public static boolean whiteListContains(String className) {
-        //Set up the whitelist
         return whiteList.contains(className);
     }
 
@@ -138,40 +137,38 @@ public class Agent {
                 BufferedWriter bfConcurrentMethodsPairs = null;
 
                 try {
-                    if (System.getProperty("agentmode").equals("CONCURRENT_METHODS") ) {
-                        if (edu.utexas.ece.flakesync.agent.Utility.methodsRunConcurrently.size() > 0) {
-                            BufferedWriter bfMethods = null;
-                            try {
-                                Paths.get(OUTPUT_DIR_NAME, CONCURRENT_METHODS).toFile().createNewFile();
-                                Path fp = Paths.get(OUTPUT_DIR_NAME, CONCURRENT_METHODS);
-                                File omf = new File(fp.toUri());
-                                FileWriter outputMethodsFile = new FileWriter(omf);
-                                bfMethods = new BufferedWriter(outputMethodsFile);
-                                synchronized (Utility.methodsRunConcurrently) {
-                                    for (String meth : Utility.methodsRunConcurrently) {
-                                        bfMethods.write(meth);
-                                        bfMethods.newLine();
-                                    }
+                    if (edu.utexas.ece.flakesync.agent.Utility.methodsRunConcurrently.size() > 0) {
+                        BufferedWriter bfMethods = null;
+                        try {
+                            Paths.get(OUTPUT_DIR_NAME, CONCURRENT_METHODS).toFile().createNewFile();
+                            Path fp = Paths.get(OUTPUT_DIR_NAME, CONCURRENT_METHODS);
+                            File omf = new File(fp.toUri());
+                            FileWriter outputMethodsFile = new FileWriter(omf);
+                            bfMethods = new BufferedWriter(outputMethodsFile);
+                            synchronized (Utility.methodsRunConcurrently) {
+                                for (String meth : Utility.methodsRunConcurrently) {
+                                    bfMethods.write(meth);
+                                    bfMethods.newLine();
                                 }
-                                bfMethods.flush();
-                            } finally {
-                                bfMethods.close();
                             }
+                            bfMethods.flush();
+                        } finally {
+                            bfMethods.close();
                         }
-                    } else {
-                        if (InjectDelayClassTracer.locations.size() > 0) {
-                            Paths.get(OUTPUT_DIR_NAME, LOCATIONS).toFile().createNewFile();
-                            Path fp = Paths.get(OUTPUT_DIR_NAME, LOCATIONS);
-                            File locsFile = new File(fp.toUri());
-                            FileWriter outputLocationsFile = new FileWriter(locsFile);
-                            bfLocations = new BufferedWriter(outputLocationsFile);
+                    }
 
-                            for (String location : InjectDelayClassTracer.locations) {
-                                bfLocations.write(location + "&" + System.getProperty("delay"));
-                                bfLocations.newLine();
-                            }
-                            bfLocations.flush();
+                    if (InjectDelayClassTracer.locations.size() > 0) {
+                        Paths.get(OUTPUT_DIR_NAME, LOCATIONS).toFile().createNewFile();
+                        Path fp = Paths.get(OUTPUT_DIR_NAME, LOCATIONS);
+                        File locsFile = new File(fp.toUri());
+                        FileWriter outputLocationsFile = new FileWriter(locsFile);
+                        bfLocations = new BufferedWriter(outputLocationsFile);
+
+                        for (String location : InjectDelayClassTracer.locations) {
+                            bfLocations.write(location + "&" + System.getProperty("delay"));
+                            bfLocations.newLine();
                         }
+                        bfLocations.flush();
                     }
                 } catch (IOException ioe) {
                     System.out.println("An error occurred.");

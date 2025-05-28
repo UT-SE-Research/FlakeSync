@@ -7,4 +7,4 @@ target/
 *Zone.Identifier
 .idea/
 *.iml
-.flakesync/
+.nondex/
