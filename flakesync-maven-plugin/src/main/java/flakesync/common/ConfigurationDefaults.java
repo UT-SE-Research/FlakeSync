@@ -42,11 +42,6 @@ public class ConfigurationDefaults {
     public static final String PROPERTY_FLAKESYNC_DIR = "flakesyncDir";
     public static final String DEFAULT_FLAKESYNC_DIR = ".flakesync";
 
-    //Surefire Arguments
-    public static final String CONCURRENT_METHODS_FILE = "ResultMethods.txt";
-    public static final String LOCATIONS_FILE = "Locations.txt";
-    public static final String WHITELIST_FILE = "whitelist.txt";
-
     public static final String PROPERTY_FLAKESYNC_JAR_DIR = "flakesyncJarDir";
     public static final String DEFAULT_FLAKESYNC_JAR_DIR = ".flakesync";
 

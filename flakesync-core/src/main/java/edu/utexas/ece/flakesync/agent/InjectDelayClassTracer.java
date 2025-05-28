@@ -22,7 +22,13 @@ public class InjectDelayClassTracer extends ClassVisitor {
 
     private String className;
 
-    static {
+    public InjectDelayClassTracer(ClassVisitor cv) {
+        super(Opcodes.ASM9, cv);
+    }
+
+    // White list consists of specific class names, same format as outputted by the EnterExitClassTracer logic
+    public static boolean whiteListContains(String name) {
+
         if (whiteList.isEmpty()) {
             whiteList = new ArrayList<>();
             try {
@@ -39,14 +45,6 @@ public class InjectDelayClassTracer extends ClassVisitor {
                 ioe.printStackTrace();
             }
         }
-    }
-
-    public InjectDelayClassTracer(ClassVisitor cv) {
-        super(Opcodes.ASM9, cv);
-    }
-
-    // White list consists of specific class names, same format as outputted by the EnterExitClassTracer logic
-    public static boolean whiteListContains(String name) {
         return whiteList.contains(name);
     }
 

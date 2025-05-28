@@ -12,8 +12,6 @@ import org.apache.maven.project.MavenProject;
 import org.codehaus.plexus.util.xml.Xpp3Dom;
 import org.twdata.maven.mojoexecutor.MojoExecutor;
 
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -24,7 +22,6 @@ import static flakesync.common.ConfigurationDefaults.DEFAULT_FLAKESYNC_DIR;
 
 public class CleanSurefireExecution {
 
-    protected Xpp3Dom domNode;
     protected Configuration configuration;
     protected final String executionId;
 
@@ -69,9 +66,11 @@ public class CleanSurefireExecution {
         EXECUTION_MONITOR
     }
 
+    protected Xpp3Dom domNode;
+
     protected CleanSurefireExecution(Plugin surefire, String originalArgLine, String executionId,
                                      MavenProject mavenProject, MavenSession mavenSession, BuildPluginManager pluginManager,
-                                     String flakesyncDir, String testName, String localRepository) {
+                                     String nondexDir, String testName, String localRepository) {
         this.executionId = executionId;
         this.surefire = surefire;
         this.testName = testName;
@@ -79,7 +78,7 @@ public class CleanSurefireExecution {
         this.mavenProject = mavenProject;
         this.mavenSession = mavenSession;
         this.pluginManager = pluginManager;
-        this.configuration = new Configuration(executionId, flakesyncDir, testName);
+        this.configuration = new Configuration(executionId, nondexDir, testName);
         this.localRepository = localRepository;
 
     }
@@ -238,7 +237,7 @@ public class CleanSurefireExecution {
 
     public void run() throws Throwable {
         try {
-            System.out.println(domNode);
+            //System.out.println(domNode);
             MojoExecutor.executeMojo(this.surefire, MojoExecutor.goal("test"), domNode,
                 MojoExecutor.executionEnvironment(this.mavenProject, this.mavenSession, this.pluginManager));
         } catch (MojoExecutionException mojoException) {
@@ -332,26 +331,16 @@ public class CleanSurefireExecution {
             }
         }
         if (mode == TYPE.ALL_LOCATIONS) {
-            System.out.println(this.configuration.getResultMethodsFile());
-            System.out.println(this.configuration.whitelistFile());
             if (node.getChild("concurrentmethods") == null) {
-                node.addChild(this.makeNode("concurrentmethods",
-                        //this.configuration.getResultMethodsFile().toString()));
-                        "./.flakesync/ResultMethods.txt"));
+                node.addChild(this.makeNode("concurrentmethods", "./.flakesync/ResultMethods.txt"));
             } else {
-                node.getChild("concurrentmethods").setValue(
-                        //this.configuration.getResultMethodsFile().toString());
-                        "./.flakesync/ResultMethods.txt");
+                node.getChild("concurrentmethods").setValue("./.flakesync/ResultMethods.txt");
             }
 
             if (node.getChild("whitelist") == null) {
-                node.addChild(this.makeNode("whitelist",
-                        //this.configuration.whitelistFile().toString()));
-                        "./.flakesync/whitelist.txt"));
+                node.addChild(this.makeNode("whitelist", "./.flakesync/whitelist.txt"));
             } else {
-                node.getChild("whitelist").setValue(
-                        //this.configuration.whitelistFile().toString());
-                        "./.flakesync/whitelist.txt");
+                node.getChild("whitelist").setValue("./.flakesync/whitelist.txt");
             }
         } else if (mode == TYPE.DELTA_DEBUG) {
             if (node.getChild("concurrentmethods") == null) {
