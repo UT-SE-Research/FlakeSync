@@ -1,3 +1,30 @@
+/*
+The MIT License (MIT)
+Copyright (c) 2025 August Shi
+Copyright (c) 2025 Shanto Rahman
+Copyright (c) 2025 Nandita Jayanthi
+
+
+Permission is hereby granted, free of charge, to any person obtaining
+a copy of this software and associated documentation files (the
+"Software"), to deal in the Software without restriction, including
+without limitation the rights to use, copy, modify, merge, publish,
+distribute, sublicense, and/or sell copies of the Software, and to
+permit persons to whom the Software is furnished to do so, subject to
+the following conditions:
+
+The above copyright notice and this permission notice shall be
+included in all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
+LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
+OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
+WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+*/
+
 package flakesync;
 
 import flakesync.common.Configuration;
@@ -332,34 +359,41 @@ public class CleanSurefireExecution {
         }
         if (mode == TYPE.ALL_LOCATIONS) {
             if (node.getChild("concurrentmethods") == null) {
-                node.addChild(this.makeNode("concurrentmethods", "./.flakesync/ResultMethods.txt"));
-            } else {
-                node.getChild("concurrentmethods").setValue("./.flakesync/ResultMethods.txt");
-            }
+                node.addChild(this.makeNode("concurrentmethods",
+                        this.configuration.getConcurrentMethodsFilepath().toString()));
+            } /*else {
+                node.getChild("concurrentmethods").setValue(
+                        this.configuration.getConcurrentMethodsFilepath().toString());
+            }*/
 
             if (node.getChild("whitelist") == null) {
-                node.addChild(this.makeNode("whitelist", "./.flakesync/whitelist.txt"));
-            } else {
-                node.getChild("whitelist").setValue("./.flakesync/whitelist.txt");
-            }
+                node.addChild(this.makeNode("whitelist",
+                        this.configuration.getWhitelistFilepath().toString()));
+            } /*else {
+                node.getChild("whitelist").setValue(
+                        this.configuration.getWhitelistFilepath().toString());
+            }*/
         } else if (mode == TYPE.DELTA_DEBUG) {
             if (node.getChild("concurrentmethods") == null) {
-                node.addChild(this.makeNode("concurrentmethods", "./.flakesync/ResultMethods.txt"));
-            } else {
+                node.addChild(this.makeNode("concurrentmethods",
+                        this.configuration.getConcurrentMethodsFilepath().toString()));
+            } /*else {
                 node.getChild("concurrentmethods").setValue("./.flakesync/ResultMethods.txt");
-            }
+            }*/
 
             if (node.getChild("whitelist") == null) {
-                node.addChild(this.makeNode("whitelist", "./.flakesync/whitelist.txt"));
-            } else {
+                node.addChild(this.makeNode("whitelist",
+                        this.configuration.getWhitelistFilepath().toString()));
+            } /*else {
                 node.getChild("whitelist").setValue("./.flakesync/whitelist.txt");
-            }
+            }*/
 
             if (node.getChild("locations") == null) {
-                node.addChild(this.makeNode("locations", this.pathToLocations));
-            } else {
+                node.addChild(this.makeNode("locations",
+                        this.configuration.getAllLocationsFilepath().toString()));
+            } /*else {
                 node.getChild("locations").setValue(pathToLocations);
-            }
+            }*/
         } else if (mode == TYPE.GET_STACK_TRACE) {
             if (node.getChild("locations") == null) {
                 node.addChild(this.makeNode("locations", this.pathToLocations));

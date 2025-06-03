@@ -1,10 +1,8 @@
 /*
 The MIT License (MIT)
-Copyright (c) 2015 Alex Gyori
-Copyright (c) 2022 Kaiyao Ke
-Copyright (c) 2015 Owolabi Legunsen
-Copyright (c) 2015 Darko Marinov
-Copyright (c) 2015 August Shi
+Copyright (c) 2025 August Shi
+Copyright (c) 2025 Shanto Rahman
+Copyright (c) 2025 Nandita Jayanthi
 
 
 Permission is hereby granted, free of charge, to any person obtaining
@@ -60,7 +58,6 @@ public class Utils {
     public static String getFreshExecutionId() {
         try {
             // TODO(gyori): Fix to check that the id was not used before in the
-            // .nondex (?)
             String id = DatatypeConverter.printBase64Binary(
                     MessageDigest.getInstance("SHA-256").digest(Long.toString(System.currentTimeMillis()).getBytes()));
             id = id.replace("/", "");

@@ -13,7 +13,7 @@ public class ConfigurationDefaults {
     public static final String PROPERTY_FLAKESYNC_DIR = "flakesyncDir";
     public static final String DEFAULT_FLAKESYNC_DIR = ".flakesync";
 
-    //Surefire Arguments
+    //Agent Input Files
     public static final String CONCURRENT_METHODS_FILE = "ResultMethods.txt";
     public static final String LOCATIONS_FILE = "Locations.txt";
     public static final String WHITELIST_FILE = "whitelist.txt";
@@ -21,12 +21,6 @@ public class ConfigurationDefaults {
     public static final String PROPERTY_FLAKESYNC_JAR_DIR = "flakesyncJarDir";
     public static final String DEFAULT_FLAKESYNC_JAR_DIR = ".flakesync";
 
-
-    public static final String FAILURES_FILE = "failures";
-    public static final String INVOCATIONS_FILE = "invocations";
-    public static final String DEBUG_FILE = "debug";
-    public static final String CONFIGURATION_FILE = "config";
-    public static final int SEED_FACTOR = 0xA1e4;
 
     public static final String PROPERTY_LOGGING_LEVEL = "flakesyncLogging";
     public static final String DEFAULT_LOGGING_LEVEL = "CONFIG";

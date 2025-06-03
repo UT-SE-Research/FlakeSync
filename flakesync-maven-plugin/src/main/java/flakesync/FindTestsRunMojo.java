@@ -1,10 +1,8 @@
 /*
 The MIT License (MIT)
-Copyright (c) 2015 Alex Gyori
-Copyright (c) 2022 Kaiyao Ke
-Copyright (c) 2015 Owolabi Legunsen
-Copyright (c) 2015 Darko Marinov
-Copyright (c) 2015 August Shi
+Copyright (c) 2025 August Shi
+Copyright (c) 2025 Shanto Rahman
+Copyright (c) 2025 Nandita Jayanthi
 
 
 Permission is hereby granted, free of charge, to any person obtaining
@@ -41,7 +39,7 @@ import org.apache.maven.plugins.annotations.ResolutionScope;
 
 import java.nio.file.Paths;
 
-@Mojo(name = "flakefind", defaultPhase = LifecyclePhase.TEST, requiresDependencyResolution = ResolutionScope.TEST)
+@Mojo(name = "concurrentfind", defaultPhase = LifecyclePhase.TEST, requiresDependencyResolution = ResolutionScope.TEST)
 public class FindTestsRunMojo extends FlakeSyncAbstractMojo {
 
     @Override
@@ -51,8 +49,6 @@ public class FindTestsRunMojo extends FlakeSyncAbstractMojo {
         MojoExecutionException allExceptions = null;
 
         try {
-            // If we add clean exceptions to allExceptions then the build fails if anything fails without nondex.
-            // Everything in nondex-test is expected to fail without nondex so we throw away the result here.
             CleanSurefireExecution cleanExec = new CleanSurefireExecution(
                     this.surefire, this.originalArgLine, this.mavenProject,
                     this.mavenSession, this.pluginManager,
@@ -61,10 +57,9 @@ public class FindTestsRunMojo extends FlakeSyncAbstractMojo {
                     this.testName, this.localRepository);
             this.executeSurefireExecution(null, cleanExec);
         } catch (Throwable exception) {
-            System.out.println(exception);
+            System.out.println("Error executing test: The test did not run");
             throw new RuntimeException();
         }
-
 
     }
 
@@ -79,10 +74,4 @@ public class FindTestsRunMojo extends FlakeSyncAbstractMojo {
         }
         return allExceptions;
     }
-
-
-    public void setTestName(String testName) {
-        this.testName = testName;
-    }
-
 }
