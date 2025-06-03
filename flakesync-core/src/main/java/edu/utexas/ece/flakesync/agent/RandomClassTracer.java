@@ -65,12 +65,12 @@ public class RandomClassTracer extends ClassVisitor {
 
     // White list consists of specific class names, same format as outputted by the EnterExitClassTracer logic
     public static boolean whiteListContains(String name) {
-        System.out.println("Checking if whitelist exists: " + System.getProperty("whitelist"));
+        System.out.println("Checking if whitelist exists: " + System.getProperty("concurrentmethods"));
         if (whiteList.isEmpty()) {
             whiteList = new ArrayList<>();
             try {
                 BufferedReader reader = new BufferedReader(
-                    new FileReader(new File(System.getProperty("whitelist"))));
+                    new FileReader(new File(System.getProperty("concurrentmethods"))));
                 String line = reader.readLine();
                 while (line != null) {
                     whiteList.add(line);

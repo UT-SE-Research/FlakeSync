@@ -292,7 +292,7 @@ public class CleanSurefireExecution {
 
             //if (mode == TYPE.ADD_BARRIER_POINT || mode == TYPE.ADD_BARRIER_POINT_2) {
             if ("forkedProcessTimeoutInSeconds".equals(node.getName())) {
-                node.setValue(70 + "");
+                node.setValue(500 + "");
             }
             //}
 
@@ -303,7 +303,7 @@ public class CleanSurefireExecution {
 
         if ((domNode.getChild("forkedProcessTimeoutInSeconds") == null) /*&& (mode == TYPE.ADD_BARRIER_POINT
                 || mode == TYPE.ADD_BARRIER_POINT_2)*/) {
-            this.domNode.addChild(this.makeNode("forkedProcessTimeoutInSeconds", 70 + ""));
+            this.domNode.addChild(this.makeNode("forkedProcessTimeoutInSeconds", 500 + ""));
 
         }
 

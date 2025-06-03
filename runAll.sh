@@ -11,12 +11,12 @@ while read line; do
     git clone https://github.com/$slug input/$slug
     cd input/$slug
     git checkout $sha
-    mvn clean install -pl $module -am -U -DskipTests
+    #mvn clean install -pl $module -am -U -DskipTests
      
     echo "mvn edu.utexas.ece:flakesync-maven-plugin:1.0-SNAPSHOT:flakefind -Dflakesync.testName=${test_name} -pl $module"
     #find . -name "*.class" | grep -v Tests | sed 's;.*target/classes/;;'| sed 's;/;.;g' | sed 's;.class$;;' > $module/.flakesync/whitelist.txt
     mvn edu.utexas.ece:flakesync-maven-plugin:1.0-SNAPSHOT:flakefind -Dflakesync.testName=${test_name} -pl $module
-    exit
+    #exit
     mvn edu.utexas.ece:flakesync-maven-plugin:1.0-SNAPSHOT:flakedelay -Dflakesync.testName=${test_name} -pl $module
     #exit
     mvn edu.utexas.ece:flakesync-maven-plugin:1.0-SNAPSHOT:flakedeltadebug -Dflakesync.testName=${test_name} -pl $module
