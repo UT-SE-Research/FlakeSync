@@ -29,8 +29,8 @@ public class RunWithDelaysMojo extends FlakeSyncAbstractMojo {
     public void execute() throws MojoExecutionException, MojoFailureException {
         super.execute();
         Logger.getGlobal().log(Level.INFO, ("Running RunWithDelaysMojo"));
-        MojoExecutionException allExceptions = null;
 
+        //Create the whitelist file that is passed to the agent
         createWhiteList();
 
         for (int i = 0; i < delays.length; i++) {
@@ -64,7 +64,8 @@ public class RunWithDelaysMojo extends FlakeSyncAbstractMojo {
 
     private boolean createWhiteList() {
         System.out.println("Inside createWhiteList");
-        File whitelist = new File(this.mavenProject.getBasedir() + "/.flakesync/whitelist.txt");
+        File whitelist = new File(Paths.get(ConfigurationDefaults.DEFAULT_FLAKESYNC_DIR,
+                ConfigurationDefaults.WHITELIST_FILE).toString());
         File outputDir = new File(this.mavenProject.getBuild().getOutputDirectory());
 
         try {
