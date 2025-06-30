@@ -47,7 +47,6 @@ public class FindTestsRunMojo extends FlakeSyncAbstractMojo {
     public void execute() throws MojoExecutionException, MojoFailureException {
         super.execute();
         Logger.getGlobal().log(Level.INFO, ("Running FindTestsRunMojo"));
-        MojoExecutionException allExceptions = null;
 
         try {
             CleanSurefireExecution cleanExec = new CleanSurefireExecution(

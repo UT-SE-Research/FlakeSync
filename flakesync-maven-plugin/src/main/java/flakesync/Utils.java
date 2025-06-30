@@ -58,7 +58,6 @@ public class Utils {
 
     public static String getFreshExecutionId() {
         try {
-            // TODO(gyori): Fix to check that the id was not used before in the
             String id = DatatypeConverter.printBase64Binary(
                     MessageDigest.getInstance("SHA-256").digest(Long.toString(System.currentTimeMillis()).getBytes()));
             id = id.replace("/", "");
@@ -67,10 +66,6 @@ public class Utils {
         } catch (NoSuchAlgorithmException nsae) {
             return "No_ID";
         }
-    }
-
-    public static boolean checkJDKBefore8() {
-        return System.getProperty("java.version").startsWith("1.");
     }
 
     public static boolean checkJDK8() {
