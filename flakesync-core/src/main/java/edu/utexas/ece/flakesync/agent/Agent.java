@@ -1,8 +1,9 @@
 /*
 The MIT License (MIT)
 Copyright (c) 2025 August Shi
-Copyright (c) 2025 Shanto Rahman
 Copyright (c) 2025 Nandita Jayanthi
+Copyright (c) 2025 Shanto Rahman
+
 
 
 Permission is hereby granted, free of charge, to any person obtaining
@@ -54,7 +55,7 @@ public class Agent {
     private static List<String> blackList;
     private static List<String> whiteList = new ArrayList<>();
 
-    //Pass these as property variables instead of hard-coding them here
+    //TODO: Pass these as property variables instead of hard-coding them here
     private static String OUTPUT_DIR_NAME = ".flakesync";
     private static String CONCURRENT_METHODS = "ResultMethods.txt";
     private static String LOCATIONS = "Locations.txt";
@@ -67,20 +68,18 @@ public class Agent {
             // get the file url, not working in JAR file.
             ClassLoader classloader = Agent.class.getClassLoader();
             InputStream is = classloader.getResourceAsStream("blacklist.txt");
-            if (is == null) {
-                System.out.println("blacklist.txt not found");
-            } else {
-                // failed if files have whitespaces or special characters
-                InputStreamReader streamReader = new InputStreamReader(is, StandardCharsets.UTF_8);
-                BufferedReader reader = new BufferedReader(streamReader);
-                String line = reader.readLine();
-                while (line != null) {
-                    blackList.add(line);
-                    // read next line
-                    line = reader.readLine();
-                }
-                reader.close();
+
+            // failed if files have whitespaces or special characters
+            InputStreamReader streamReader = new InputStreamReader(is, StandardCharsets.UTF_8);
+            BufferedReader reader = new BufferedReader(streamReader);
+            String line = reader.readLine();
+            while (line != null) {
+                blackList.add(line);
+                // read next line
+                line = reader.readLine();
             }
+            reader.close();
+
         } catch (IOException ioe) {
             ioe.printStackTrace();
         }
@@ -121,7 +120,7 @@ public class Agent {
         inst.addTransformer(new ClassFileTransformer() {
             @Override
             public byte[] transform(ClassLoader classLoader, String className, Class<?> classBeingRedefined,
-                    ProtectionDomain protectionDomain, byte[] bytes) throws IllegalClassFormatException {
+                                    ProtectionDomain protectionDomain, byte[] bytes) throws IllegalClassFormatException {
                 className = className.replaceAll("[/]", ".");
 
                 final ClassReader reader = new ClassReader(bytes);
@@ -135,8 +134,6 @@ public class Agent {
                         return writer.toByteArray();
                     } else if (whiteListContains(className)) {
                         if (System.getProperty("agentmode").equals("ALL_LOCATIONS")) {
-                            //System.out.println(System.getProperty("concurrentmethods"));
-                            //System.out.println(System.getProperty("whitelist"));
                             visitor = new InjectDelayClassTracer(writer);
                             reader.accept(visitor, 0);
                             return writer.toByteArray();
@@ -196,7 +193,6 @@ public class Agent {
                         bfLocations.flush();
                     }
                 } catch (IOException ioe) {
-                    System.out.println("An error occurred.");
                     ioe.printStackTrace();
                 } finally {
                     try {
@@ -212,4 +208,3 @@ public class Agent {
         Runtime.getRuntime().addShutdownHook(hook);
     }
 }
-

@@ -1,8 +1,9 @@
 /*
 The MIT License (MIT)
 Copyright (c) 2025 August Shi
-Copyright (c) 2025 Shanto Rahman
 Copyright (c) 2025 Nandita Jayanthi
+Copyright (c) 2025 Shanto Rahman
+
 
 
 Permission is hereby granted, free of charge, to any person obtaining
@@ -45,7 +46,7 @@ public class InjectDelayClassTracer extends ClassVisitor {
 
     public static Set<String> locations = new HashSet<>();
 
-    private static List<String> whiteList = new ArrayList<>();
+    private static Set<String> whiteList = new HashSet<>();
 
     private String className;
 
@@ -57,7 +58,7 @@ public class InjectDelayClassTracer extends ClassVisitor {
     public static boolean whiteListContains(String name) {
 
         if (whiteList.isEmpty()) {
-            whiteList = new ArrayList<>();
+            whiteList = new HashSet<>();
             try {
                 BufferedReader reader = new BufferedReader(
                         new FileReader(new File(System.getProperty("concurrentmethods"))));
@@ -102,7 +103,7 @@ public class InjectDelayClassTracer extends ClassVisitor {
                     // Insert some random delay call right before invoking the method
                     locations.add(location);
                     super.visitMethodInsn(Opcodes.INVOKESTATIC,
-                        "edu/utexas/ece/flakesync/agent/Utility", "delay", "()V", false);
+                            "edu/utexas/ece/flakesync/agent/Utility", "delay", "()V", false);
                 }
                 super.visitMethodInsn(opcode, owner, name, desc, itf);
             }
