@@ -1,8 +1,9 @@
 /*
 The MIT License (MIT)
 Copyright (c) 2025 August Shi
-Copyright (c) 2025 Shanto Rahman
 Copyright (c) 2025 Nandita Jayanthi
+Copyright (c) 2025 Shanto Rahman
+
 
 
 Permission is hereby granted, free of charge, to any person obtaining
@@ -24,7 +25,6 @@ LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
 OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
-
 package flakesync;
 
 import flakesync.common.Configuration;
@@ -39,6 +39,8 @@ import org.apache.maven.project.MavenProject;
 import org.codehaus.plexus.util.xml.Xpp3Dom;
 import org.twdata.maven.mojoexecutor.MojoExecutor;
 
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -112,8 +114,8 @@ public class CleanSurefireExecution {
 
     //MOJO FindTestsRunMojo: For finding concurrent methods and number of threads running
     public CleanSurefireExecution(Plugin surefire, String originalArgLine, MavenProject mavenProject,
-            MavenSession mavenSession, BuildPluginManager pluginManager, String nondexDir, String testName,
-            String localRepository) {
+                                  MavenSession mavenSession, BuildPluginManager pluginManager, String nondexDir, String testName,
+                                  String localRepository) {
         this(surefire, originalArgLine, "clean_" + Utils.getFreshExecutionId(), mavenProject, mavenSession, pluginManager,
                 nondexDir, testName, localRepository);
 
@@ -127,11 +129,11 @@ public class CleanSurefireExecution {
 
     //MOJO RunWithDelaysMojo: For getting complete list of locations(not minimal)
     public CleanSurefireExecution(Plugin surefire, String originalArgLine, MavenProject mavenProject,
-            MavenSession mavenSession, BuildPluginManager pluginManager, String flakesyncDir, String localRepository,
-            String testName, int delay) {
+                                  MavenSession mavenSession, BuildPluginManager pluginManager, String flakesyncDir, String localRepository,
+                                  String testName, int delay) {
 
         this(surefire, originalArgLine, "clean_" + Utils.getFreshExecutionId(), mavenProject, mavenSession, pluginManager,
-            flakesyncDir, testName, localRepository);
+                flakesyncDir, testName, localRepository);
 
         this.delay = delay;
         this.phase = PHASE.LOCATIONS_MINIMIZER;
@@ -172,10 +174,10 @@ public class CleanSurefireExecution {
 
     // MOJO CritSearchMojo: Delay Injection
     public CleanSurefireExecution(Plugin surefire, String originalArgLine, MavenProject mavenProject,
-            MavenSession mavenSession, BuildPluginManager pluginManager, String flakesyncDir, String localRepository,
-            String testName, int delay, String pathToLocations, String methodName, boolean barrier) {
+                                  MavenSession mavenSession, BuildPluginManager pluginManager, String flakesyncDir, String localRepository,
+                                  String testName, int delay, String pathToLocations, String methodName, boolean barrier) {
         this(surefire, originalArgLine, "clean_" + Utils.getFreshExecutionId(), mavenProject, mavenSession, pluginManager,
-            flakesyncDir, testName, localRepository);
+                flakesyncDir, testName, localRepository);
 
         if (!barrier) {
             this.phase = PHASE.CRITICAL_POINT_SEARCH;
@@ -200,10 +202,10 @@ public class CleanSurefireExecution {
 
     //MOJO CritSearchMojo: Root Method Analysis
     public CleanSurefireExecution(Plugin surefire, String originalArgLine, MavenProject mavenProject,
-            MavenSession mavenSession, BuildPluginManager pluginManager, String flakesyncDir, String localRepository,
-            String testName, int delay, String methodName) {
+                                  MavenSession mavenSession, BuildPluginManager pluginManager, String flakesyncDir, String localRepository,
+                                  String testName, int delay, String methodName) {
         this(surefire, originalArgLine, "clean_" + Utils.getFreshExecutionId(), mavenProject, mavenSession, pluginManager,
-            flakesyncDir, testName, localRepository);
+                flakesyncDir, testName, localRepository);
 
         this.phase = PHASE.CRITICAL_POINT_SEARCH;
 
@@ -216,10 +218,10 @@ public class CleanSurefireExecution {
 
     // MOJO BarrierPointMojo: Downward Maven
     public CleanSurefireExecution(Plugin surefire, String originalArgLine, MavenProject mavenProject,
-            MavenSession mavenSession, BuildPluginManager pluginManager, String flakesyncDir, String localRepository,
-            String testName, int delay, String startLine, boolean execMon) {
+                                  MavenSession mavenSession, BuildPluginManager pluginManager, String flakesyncDir, String localRepository,
+                                  String testName, int delay, String startLine, boolean execMon) {
         this(surefire, originalArgLine, "clean_" + Utils.getFreshExecutionId(), mavenProject, mavenSession, pluginManager,
-            flakesyncDir, testName, localRepository);
+                flakesyncDir, testName, localRepository);
 
         if (!execMon) {
             this.phase = PHASE.BARRIER_POINT_SEARCH;
@@ -229,6 +231,7 @@ public class CleanSurefireExecution {
 
             this.domNode = this.applyFlakeSyncConfig((Xpp3Dom) this.surefire.getConfiguration());
             this.setupArgline(TYPE.DOWNWARD_MAVEN_EXEC);
+            System.out.println(this.domNode);
         } else {
             this.phase = PHASE.BARRIER_POINT_SEARCH;
 
@@ -242,10 +245,10 @@ public class CleanSurefireExecution {
 
     // MOJO BarrierPointMojo: Instrument/add barrier point
     public CleanSurefireExecution(Plugin surefire, String originalArgLine, MavenProject mavenProject,
-            MavenSession mavenSession, BuildPluginManager pluginManager, String flakesyncDir, String localRepository,
-            String testName, int delay, String startLine, String yieldingPoint, int threshold) {
+                                  MavenSession mavenSession, BuildPluginManager pluginManager, String flakesyncDir, String localRepository,
+                                  String testName, int delay, String startLine, String yieldingPoint, int threshold) {
         this(surefire, originalArgLine, "clean_" + Utils.getFreshExecutionId(), mavenProject, mavenSession, pluginManager,
-            flakesyncDir, testName, localRepository);
+                flakesyncDir, testName, localRepository);
 
         this.phase = PHASE.BARRIER_POINT_SEARCH;
 
@@ -264,11 +267,13 @@ public class CleanSurefireExecution {
 
     public void run() throws Throwable {
         try {
-            //System.out.println(domNode);
+            System.out.println(domNode);
             MojoExecutor.executeMojo(this.surefire, MojoExecutor.goal("test"), domNode,
-                MojoExecutor.executionEnvironment(this.mavenProject, this.mavenSession, this.pluginManager));
+                    MojoExecutor.executionEnvironment(this.mavenProject, this.mavenSession, this.pluginManager));
         } catch (MojoExecutionException mojoException) {
             if (mojoException.getCause() instanceof PluginExecutionException) {
+                Logger.getGlobal().log(Level.INFO, "Surefire TIMED OUT when running tests for "
+                        + this.configuration.executionId + " with delay: " + this.delay);
                 throw mojoException.getCause();
             } else {
                 Logger.getGlobal().log(Level.INFO, "Surefire failed when running tests for " + this.configuration.executionId
@@ -317,7 +322,7 @@ public class CleanSurefireExecution {
 
             //if (mode == TYPE.ADD_BARRIER_POINT || mode == TYPE.ADD_BARRIER_POINT_2) {
             if ("forkedProcessTimeoutInSeconds".equals(node.getName())) {
-                node.setValue(70 + "");
+                node.setValue(this.delay * 4 + "");
             }
             //}
 
@@ -328,7 +333,7 @@ public class CleanSurefireExecution {
 
         if ((domNode.getChild("forkedProcessTimeoutInSeconds") == null) /*&& (mode == TYPE.ADD_BARRIER_POINT
                 || mode == TYPE.ADD_BARRIER_POINT_2)*/) {
-            this.domNode.addChild(this.makeNode("forkedProcessTimeoutInSeconds", 70 + ""));
+            this.domNode.addChild(this.makeNode("forkedProcessTimeoutInSeconds", this.delay * 4 + ""));
 
         }
 
@@ -349,7 +354,6 @@ public class CleanSurefireExecution {
     }
 
     private void addPropVars(TYPE mode, Xpp3Dom node) {
-        node.addChild(this.makeNode("agentmode", mode.name()));
         if (mode != TYPE.CONCURRENT_METHODS) {
             if (node.getChild("delay") == null) {
                 node.addChild(this.makeNode("delay", delay + ""));
@@ -359,41 +363,34 @@ public class CleanSurefireExecution {
         }
         if (mode == TYPE.ALL_LOCATIONS) {
             if (node.getChild("concurrentmethods") == null) {
-                node.addChild(this.makeNode("concurrentmethods",
-                        this.configuration.getConcurrentMethodsFilepath().toString()));
-            } /*else {
-                node.getChild("concurrentmethods").setValue(
-                        this.configuration.getConcurrentMethodsFilepath().toString());
-            }*/
+                node.addChild(this.makeNode("concurrentmethods", "./.flakesync/ResultMethods.txt"));
+            } else {
+                node.getChild("concurrentmethods").setValue("./.flakesync/ResultMethods.txt");
+            }
 
             if (node.getChild("whitelist") == null) {
-                node.addChild(this.makeNode("whitelist",
-                        this.configuration.getWhitelistFilepath().toString()));
-            } /*else {
-                node.getChild("whitelist").setValue(
-                        this.configuration.getWhitelistFilepath().toString());
-            }*/
+                node.addChild(this.makeNode("whitelist", "./.flakesync/whitelist.txt"));
+            } else {
+                node.getChild("whitelist").setValue("./.flakesync/whitelist.txt");
+            }
         } else if (mode == TYPE.DELTA_DEBUG) {
             if (node.getChild("concurrentmethods") == null) {
-                node.addChild(this.makeNode("concurrentmethods",
-                        this.configuration.getConcurrentMethodsFilepath().toString()));
-            } /*else {
+                node.addChild(this.makeNode("concurrentmethods", "./.flakesync/ResultMethods.txt"));
+            } else {
                 node.getChild("concurrentmethods").setValue("./.flakesync/ResultMethods.txt");
-            }*/
+            }
 
             if (node.getChild("whitelist") == null) {
-                node.addChild(this.makeNode("whitelist",
-                        this.configuration.getWhitelistFilepath().toString()));
-            } /*else {
+                node.addChild(this.makeNode("whitelist", "./.flakesync/whitelist.txt"));
+            } else {
                 node.getChild("whitelist").setValue("./.flakesync/whitelist.txt");
-            }*/
+            }
 
             if (node.getChild("locations") == null) {
-                node.addChild(this.makeNode("locations",
-                        this.configuration.getAllLocationsFilepath().toString()));
-            } /*else {
+                node.addChild(this.makeNode("locations", this.pathToLocations));
+            } else {
                 node.getChild("locations").setValue(pathToLocations);
-            }*/
+            }
         } else if (mode == TYPE.GET_STACK_TRACE) {
             if (node.getChild("locations") == null) {
                 node.addChild(this.makeNode("locations", this.pathToLocations));
