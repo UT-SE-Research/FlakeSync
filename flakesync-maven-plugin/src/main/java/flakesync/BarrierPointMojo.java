@@ -57,7 +57,8 @@ public class BarrierPointMojo extends FlakeSyncAbstractMojo {
                 int delay = Integer.parseInt(line.split("\\[")[1].substring(0,
                         line.split("\\[")[1].length() - 1));
 
-                if (firstLoc.contains("Test")) {
+                boolean elseb = false;
+                if (firstLoc.contains("Test") && elseb) {
                     System.out.println("It appears that the boundary exists in the test code");
 
                     CleanSurefireExecution downwardMvnExecution = new CleanSurefireExecution(this.surefire,
@@ -73,6 +74,7 @@ public class BarrierPointMojo extends FlakeSyncAbstractMojo {
                             + "/.flakesync/SearchedMethodEndLine.txt");
                     BufferedReader reader = new BufferedReader(new FileReader(endLineFile));
 
+                    //Fix this!
                     String yieldingPoint = "";
                     downwardMvnExecution = new CleanSurefireExecution(this.surefire, this.originalArgLine,
                             this.mavenProject, this.mavenSession, this.pluginManager,
@@ -85,7 +87,7 @@ public class BarrierPointMojo extends FlakeSyncAbstractMojo {
                     if (!fail && checkValidPass()) {
                         addBarrierPointToResults(bw, firstLoc, yieldingPoint, delay);
                     }
-                    // If test passed add to results file
+                    // If test passed add to results file*/
                 } else {
                     System.out.println("GETTING THE STACKTRACE======================================================");
                     CleanSurefireExecution stackTraceExec = new CleanSurefireExecution(this.surefire,
@@ -170,11 +172,29 @@ public class BarrierPointMojo extends FlakeSyncAbstractMojo {
 
                                 boolean fail = executeSurefireExecution(null, barrierPoint);
 
+                                /*YieldPointRunnable ypr = new YieldPointRunnable(this.surefire, this.originalArgLine,
+                                        this.mavenProject, this.mavenSession, this.pluginManager,
+                                        this.baseDir, this.localRepository, this.testName, delay,
+                                        endLoc, yieldingPoint, 1);
+                                long start = System.currentTimeMillis();
+                                long counter = start;
+                                Thread barrierPointThread = new Thread(ypr);
+                                barrierPointThread.start();
+
+                                while (counter < (180000000 + start)) {
+                                    counter++;
+                                }
+                                if (!ypr.finishedTest) {
+                                    ypr.terminate();
+                                    System.out.println("oops test timed out");
+                                    continue;
+                                }
+
+                                boolean fail = !ypr.testPass;*/
                                 if (!fail && checkValidPass()) {
                                     addBarrierPointToResults(bw, line, yieldingPoint, 1);
                                     break;
                                 } else {
-
                                     System.out.println("FAIL: " + yieldingPoint + " " + endLoc);
                                     CleanSurefireExecution execMon = new CleanSurefireExecution(this.surefire,
                                             this.originalArgLine, this.mavenProject, this.mavenSession,
@@ -187,24 +207,26 @@ public class BarrierPointMojo extends FlakeSyncAbstractMojo {
                                             + "/.flakesync/ExecutionMonitor.txt");
                                     reader = new BufferedReader(new FileReader(execsFile));
                                     int numExecutions = Integer.parseInt(reader.readLine().split("=")[1]);
-                                    System.out.println("WE HAVE A NEW THRESHOLD: " + numExecutions);
-                                    barrierPoint = new CleanSurefireExecution(this.surefire, this.originalArgLine,
-                                            this.mavenProject, this.mavenSession, this.pluginManager,
-                                            Paths.get(this.baseDir.getAbsolutePath(),
-                                                    ConfigurationDefaults.DEFAULT_FLAKESYNC_DIR).toString(),
-                                            this.localRepository, this.testName, delay, endLoc, yieldingPoint,
-                                            numExecutions);
+                                    if (numExecutions > 1) {
+                                        System.out.println("WE HAVE A NEW THRESHOLD: " + numExecutions);
+                                        barrierPoint = new CleanSurefireExecution(this.surefire, this.originalArgLine,
+                                                this.mavenProject, this.mavenSession, this.pluginManager,
+                                                Paths.get(this.baseDir.getAbsolutePath(),
+                                                        ConfigurationDefaults.DEFAULT_FLAKESYNC_DIR).toString(),
+                                                this.localRepository, this.testName, delay, endLoc, yieldingPoint,
+                                                numExecutions);
 
-                                    fail = executeSurefireExecution(null, barrierPoint);
+                                        fail = executeSurefireExecution(null, barrierPoint);
 
-                                    if (!fail && checkValidPass()) {
-                                        // If test passed, barrier point worked, and add to results file
-                                        addBarrierPointToResults(bw, line, yieldingPoint, numExecutions);
-                                        break;
-                                    } else {
-                                        //This barrier point does not work
-                                        checkValidPass();
-                                        System.out.println("FAIL: " + yieldingPoint + " " + numExecutions);
+                                        if (!fail && checkValidPass()) {
+                                            // If test passed, barrier point worked, and add to results file
+                                            addBarrierPointToResults(bw, line, yieldingPoint, numExecutions);
+                                            break;
+                                        } else {
+                                            //This barrier point does not work
+                                            checkValidPass();
+                                            System.out.println("FAIL: " + yieldingPoint + " " + numExecutions);
+                                        }
                                     }
                                 }
                             }

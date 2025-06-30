@@ -85,6 +85,7 @@ public class Agent {
             @Override
             public byte[] transform(ClassLoader classLoader, String className, Class<?> classBeingRedefined,
                     ProtectionDomain protectionDomain, byte[] bytes) throws IllegalClassFormatException {
+
                 className = className.replaceAll("[/]",".");
 
                 final ClassReader reader = new ClassReader(bytes);

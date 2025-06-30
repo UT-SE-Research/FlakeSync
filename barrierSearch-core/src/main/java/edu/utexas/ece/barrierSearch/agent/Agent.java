@@ -61,41 +61,40 @@ public class Agent {
                 s = s.replaceAll("[/]",".");
 
                 String codeToIntroduceVariable = System.getProperty("CodeToIntroduceVariable");
-                //System.out.println(s);
                 String codeUnderTest=codeToIntroduceVariable.split("#")[0]; // code-undet-test class
                 final ClassReader reader = new ClassReader(bytes);
                 final ClassWriter writer = new ClassWriter(reader, ClassWriter.COMPUTE_FRAMES|ClassWriter.COMPUTE_MAXS );
                 ClassVisitor visitor;
 
                 if (System.getProperty("stackTraceCollect") != null && System.getProperty("stackTraceCollect").equals("true") && !blackListContains(s)) { // Going to add delay and collect the stacktrace
-                    //System.out.println("FROM STACKTRACE ***************************"+codeToIntroduceVariable);
+                    System.out.println("FROM STACKTRACE ***************************"+codeToIntroduceVariable);
                     visitor = new StackTraceTracer(writer, codeToIntroduceVariable);
                     reader.accept(visitor, 0);
                     return writer.toByteArray();
                 }
                 else if (System.getProperty("executionMonitor") != null && System.getProperty("executionMonitor").equals("flag") && !blackListContains(s)) {
-                    //synchronized (edu.utexas.ece.edu.utexas.ece.barrierSearch.agent.Utility.class) {
-                    System.out.println("Starting execution monitor steps");
-                    visitor = new ExecutionMonitorTracer(writer, codeToIntroduceVariable);
-                    reader.accept(visitor, 0);
-                    //}
+                    synchronized (edu.utexas.ece.barrierSearch.agent.Utility.class) {
+                        System.out.println("Starting execution monitor steps");
+                        visitor = new ExecutionMonitorTracer(writer, codeToIntroduceVariable);
+                        reader.accept(visitor, 0);
+                    }
                     return writer.toByteArray();
                 }
                 else if (System.getProperty("searchMethodEndLine") != null && System.getProperty("searchMethodEndLine").equals("search") && !blackListContains(s)) {
-                    //synchronized (edu.utexas.ece.edu.utexas.ece.barrierSearch.agent.Utility.class) {
-                    System.out.println("Starting search method steps");
-                    visitor = new MethodEndLineTracer(writer, codeToIntroduceVariable);
-                    reader.accept(visitor, 0);
+                    //synchronized (edu.utexas.ece.barrierSearch.agent.Utility.class) {
+                        System.out.println("Starting search method steps");
+                        visitor = new MethodEndLineTracer(writer, codeToIntroduceVariable);
+                        reader.accept(visitor, 0);
                     //}
                     return writer.toByteArray();
                 }
-                else {
+                else if (!blackListContains(s)){
                     String yieldPointInfo = System.getProperty("YieldingPoint"); // YIELDING_POINT may or may not be a test_method's location
                     String tcls=yieldPointInfo.split("#")[0]; // test-class
                     //RandomClassTracer.yieldEntered = false;
                     //RandomClassTracer.delayed = false;
                     //RandomClassTracer.updateFlag = false;
-                    if ((s.equals(codeUnderTest) || s.equals(tcls)) && !blackListContains(s)) {  // Need substring match, test-class name is not coming here
+                    if ((s.equals(codeUnderTest) || s.equals(tcls))) {  // Need substring match, test-class name is not coming here
                         if(s.equals(tcls)) System.out.println("ELSE****ALLOWED CLASS="+s +",yieldPointInfo="+tcls+",codeUnderTest="+codeUnderTest);
                         visitor = new RandomClassTracer(writer, yieldPointInfo, codeToIntroduceVariable);
                         reader.accept(visitor, 0);
@@ -120,18 +119,13 @@ public class Agent {
                         //System.out.println("FROM AGENT="+RandomClassTracer.methodAndLine);
                         return writer.toByteArray();
                     }
-                    System.out.println("Not doing anything right now");
                 }
                 return null;
-
             }
         });
 
-        //if (System.getProperty("executionMonitor") != null) {
-        //}
+        printStartStopTimes();
 
-        printStartStopTimes(); // WIll print in a file
-        //registerShutdownHook();
     }
 
     private static void printStartStopTimes() {
@@ -165,50 +159,4 @@ public class Agent {
 
         Runtime.getRuntime().addShutdownHook(hook);
     }
-
-   /*private static void registerShutdownHook() {
-        Runtime.getRuntime().addShutdownHook(new Thread() {
-            @Override
-            public void run() {
-                System.out.println("JVM shutting down...");
-            }
-        });
-    }
-    private static void writeTo(final String outputPath, String output) {
-        System.err.println("output from writeTo="+output);
-        if (!Files.exists(Paths.get(outputPath))) {
-            try {
-                //System.err.println("outputPath="+outputPath);
-                Files.createFile(Paths.get(outputPath));
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        }
-        try {
-            //System.err.println("outputPath="+outputPath + ",output="+output);
-            Files.write(Paths.get(outputPath), output.getBytes(StandardCharsets.UTF_8),
-                    StandardOpenOption.APPEND);
-        } catch (IOException e) {
-            e.printStackTrace(System.err);
-        }
-    }
-    private static void printStartStopTimes() {
-        final long start = System.currentTimeMillis();
-        //Thread hook = new Thread() {
-        //    @Override
-        //    public void run() {
-                //try{
-                System.err.println("1st Stop at .............................,methodAndLine = " + RandomClassTracer.methodAndLine );
-                String methAndLine=RandomClassTracer.methodAndLine;
-                System.err.println("Stop at .............................,methodAndLine = " + methAndLine );
-                String curDir = new File("").getAbsolutePath();
-                System.err.println("************"+curDir);
-                writeTo(curDir + "MethodAndLine.txt", methAndLine + "\n");
-                //} catch (Exception e) {
-               //e.printStackTrace();
-                //}
-            }
-       // };
-        //Runtime.getRuntime().addShutdownHook(hook);
-   // }*/
 }

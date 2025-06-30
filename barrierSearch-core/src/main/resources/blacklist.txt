@@ -47,6 +47,7 @@ net.bytebuddy.
 net.sf.ehcache.store.MemoryStore
 okio.RealBufferedSink
 okio.RealBufferedSink.
+org.assertj.
 org.apache.cassandra.cql3.selection.Selection
 org.apache.cassandra.db.Clustering
 org.apache.cassandra.db.CounterUpdateColumn

@@ -32,6 +32,7 @@ public class ExecutionMonitorTracer extends ClassVisitor {
         final String cn_dot=cn.replace("/",".");
         final String containingMethod = cn + "." + name + desc;
         final String methName=name;
+
         MethodVisitor methodVisitor = super.visitMethod(access, name, desc, signature, exceptions);
         return new MethodVisitor(Opcodes.ASM9, methodVisitor) {
             int lineNumber;

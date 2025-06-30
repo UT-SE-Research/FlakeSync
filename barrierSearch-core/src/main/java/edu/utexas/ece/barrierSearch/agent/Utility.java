@@ -19,7 +19,11 @@ public class Utility {
     }
 
     public static void yield() {
-        while (testVarCount < threshold) {
+        long start = System.currentTimeMillis();
+        //Add an external timeout that can be set by the user
+        //int timeout;
+        while ((testVarCount < threshold) &&
+                (System.currentTimeMillis() < start + (delay * 1000))) {
             Thread.yield();
         }
         testVarCount = 0;
@@ -41,8 +45,13 @@ public class Utility {
 
     public static void delay() {
         try {
-            System.out.println("DELAY***From Utility, Delay=" + delay);
+            //System.out.println("DELAY***From Utility, Delay=" + delay);
             Thread.sleep(delay);
+            //Long start = System.currentTimeMillis();
+            //Long current = start;
+            //while(current < start + (delay * 1000)) {
+                //current++;
+            //}
         } catch (InterruptedException ie) {
             System.out.println("Exception ");
             ie.printStackTrace();

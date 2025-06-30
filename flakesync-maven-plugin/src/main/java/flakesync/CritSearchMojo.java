@@ -26,7 +26,7 @@ import java.util.List;
 public class CritSearchMojo extends FlakeSyncAbstractMojo {
 
     private HashSet<String> stackTraceLines;
-    private ArrayList<Output> results;
+    private HashSet<Output> results;
     private HashSet<String> roots;
     private int delay;
     private boolean beginningFail = false;
@@ -39,14 +39,14 @@ public class CritSearchMojo extends FlakeSyncAbstractMojo {
         Logger.getGlobal().log(Level.INFO, ("Running CriticalPointMojo"));
         MojoExecutionException allExceptions = null;
 
-        results = new ArrayList<Output>();
+        results = new HashSet<Output>();
 
         //runs mvn-run-and-find-stack-trace.sh: mvn test -pl $module -Dtest=$4  -Ddelay=$3  -Dlocations=$7
 
         List<String> locations = new ArrayList<String>();
         this.delay = generateLocsList(locations, this.mavenProject.getBasedir() + "/.flakesync/Locations_minimized.txt");
 
-        roots = new HashSet<String>();
+        //roots = new HashSet<String>();
 
 
         try {
@@ -58,8 +58,6 @@ public class CritSearchMojo extends FlakeSyncAbstractMojo {
                 System.out.println("This minimized location is not a good one. Go back and run minimizer.");
                 return;
             }
-
-
 
             System.out.println("NOW WE ARE PARSING THE STACK TRACE");
             //parse-stack-trace.sh
@@ -84,8 +82,6 @@ public class CritSearchMojo extends FlakeSyncAbstractMojo {
                         if (className.contains("$")) {
                             itemLocation = itemLocation.split("$")[0];
                         }
-
-
 
                         File directory = new File(this.baseDir + "/.flakesync/Locations/Line/");
                         System.out.println(directory.mkdirs() + " = whether dir creation worked");
@@ -138,10 +134,10 @@ public class CritSearchMojo extends FlakeSyncAbstractMojo {
                             }
 
                             // We reached the max delay without a failure, something is wrong here
-                            results.add(new Output(testName, itemLocation, false, delay));
-                        } else {
-                            results.add(new Output(testName, itemLocation, true, delay));
-                        }
+                            //results.add(new Output(testName, new String(itemLocation), false, delay));
+                        } /*else {
+                            //results.add(new Output(testName, new String(itemLocation), true, delay));
+                        }*/
                     }
                 }
             }
@@ -150,7 +146,13 @@ public class CritSearchMojo extends FlakeSyncAbstractMojo {
             throw new RuntimeException();
         }
 
-        if (!roots.isEmpty()) {
+        /*if (!roots.isEmpty()) {
+            createResultsFile1();
+        } else {
+            System.out.println("No roots found");
+        }*/
+
+        if (!results.isEmpty()) {
             createResultsFile1();
         } else {
             System.out.println("No roots found");
@@ -294,11 +296,12 @@ public class CritSearchMojo extends FlakeSyncAbstractMojo {
             //Is the following info needed?
             // echo -n "${slug},${sha},${module},${testName}" >> "$currentDir/$result_file_name"
 
-            for (String location : roots) {
+            for (Output output : results) {
+                String location = output.getLocation();
                 bw.write(testName + "," + location);
                 bw.newLine();
 
-                this.results.add(new Output(testName, location, false, this.delay));
+                //this.results.add(new Output(testName, location, false, this.delay));
             }
             bw.flush();
         } catch (IOException ioe) {
@@ -400,9 +403,15 @@ public class CritSearchMojo extends FlakeSyncAbstractMojo {
                 // Parse method name from line
                 System.out.println("hahahah" + line);
                 String[] tmp = line.split("#");
-                String methodName = tmp[3];
                 String className = tmp[0];
-                String lowerLineNumber = tmp[1].substring(0, tmp[1].indexOf('-'));
+                int completeLine = tmp[1].indexOf('-');
+                String lowerLineNumber;
+                if (completeLine < 0) {
+                    line = reader.readLine();
+                    continue;
+                }
+                String methodName = tmp[3];
+                lowerLineNumber = tmp[1].substring(0, completeLine);
 
                 System.out.println(
                         "Trying to run delay injection "
@@ -463,7 +472,13 @@ public class CritSearchMojo extends FlakeSyncAbstractMojo {
                 System.out.println("huhuhuh" + line);
                 String[] tmp = line.split("#");
                 String className = tmp[0];
-                String lowerLineNumber = tmp[1].substring(0, tmp[1].indexOf('-'));
+                int completeLine = tmp[1].indexOf('-');
+                String lowerLineNumber;
+                if (completeLine < 0) {
+                    line = reader.readLine();
+                    continue;
+                }
+                lowerLineNumber = tmp[1].substring(0, tmp[1].indexOf('-'));
                 String upperLineNumber = tmp[2];
 
                 for (int i = Integer.parseInt(lowerLineNumber); i < Integer.parseInt(upperLineNumber); i++) {
@@ -530,7 +545,9 @@ public class CritSearchMojo extends FlakeSyncAbstractMojo {
             rootLine += "[" + this.delay + "]";
             System.out.println(threadID + "," + className + ".*:" + lineNumber);
             System.out.println("Formatted rootLine: " + rootLine);
-            roots.add(rootLine);
+            //roots.add(rootLine);
+            Output root = new Output(testName, new String(rootLine), true, delay);
+            results.add(root);
             return 1;
         }
         return 3;

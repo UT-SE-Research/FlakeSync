@@ -204,6 +204,7 @@ public class CleanSurefireExecution {
 
             this.domNode = this.applyFlakeSyncConfig((Xpp3Dom) this.surefire.getConfiguration());
             this.setupArgline(TYPE.DOWNWARD_MAVEN_EXEC);
+            System.out.println(this.domNode);
         } else {
             this.phase = PHASE.BARRIER_POINT_SEARCH;
 
@@ -239,11 +240,13 @@ public class CleanSurefireExecution {
 
     public void run() throws Throwable {
         try {
-            //System.out.println(domNode);
+            System.out.println(domNode);
             MojoExecutor.executeMojo(this.surefire, MojoExecutor.goal("test"), domNode,
                 MojoExecutor.executionEnvironment(this.mavenProject, this.mavenSession, this.pluginManager));
         } catch (MojoExecutionException mojoException) {
             if (mojoException.getCause() instanceof PluginExecutionException) {
+                Logger.getGlobal().log(Level.INFO, "Surefire TIMED OUT when running tests for "
+                        + this.configuration.executionId + " with delay: " + this.delay);
                 throw mojoException.getCause();
             } else {
                 Logger.getGlobal().log(Level.INFO, "Surefire failed when running tests for " + this.configuration.executionId
@@ -292,7 +295,7 @@ public class CleanSurefireExecution {
 
             //if (mode == TYPE.ADD_BARRIER_POINT || mode == TYPE.ADD_BARRIER_POINT_2) {
             if ("forkedProcessTimeoutInSeconds".equals(node.getName())) {
-                node.setValue(500 + "");
+                node.setValue(this.delay * 4 + "");
             }
             //}
 
@@ -303,7 +306,7 @@ public class CleanSurefireExecution {
 
         if ((domNode.getChild("forkedProcessTimeoutInSeconds") == null) /*&& (mode == TYPE.ADD_BARRIER_POINT
                 || mode == TYPE.ADD_BARRIER_POINT_2)*/) {
-            this.domNode.addChild(this.makeNode("forkedProcessTimeoutInSeconds", 500 + ""));
+            this.domNode.addChild(this.makeNode("forkedProcessTimeoutInSeconds", this.delay * 4 + ""));
 
         }
 
