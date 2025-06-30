@@ -46,7 +46,7 @@ public class InjectDelayClassTracer extends ClassVisitor {
 
     public static Set<String> locations = new HashSet<>();
 
-    private static List<String> whiteList = new ArrayList<>();
+    private static Set<String> whiteList = new HashSet<>();
 
     private String className;
 
@@ -58,7 +58,7 @@ public class InjectDelayClassTracer extends ClassVisitor {
     public static boolean whiteListContains(String name) {
 
         if (whiteList.isEmpty()) {
-            whiteList = new ArrayList<>();
+            whiteList = new HashSet<>();
             try {
                 BufferedReader reader = new BufferedReader(
                         new FileReader(new File(System.getProperty("concurrentmethods"))));

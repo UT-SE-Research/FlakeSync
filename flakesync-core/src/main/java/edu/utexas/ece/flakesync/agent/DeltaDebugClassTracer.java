@@ -44,11 +44,7 @@ import java.util.Set;
 
 public class DeltaDebugClassTracer extends ClassVisitor {
 
-    public static Set<String> locations = new HashSet<>();
-
     public static Set<String> providedLocations = new HashSet<>();
-
-    private static List<String> whiteList = new ArrayList<>();
 
     private String className;
 
@@ -68,32 +64,10 @@ public class DeltaDebugClassTracer extends ClassVisitor {
                 ioe.printStackTrace();
             }
         }
-
-        if (whiteList.isEmpty()) {
-            whiteList = new ArrayList<>();
-            try {
-                BufferedReader reader = new BufferedReader(
-                        new FileReader(new File(System.getProperty("concurrentmethods"))));
-                String line = reader.readLine();
-                while (line != null) {
-                    whiteList.add(line);
-                    // read next line
-                    line = reader.readLine();
-                }
-                reader.close();
-            } catch (IOException ioe) {
-                ioe.printStackTrace();
-            }
-        }
     }
 
     public DeltaDebugClassTracer(ClassVisitor cv) {
         super(Opcodes.ASM9, cv);
-    }
-
-    // White list consists of specific class names, same format as outputted by the EnterExitClassTracer logic
-    public static boolean whiteListContains(String name) {
-        return whiteList.contains(name);
     }
 
     @Override
@@ -117,8 +91,6 @@ public class DeltaDebugClassTracer extends ClassVisitor {
 
             @Override
             public void visitMethodInsn(int opcode, String owner, String name, String desc, boolean itf) {
-                String methodName = owner + "." + name + desc;
-
                 String location = cn + "#" + lineNumber;
 
                 // If locations are provided, delay only at those locations
