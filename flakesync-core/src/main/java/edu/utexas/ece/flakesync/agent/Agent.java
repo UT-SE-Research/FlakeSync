@@ -52,6 +52,7 @@ import java.util.List;
 
 public class Agent {
 
+    private static String delay;
     private static List<String> blackList;
     private static List<String> whiteList = new ArrayList<>();
 
@@ -83,7 +84,6 @@ public class Agent {
         } catch (IOException ioe) {
             ioe.printStackTrace();
         }
-
     }
 
     public static boolean blackListContains(String name) {
@@ -125,6 +125,9 @@ public class Agent {
 
                 final ClassReader reader = new ClassReader(bytes);
                 final ClassWriter writer = new ClassWriter(reader, ClassWriter.COMPUTE_FRAMES | ClassWriter.COMPUTE_MAXS);
+
+                //Set up delay
+                delay = System.getProperty("delay");
 
                 ClassVisitor visitor;
                 if (!blackListContains(className)) {
@@ -186,7 +189,7 @@ public class Agent {
 
                         synchronized (InjectDelayClassTracer.locations) {
                             for (String location : InjectDelayClassTracer.locations) {
-                                bfLocations.write(location + "&" + System.getProperty("delay"));
+                                bfLocations.write(location + "&" + delay);
                                 bfLocations.newLine();
                             }
                         }
