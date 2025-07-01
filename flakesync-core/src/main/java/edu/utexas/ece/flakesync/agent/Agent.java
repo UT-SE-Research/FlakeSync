@@ -164,22 +164,18 @@ public class Agent {
 
                 try {
                     if (System.getProperty("agentmode").equals("CONCURRENT_METHODS")) {
-                        try {
-                            Paths.get(OUTPUT_DIR_NAME, CONCURRENT_METHODS).toFile().createNewFile();
-                            Path fp = Paths.get(OUTPUT_DIR_NAME, CONCURRENT_METHODS);
-                            File omf = new File(fp.toUri());
-                            FileWriter outputMethodsFile = new FileWriter(omf);
-                            bfMethods = new BufferedWriter(outputMethodsFile);
-                            synchronized (Utility.methodsRunConcurrently) {
-                                for (String meth : Utility.methodsRunConcurrently) {
-                                    bfMethods.write(meth);
-                                    bfMethods.newLine();
-                                }
+                        Paths.get(OUTPUT_DIR_NAME, CONCURRENT_METHODS).toFile().createNewFile();
+                        Path fp = Paths.get(OUTPUT_DIR_NAME, CONCURRENT_METHODS);
+                        File omf = new File(fp.toUri());
+                        FileWriter outputMethodsFile = new FileWriter(omf);
+                        bfMethods = new BufferedWriter(outputMethodsFile);
+                        synchronized (Utility.methodsRunConcurrently) {
+                            for (String meth : Utility.methodsRunConcurrently) {
+                                bfMethods.write(meth);
+                                bfMethods.newLine();
                             }
-                            bfMethods.flush();
-                        } finally {
-                            bfMethods.close();
                         }
+                        bfMethods.flush();
                     } else if (System.getProperty("agentmode").equals("ALL_LOCATIONS")) {
                         Paths.get(OUTPUT_DIR_NAME, LOCATIONS).toFile().createNewFile();
                         Path fp = Paths.get(OUTPUT_DIR_NAME, LOCATIONS);
@@ -201,6 +197,9 @@ public class Agent {
                     try {
                         if (bfLocations != null) {
                             bfLocations.close();
+                        }
+                        if (bfMethods != null) {
+                            bfMethods.close();
                         }
                     } catch (Exception ex) {
                         ex.printStackTrace();
