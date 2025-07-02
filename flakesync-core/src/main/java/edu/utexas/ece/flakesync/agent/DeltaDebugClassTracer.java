@@ -54,7 +54,6 @@ public class DeltaDebugClassTracer extends ClassVisitor {
                 BufferedReader reader = new BufferedReader(new FileReader(new File(System.getProperty("locations"))));
                 String line = reader.readLine();
                 while (line != null) {
-                    System.out.println(line);
                     providedLocations.add(line);
                     // read next line
                     line = reader.readLine();
@@ -79,7 +78,7 @@ public class DeltaDebugClassTracer extends ClassVisitor {
     @Override
     public MethodVisitor visitMethod(int access, String name, String desc, String signature, String[] exceptions) {
         final String cn = this.className;
-        final String containingMethod = cn + "." + name + desc;
+
         return new MethodVisitor(Opcodes.ASM9, super.visitMethod(access, name, desc, signature, exceptions)) {
             int lineNumber;
 
@@ -94,12 +93,11 @@ public class DeltaDebugClassTracer extends ClassVisitor {
                 String location = cn + "#" + lineNumber;
 
                 // If locations are provided, delay only at those locations
-                if (System.getProperty("locations") != null) {
-                    if (providedLocations.contains(location)) {
-                        super.visitMethodInsn(Opcodes.INVOKESTATIC,
-                                "edu/utexas/ece/flakesync/agent/Utility", "delay", "()V", false);
-                    }
+                if (providedLocations.contains(location)) {
+                    super.visitMethodInsn(Opcodes.INVOKESTATIC,
+                            "edu/utexas/ece/flakesync/agent/Utility", "delay", "()V", false);
                 }
+
                 super.visitMethodInsn(opcode, owner, name, desc, itf);
             }
         };
