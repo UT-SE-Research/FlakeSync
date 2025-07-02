@@ -98,7 +98,7 @@ public class SurefireExecution {
 
     protected SurefireExecution(Plugin surefire, String originalArgLine, String executionId,
                                 MavenProject mavenProject, MavenSession mavenSession, BuildPluginManager pluginManager,
-                                String nondexDir, String testName, String localRepository) {
+                                String flakesyncDir, String testName, String localRepository) {
         this.executionId = executionId;
         this.surefire = surefire;
         this.testName = testName;
@@ -106,7 +106,7 @@ public class SurefireExecution {
         this.mavenProject = mavenProject;
         this.mavenSession = mavenSession;
         this.pluginManager = pluginManager;
-        this.configuration = new Configuration(executionId, nondexDir, testName);
+        this.configuration = new Configuration(executionId, flakesyncDir, testName);
         this.localRepository = localRepository;
 
     }
