@@ -242,7 +242,7 @@ public class SurefireExecution {
         this(surefire, originalArgLine, "clean_" + Utils.getFreshExecutionId(), mavenProject, mavenSession, pluginManager,
             flakesyncDir, testName, localRepository);
 
-        makeRootMethodAnalysisExecution(methodName);
+        makeRootMethodAnalysisExecution(delay, methodName);
     }
 
     private void makeRootMethodAnalysisExecution(int delay, String methodName) {
