@@ -41,7 +41,7 @@ public class Utility {
 
     // Map of threads to stack of currently executing methods
     public static Map<Long, Stack<String>> threadToMethods = new ConcurrentHashMap<>();
-    public static List<Long> threadCountListFromUtility = new ArrayList(); // To collect thread count
+    public static List<Long>  threadCountListFromUtility = new ArrayList(); // To collect thread count
 
     // Set of methods found to have been run concurrently with other methods
     public static Set<String> methodsRunConcurrently = new HashSet<>();
