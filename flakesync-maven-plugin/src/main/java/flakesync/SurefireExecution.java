@@ -118,11 +118,6 @@ public class SurefireExecution {
         this(surefire, originalArgLine, "clean_" + Utils.getFreshExecutionId(), mavenProject, mavenSession, pluginManager,
                 flakesyncDir, testName, localRepository);
 
-        makeConcurrentMethodsExecution();
-
-    }
-
-    private void makeConcurrentMethodsExecution() {
         this.phase = PHASE.LOCATIONS_MINIMIZER;
 
         System.out.println("Inside run in CleanSurefireExecution");
@@ -130,6 +125,7 @@ public class SurefireExecution {
         this.domNode = this.applyFlakeSyncConfig((Xpp3Dom) this.surefire.getConfiguration());
         this.setupArgline(TYPE.CONCURRENT_METHODS);
     }
+
 
     //MOJO RunWithDelaysMojo: For getting complete list of locations(not minimal)
     public SurefireExecution(Plugin surefire, String originalArgLine, MavenProject mavenProject,
@@ -139,10 +135,6 @@ public class SurefireExecution {
         this(surefire, originalArgLine, "clean_" + Utils.getFreshExecutionId(), mavenProject, mavenSession, pluginManager,
             flakesyncDir, testName, localRepository);
 
-        makeDelayEverywhereExecution(delay);
-    }
-
-    private void makeDelayEverywhereExecution(int delay) {
         this.delay = delay;
         this.phase = PHASE.LOCATIONS_MINIMIZER;
         this.domNode = this.applyFlakeSyncConfig((Xpp3Dom) this.surefire.getConfiguration());
@@ -162,41 +154,25 @@ public class SurefireExecution {
 
         switch (mode) {
             case 0:
-                makeGetStacktraceExecutionCritSearch();
+                this.phase = PHASE.CRITICAL_POINT_SEARCH;
+                this.domNode = this.applyFlakeSyncConfig((Xpp3Dom) this.surefire.getConfiguration());
+                this.setupArgline(TYPE.GET_STACK_TRACE);
                 break;
             case 1:
-                makeDeltaDebugExecution();
+                this.phase = PHASE.LOCATIONS_MINIMIZER;
+                this.domNode = this.applyFlakeSyncConfig((Xpp3Dom) this.surefire.getConfiguration());
+                this.setupArgline(TYPE.DELTA_DEBUG);
                 break;
             case 2:
-                makeGetStacktraceExecutionBarrierSearch();
+                this.phase = PHASE.BARRIER_POINT_SEARCH;
+                this.domNode = this.applyFlakeSyncConfig((Xpp3Dom) this.surefire.getConfiguration());
+                this.setupArgline(TYPE.BARRIER_STACKTRACE);
                 break;
             case 3:
-                makeSequentialDebugExecution();
+                this.phase = PHASE.CRITICAL_POINT_SEARCH;
+                this.domNode = this.applyFlakeSyncConfig((Xpp3Dom) this.surefire.getConfiguration());
+                this.setupArgline(TYPE.SEQUENTIAL_DEBUG);
         }
-    }
-
-    private void makeGetStacktraceExecutionCritSearch() {
-        this.phase = PHASE.CRITICAL_POINT_SEARCH;
-        this.domNode = this.applyFlakeSyncConfig((Xpp3Dom) this.surefire.getConfiguration());
-        this.setupArgline(TYPE.GET_STACK_TRACE);
-    }
-
-    private void makeDeltaDebugExecution() {
-        this.phase = PHASE.LOCATIONS_MINIMIZER;
-        this.domNode = this.applyFlakeSyncConfig((Xpp3Dom) this.surefire.getConfiguration());
-        this.setupArgline(TYPE.DELTA_DEBUG);
-    }
-
-    private void makeGetStacktraceExecutionBarrierSearch() {
-        this.phase = PHASE.BARRIER_POINT_SEARCH;
-        this.domNode = this.applyFlakeSyncConfig((Xpp3Dom) this.surefire.getConfiguration());
-        this.setupArgline(TYPE.BARRIER_STACKTRACE);
-    }
-
-    private void makeSequentialDebugExecution() {
-        this.phase = PHASE.CRITICAL_POINT_SEARCH;
-        this.domNode = this.applyFlakeSyncConfig((Xpp3Dom) this.surefire.getConfiguration());
-        this.setupArgline(TYPE.SEQUENTIAL_DEBUG);
     }
 
     // MOJO CritSearchMojo: Delay Injection
@@ -207,32 +183,24 @@ public class SurefireExecution {
             flakesyncDir, testName, localRepository);
 
         if (crit) {
-            makeDelayInjectionExecution(delay, pathToLocations, methodName);
+            this.phase = PHASE.CRITICAL_POINT_SEARCH;
+
+            this.delay = delay;
+            this.pathToLocations = pathToLocations;
+            this.methodName = methodName;
+
+            this.domNode = this.applyFlakeSyncConfig((Xpp3Dom) this.surefire.getConfiguration());
+            this.setupArgline(TYPE.DELAY_INJECTION);
         } else {
-            makeAddBarrierPointExecution2(delay, pathToLocations, methodName);
+            this.phase = PHASE.BARRIER_POINT_SEARCH;
+
+            this.delay = delay;
+            this.startLine = pathToLocations;
+            this.yieldingPoint = methodName;
+
+            this.domNode = this.applyFlakeSyncConfig((Xpp3Dom) this.surefire.getConfiguration());
+            this.setupArgline(TYPE.ADD_BARRIER_POINT_2);
         }
-    }
-
-    private void makeDelayInjectionExecution(int delay, String pathToLocations, String methodName) {
-        this.phase = PHASE.CRITICAL_POINT_SEARCH;
-
-        this.delay = delay;
-        this.pathToLocations = pathToLocations;
-        this.methodName = methodName;
-
-        this.domNode = this.applyFlakeSyncConfig((Xpp3Dom) this.surefire.getConfiguration());
-        this.setupArgline(TYPE.DELAY_INJECTION);
-    }
-
-    private void makeAddBarrierPointExecution2(int delay, String pathToLocations, String methodName) {
-        this.phase = PHASE.BARRIER_POINT_SEARCH;
-
-        this.delay = delay;
-        this.startLine = pathToLocations;
-        this.yieldingPoint = methodName;
-
-        this.domNode = this.applyFlakeSyncConfig((Xpp3Dom) this.surefire.getConfiguration());
-        this.setupArgline(TYPE.ADD_BARRIER_POINT_2);
     }
 
     //MOJO CritSearchMojo: Root Method Analysis
@@ -242,10 +210,6 @@ public class SurefireExecution {
         this(surefire, originalArgLine, "clean_" + Utils.getFreshExecutionId(), mavenProject, mavenSession, pluginManager,
             flakesyncDir, testName, localRepository);
 
-        makeRootMethodAnalysisExecution(methodName);
-    }
-
-    private void makeRootMethodAnalysisExecution(int delay, String methodName) {
         this.phase = PHASE.CRITICAL_POINT_SEARCH;
 
         this.delay = delay;
@@ -263,43 +227,32 @@ public class SurefireExecution {
             flakesyncDir, testName, localRepository);
 
         if (!execMon) {
-            makeDownwardMvnExecution(delay, startLine);
+            this.phase = PHASE.BARRIER_POINT_SEARCH;
+
+            this.delay = delay;
+            this.startLine = startLine;
+
+            this.domNode = this.applyFlakeSyncConfig((Xpp3Dom) this.surefire.getConfiguration());
+            this.setupArgline(TYPE.DOWNWARD_MAVEN_EXEC);
+            System.out.println(this.domNode);
         } else {
-            makeGetThresholdExecution(delay, startLine);
+            this.phase = PHASE.BARRIER_POINT_SEARCH;
+
+            this.delay = delay;
+            this.startLine = startLine;
+
+            this.domNode = this.applyFlakeSyncConfig((Xpp3Dom) this.surefire.getConfiguration());
+            this.setupArgline(TYPE.EXECUTION_MONITOR);
         }
     }
 
-    private void makeDownwardMvnExecution(int delay, String startLine) {
-        this.phase = PHASE.BARRIER_POINT_SEARCH;
-
-        this.delay = delay;
-        this.startLine = startLine;
-
-        this.domNode = this.applyFlakeSyncConfig((Xpp3Dom) this.surefire.getConfiguration());
-        this.setupArgline(TYPE.DOWNWARD_MAVEN_EXEC);
-    }
-
-    private void makeGetThresholdExecution(int delay, String startLine) {
-        this.phase = PHASE.BARRIER_POINT_SEARCH;
-
-        this.delay = delay;
-        this.startLine = startLine;
-
-        this.domNode = this.applyFlakeSyncConfig((Xpp3Dom) this.surefire.getConfiguration());
-        this.setupArgline(TYPE.EXECUTION_MONITOR);
-    }
-
-    // MOJO BarrierPointMojo: Add barrier point
+    // MOJO BarrierPointMojo: Instrument/add barrier point
     public SurefireExecution(Plugin surefire, String originalArgLine, MavenProject mavenProject,
                              MavenSession mavenSession, BuildPluginManager pluginManager, String flakesyncDir, String localRepository,
                              String testName, int delay, String startLine, String yieldingPoint, int threshold) {
         this(surefire, originalArgLine, "clean_" + Utils.getFreshExecutionId(), mavenProject, mavenSession, pluginManager,
             flakesyncDir, testName, localRepository);
 
-        makeAddBarrierPointExecution(delay, startLine, yieldingPoint, threshold);
-    }
-
-    private void makeAddBarrierPointExecution(int delay, String startLine, String yieldingPoint, int threshold) {
         this.phase = PHASE.BARRIER_POINT_SEARCH;
 
         this.delay = delay;
@@ -310,8 +263,6 @@ public class SurefireExecution {
         this.domNode = this.applyFlakeSyncConfig((Xpp3Dom) this.surefire.getConfiguration());
         this.setupArgline(TYPE.ADD_BARRIER_POINT);
     }
-
-
 
     public Configuration getConfiguration() {
         return this.configuration;
