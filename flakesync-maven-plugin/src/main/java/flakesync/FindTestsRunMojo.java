@@ -53,7 +53,7 @@ public class FindTestsRunMojo extends FlakeSyncAbstractMojo {
         try {
             // If we add clean exceptions to allExceptions then the build fails if anything fails without nondex.
             // Everything in nondex-test is expected to fail without nondex so we throw away the result here.
-            CleanSurefireExecution cleanExec = new CleanSurefireExecution(
+            SurefireExecution cleanExec = SurefireExecution.SurefireFactory.createConcurrentMethodsExec(
                     this.surefire, this.originalArgLine, this.mavenProject,
                     this.mavenSession, this.pluginManager,
                     Paths.get(this.baseDir.getAbsolutePath(), ConfigurationDefaults.DEFAULT_FLAKESYNC_DIR).toString(),
@@ -69,7 +69,7 @@ public class FindTestsRunMojo extends FlakeSyncAbstractMojo {
 
 
     private MojoExecutionException executeSurefireExecution(MojoExecutionException allExceptions,
-                                                            CleanSurefireExecution execution)
+                                                            SurefireExecution execution)
                                                             throws Throwable {
         try {
             execution.run();

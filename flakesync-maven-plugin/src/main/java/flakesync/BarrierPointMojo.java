@@ -61,12 +61,12 @@ public class BarrierPointMojo extends FlakeSyncAbstractMojo {
                 if (firstLoc.contains("Test") && elseb) {
                     System.out.println("It appears that the boundary exists in the test code");
 
-                    CleanSurefireExecution downwardMvnExecution = new CleanSurefireExecution(this.surefire,
-                            this.originalArgLine, this.mavenProject, this.mavenSession, this.pluginManager,
-                            Paths.get(this.baseDir.getAbsolutePath(),
+                    SurefireExecution downwardMvnExecution = SurefireExecution.SurefireFactory.createDwnwrdMvnExec(
+                            this.surefire, this.originalArgLine, this.mavenProject, this.mavenSession,
+                            this.pluginManager, Paths.get(this.baseDir.getAbsolutePath(),
                                     ConfigurationDefaults.DEFAULT_FLAKESYNC_DIR).toString(),
                             this.localRepository, this.testName, delay,
-                            firstLoc.replace("/", "."), false);
+                            firstLoc.replace("/", "."));
 
                     executeSurefireExecution(null, downwardMvnExecution);
 
@@ -76,11 +76,11 @@ public class BarrierPointMojo extends FlakeSyncAbstractMojo {
 
                     //Fix this!
                     String yieldingPoint = "";
-                    downwardMvnExecution = new CleanSurefireExecution(this.surefire, this.originalArgLine,
-                            this.mavenProject, this.mavenSession, this.pluginManager,
+                    downwardMvnExecution = SurefireExecution.SurefireFactory.createBasicBarrierPtExec(this.surefire,
+                            this.originalArgLine, this.mavenProject, this.mavenSession, this.pluginManager,
                             Paths.get(this.baseDir.getAbsolutePath(),
                                     ConfigurationDefaults.DEFAULT_FLAKESYNC_DIR).toString(),
-                            this.localRepository, this.testName, delay, firstLoc, yieldingPoint, 1);
+                            this.localRepository, this.testName, delay, firstLoc, yieldingPoint);
 
                     boolean fail = executeSurefireExecution(null, downwardMvnExecution);
 
@@ -90,12 +90,11 @@ public class BarrierPointMojo extends FlakeSyncAbstractMojo {
                     // If test passed add to results file*/
                 } else {
                     System.out.println("GETTING THE STACKTRACE======================================================");
-                    CleanSurefireExecution stackTraceExec = new CleanSurefireExecution(this.surefire,
-                            this.originalArgLine, this.mavenProject, this.mavenSession, this.pluginManager,
-                            Paths.get(this.baseDir.getAbsolutePath(),
+                    SurefireExecution stackTraceExec = SurefireExecution.SurefireFactory.createBarrSearchStacktraceExec(
+                            this.surefire, this.originalArgLine, this.mavenProject, this.mavenSession,
+                            this.pluginManager, Paths.get(this.baseDir.getAbsolutePath(),
                                     ConfigurationDefaults.DEFAULT_FLAKESYNC_DIR).toString(),
-                            this.localRepository, this.testName, delay, firstLoc.replace("/", "."),
-                            2);
+                            this.localRepository, this.testName, delay, firstLoc.replace("/", "."));
 
                     executeSurefireExecution(null, stackTraceExec);
 
@@ -144,11 +143,11 @@ public class BarrierPointMojo extends FlakeSyncAbstractMojo {
                         System.out.println(endLoc + "\n" + yieldPoint);
                         if (!visited.contains(classN + "#" + classes.get(classN))) {
                             visited.add(classN + "#" + classes.get(classN));
-                            CleanSurefireExecution barrierPoint = new CleanSurefireExecution(this.surefire,
-                                    this.originalArgLine, this.mavenProject, this.mavenSession,
+                            SurefireExecution barrierPoint = SurefireExecution.SurefireFactory.createPrepBarrierPtExec(
+                                    this.surefire, this.originalArgLine, this.mavenProject, this.mavenSession,
                                     this.pluginManager, Paths.get(this.baseDir.getAbsolutePath(),
                                     ConfigurationDefaults.DEFAULT_FLAKESYNC_DIR).toString(),
-                                    this.localRepository, this.testName, delay, endLoc, yieldPoint, true);
+                                    this.localRepository, this.testName, delay, endLoc, yieldPoint);
 
                             executeSurefireExecution(null, barrierPoint);
 
@@ -164,43 +163,24 @@ public class BarrierPointMojo extends FlakeSyncAbstractMojo {
                             for (int ln = Integer.parseInt(yieldPoint.split("#")[1]); ln >= beginning; ln--) {
                                 String yieldingPoint = classN + "#" + ln;
 
-                                barrierPoint = new CleanSurefireExecution(this.surefire, this.originalArgLine,
-                                        this.mavenProject, this.mavenSession, this.pluginManager,
+                                barrierPoint = SurefireExecution.SurefireFactory.createBasicBarrierPtExec(this.surefire,
+                                        this.originalArgLine, this.mavenProject, this.mavenSession, this.pluginManager,
                                         Paths.get(this.baseDir.getAbsolutePath(),
                                                 ConfigurationDefaults.DEFAULT_FLAKESYNC_DIR).toString(),
-                                        this.localRepository, this.testName, delay, endLoc, yieldingPoint, 1);
+                                        this.localRepository, this.testName, delay, endLoc, yieldingPoint);
 
                                 boolean fail = executeSurefireExecution(null, barrierPoint);
 
-                                /*YieldPointRunnable ypr = new YieldPointRunnable(this.surefire, this.originalArgLine,
-                                        this.mavenProject, this.mavenSession, this.pluginManager,
-                                        this.baseDir, this.localRepository, this.testName, delay,
-                                        endLoc, yieldingPoint, 1);
-                                long start = System.currentTimeMillis();
-                                long counter = start;
-                                Thread barrierPointThread = new Thread(ypr);
-                                barrierPointThread.start();
-
-                                while (counter < (180000000 + start)) {
-                                    counter++;
-                                }
-                                if (!ypr.finishedTest) {
-                                    ypr.terminate();
-                                    System.out.println("oops test timed out");
-                                    continue;
-                                }
-
-                                boolean fail = !ypr.testPass;*/
                                 if (!fail && checkValidPass()) {
                                     addBarrierPointToResults(bw, line, yieldingPoint, 1);
                                     break;
                                 } else {
                                     System.out.println("FAIL: " + yieldingPoint + " " + endLoc);
-                                    CleanSurefireExecution execMon = new CleanSurefireExecution(this.surefire,
-                                            this.originalArgLine, this.mavenProject, this.mavenSession,
+                                    SurefireExecution execMon = SurefireExecution.SurefireFactory.createExecMonitorExec(
+                                            this.surefire, this.originalArgLine, this.mavenProject, this.mavenSession,
                                             this.pluginManager, Paths.get(this.baseDir.getAbsolutePath(),
                                             ConfigurationDefaults.DEFAULT_FLAKESYNC_DIR).toString(),
-                                            this.localRepository, this.testName, delay, endLoc, true);
+                                            this.localRepository, this.testName, delay, endLoc);
                                     executeSurefireExecution(null, execMon);
 
                                     File execsFile = new File(this.mavenProject.getBasedir()
@@ -209,9 +189,9 @@ public class BarrierPointMojo extends FlakeSyncAbstractMojo {
                                     int numExecutions = Integer.parseInt(reader.readLine().split("=")[1]);
                                     if (numExecutions > 1) {
                                         System.out.println("WE HAVE A NEW THRESHOLD: " + numExecutions);
-                                        barrierPoint = new CleanSurefireExecution(this.surefire, this.originalArgLine,
-                                                this.mavenProject, this.mavenSession, this.pluginManager,
-                                                Paths.get(this.baseDir.getAbsolutePath(),
+                                        barrierPoint = SurefireExecution.SurefireFactory.createBarrierPtExec(this.surefire,
+                                                this.originalArgLine, this.mavenProject, this.mavenSession,
+                                                this.pluginManager, Paths.get(this.baseDir.getAbsolutePath(),
                                                         ConfigurationDefaults.DEFAULT_FLAKESYNC_DIR).toString(),
                                                 this.localRepository, this.testName, delay, endLoc, yieldingPoint,
                                                 numExecutions);
@@ -285,7 +265,7 @@ public class BarrierPointMojo extends FlakeSyncAbstractMojo {
 
 
     private boolean executeSurefireExecution(MojoExecutionException allExceptions,
-                                             CleanSurefireExecution execution)
+                                             SurefireExecution execution)
             throws Throwable {
         try {
             execution.run();

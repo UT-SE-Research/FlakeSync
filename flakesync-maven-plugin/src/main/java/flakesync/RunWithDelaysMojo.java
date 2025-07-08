@@ -63,7 +63,7 @@ public class RunWithDelaysMojo extends FlakeSyncAbstractMojo {
         createWhiteList();
 
         for (int i = 0; i < delays.length; i++) {
-            CleanSurefireExecution cleanExec = new CleanSurefireExecution(
+            SurefireExecution cleanExec = SurefireExecution.SurefireFactory.createDelayAllExec(
                     this.surefire, this.originalArgLine, this.mavenProject,
                     this.mavenSession, this.pluginManager,
                     Paths.get(this.baseDir.getAbsolutePath(), ConfigurationDefaults.DEFAULT_FLAKESYNC_DIR).toString(),
@@ -81,7 +81,7 @@ public class RunWithDelaysMojo extends FlakeSyncAbstractMojo {
 
 
     private MojoExecutionException executeSurefireExecution(MojoExecutionException allExceptions,
-                                                            CleanSurefireExecution execution) throws MojoExecutionException,
+                                                            SurefireExecution execution) throws MojoExecutionException,
             Throwable {
         execution.run();
         return allExceptions;
