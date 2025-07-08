@@ -112,7 +112,7 @@ public class SurefireExecution {
     }
 
     //MOJO FindTestsRunMojo: For finding concurrent methods and number of threads running
-    public SurefireExecution(Plugin surefire, String originalArgLine, MavenProject mavenProject,
+    private SurefireExecution(Plugin surefire, String originalArgLine, MavenProject mavenProject,
                              MavenSession mavenSession, BuildPluginManager pluginManager, String flakesyncDir, String testName,
                              String localRepository) {
         this(surefire, originalArgLine, "clean_" + Utils.getFreshExecutionId(), mavenProject, mavenSession, pluginManager,
@@ -594,5 +594,18 @@ public class SurefireExecution {
             toSanitize = subexpr.matcher(toSanitize).replaceAll("");
         }
         return toSanitize.trim();
+    }
+
+    public static class SurefireFactory {
+        public static SurefireExecution createConcurrentMethodsExec(Plugin surefire, String originalArgLine,
+                                                             MavenProject mavenProject, MavenSession mavenSession,
+                                                             BuildPluginManager pluginManager, String flakesyncDir,
+                                                             String testName, String localRepository) {
+
+            SurefireExecution execution = new SurefireExecution(surefire, originalArgLine, mavenProject,
+                    mavenSession, pluginManager, flakesyncDir, testName, localRepository);
+
+            return execution;
+        }
     }
 }

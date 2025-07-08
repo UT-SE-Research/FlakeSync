@@ -49,7 +49,7 @@ public class FindTestsRunMojo extends FlakeSyncAbstractMojo {
         Logger.getGlobal().log(Level.INFO, ("Running FindTestsRunMojo"));
 
         try {
-            SurefireExecution cleanExec = SurefireFactory.createConcurrentMethodsExec(this.surefire,
+            SurefireExecution cleanExec = SurefireExecution.SurefireFactory.createConcurrentMethodsExec(this.surefire,
                     this.originalArgLine, this.mavenProject, this.mavenSession, this.pluginManager,
                     Paths.get(this.baseDir.getAbsolutePath(),
                             ConfigurationDefaults.DEFAULT_FLAKESYNC_DIR).toString(),
