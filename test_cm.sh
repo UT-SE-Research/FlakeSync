@@ -20,7 +20,7 @@ while read line; do
     mvn install -pl ${module} -am -DskipTests=true > out.txt
 
     # Run command
-    mvn edu.utexas.ece:flakesync-maven-plugin:1.0-SNAPSHOT:flakefind -Dflakesync.testName=${testname} -pl $module > out.txt    
+    mvn edu.utexas.ece:flakesync-maven-plugin:1.0-SNAPSHOT:concurrentfind -Dflakesync.testName=${testname} -pl $module > out.txt    
 
     # Check that the results are consistent (TBD)
     # Assume expected results are in a known file
