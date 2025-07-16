@@ -4,7 +4,7 @@ name: auto-run-test-flakesync-concurrentmethods
 on: [push, pull_request]
 
 jobs:
-  install:
+  test-concurrentmethods:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
