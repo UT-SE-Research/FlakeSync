@@ -46,31 +46,20 @@ import java.util.regex.Pattern;
 import static flakesync.common.ConfigurationDefaults.BARRIER_SEARCH_JAR;
 import static flakesync.common.ConfigurationDefaults.BOUNDARY_SEARCH_JAR;
 import static flakesync.common.ConfigurationDefaults.CONCURRENT_METHODS_JAR;
-import static flakesync.common.ConfigurationDefaults.DEFAULT_FLAKESYNC_DIR;
 
 public class SurefireExecution {
 
-    protected Configuration configuration;
-    protected final String executionId;
 
+    protected Xpp3Dom domNode;
     protected Plugin surefire;
     protected MavenProject mavenProject;
     protected MavenSession mavenSession;
     protected BuildPluginManager pluginManager;
-    protected String testName;
+    protected String flakesyncDir;
     protected String localRepository;
-    protected String originalArgLine;
-
+    protected Configuration configuration;
 
     protected int delay;
-    protected String pathToLocations;
-    protected String methodName;
-    protected String startLine;
-    protected String yieldingPoint;
-    protected int threshold;
-
-    protected PHASE phase;
-
 
     enum PHASE {
         LOCATIONS_MINIMIZER,
@@ -78,491 +67,49 @@ public class SurefireExecution {
         BARRIER_POINT_SEARCH
     }
 
-    enum TYPE {
-        CONCURRENT_METHODS,
-        ALL_LOCATIONS,
-        DELTA_DEBUG,
-        GET_STACK_TRACE,
-        ROOT_METHOD_ANALYSIS,
-        DELAY_INJECTION,
-        SEQUENTIAL_DEBUG,
-        METHOD_END_LINE,
-        DOWNWARD_MAVEN_EXEC,
-        ADD_BARRIER_POINT,
-        BARRIER_STACKTRACE,
-        ADD_BARRIER_POINT_2,
-        EXECUTION_MONITOR
-    }
-
-    protected Xpp3Dom domNode;
-
-    protected SurefireExecution(Plugin surefire, String originalArgLine, String executionId,
-                                MavenProject mavenProject, MavenSession mavenSession, BuildPluginManager pluginManager,
-                                String flakesyncDir, String testName, String localRepository) {
-        this.executionId = executionId;
+    private SurefireExecution(Plugin surefire, MavenProject mavenProject, MavenSession mavenSession,
+                               BuildPluginManager pluginManager, String flakesyncDir, String localRepository) {
         this.surefire = surefire;
-        this.testName = testName;
-        this.originalArgLine = sanitizeAndRemoveEnvironmentVars(originalArgLine);
         this.mavenProject = mavenProject;
         this.mavenSession = mavenSession;
         this.pluginManager = pluginManager;
-        this.configuration = new Configuration(executionId, flakesyncDir, testName);
+        this.flakesyncDir = flakesyncDir;
         this.localRepository = localRepository;
-
-    }
-
-    //MOJO FindTestsRunMojo: For finding concurrent methods and number of threads running
-    private SurefireExecution(Plugin surefire, String originalArgLine, MavenProject mavenProject,
-                              MavenSession mavenSession, BuildPluginManager pluginManager, String flakesyncDir,
-                              String testName, String localRepository) {
-        this(surefire, originalArgLine, "clean_" + Utils.getFreshExecutionId(), mavenProject, mavenSession,
-                pluginManager, flakesyncDir, testName, localRepository);
-
-        this.phase = PHASE.LOCATIONS_MINIMIZER;
-
-        System.out.println("Inside run in CleanSurefireExecution");
-
-        this.domNode = this.applyFlakeSyncConfig((Xpp3Dom) this.surefire.getConfiguration());
-        this.setupArgline(TYPE.CONCURRENT_METHODS);
-    }
-
-
-    //MOJO RunWithDelaysMojo: For getting complete list of locations(not minimal)
-    public SurefireExecution(Plugin surefire, String originalArgLine, MavenProject mavenProject,
-                             MavenSession mavenSession, BuildPluginManager pluginManager, String flakesyncDir,
-                             String localRepository, String testName, int delay) {
-
-        this(surefire, originalArgLine, "clean_" + Utils.getFreshExecutionId(), mavenProject, mavenSession,
-                pluginManager, flakesyncDir, testName, localRepository);
-
-        this.delay = delay;
-        this.phase = PHASE.LOCATIONS_MINIMIZER;
-        this.domNode = this.applyFlakeSyncConfig((Xpp3Dom) this.surefire.getConfiguration());
-        this.setupArgline(TYPE.ALL_LOCATIONS);
-    }
-
-    //MOJO DeltaDebugMojo(0), MOJO CritSearchMojo: Generate stack trace(1), Generate stack trace barrier point(2)
-    public SurefireExecution(Plugin surefire, String originalArgLine, MavenProject mavenProject,
-                             MavenSession mavenSession, BuildPluginManager pluginManager,
-                             String flakesyncDir, String localRepository, String testName, int delay,
-                             String pathToLocations, int mode) {
-        this(surefire, originalArgLine, "clean_" + Utils.getFreshExecutionId(), mavenProject, mavenSession,
-                pluginManager, flakesyncDir, testName, localRepository);
-
-        this.delay = delay;
-        this.pathToLocations = pathToLocations;
-
-        switch (mode) {
-            case 0:
-                this.phase = PHASE.CRITICAL_POINT_SEARCH;
-                this.domNode = this.applyFlakeSyncConfig((Xpp3Dom) this.surefire.getConfiguration());
-                this.setupArgline(TYPE.GET_STACK_TRACE);
-                break;
-            case 1:
-                this.phase = PHASE.LOCATIONS_MINIMIZER;
-                this.domNode = this.applyFlakeSyncConfig((Xpp3Dom) this.surefire.getConfiguration());
-                this.setupArgline(TYPE.DELTA_DEBUG);
-                break;
-            case 2:
-                this.phase = PHASE.BARRIER_POINT_SEARCH;
-                this.domNode = this.applyFlakeSyncConfig((Xpp3Dom) this.surefire.getConfiguration());
-                this.setupArgline(TYPE.BARRIER_STACKTRACE);
-                break;
-            case 3:
-                this.phase = PHASE.CRITICAL_POINT_SEARCH;
-                this.domNode = this.applyFlakeSyncConfig((Xpp3Dom) this.surefire.getConfiguration());
-                this.setupArgline(TYPE.SEQUENTIAL_DEBUG);
-                break;
-            default:
-                throw new RuntimeException("Unsupported mode: " + mode);
-        }
-    }
-
-    // MOJO CritSearchMojo: Delay Injection
-    public SurefireExecution(Plugin surefire, String originalArgLine, MavenProject mavenProject,
-                             MavenSession mavenSession, BuildPluginManager pluginManager, String flakesyncDir,
-                             String localRepository, String testName, int delay, String pathToLocations,
-                             String methodName, boolean crit) {
-        this(surefire, originalArgLine, "clean_" + Utils.getFreshExecutionId(), mavenProject, mavenSession,
-                pluginManager, flakesyncDir, testName, localRepository);
-
-        if (crit) {
-            this.phase = PHASE.CRITICAL_POINT_SEARCH;
-
-            this.delay = delay;
-            this.pathToLocations = pathToLocations;
-            this.methodName = methodName;
-
-            this.domNode = this.applyFlakeSyncConfig((Xpp3Dom) this.surefire.getConfiguration());
-            this.setupArgline(TYPE.DELAY_INJECTION);
-        } else {
-            this.phase = PHASE.BARRIER_POINT_SEARCH;
-
-            this.delay = delay;
-            this.startLine = pathToLocations;
-            this.yieldingPoint = methodName;
-
-            this.domNode = this.applyFlakeSyncConfig((Xpp3Dom) this.surefire.getConfiguration());
-            this.setupArgline(TYPE.ADD_BARRIER_POINT_2);
-        }
-    }
-
-    //MOJO CritSearchMojo: Root Method Analysis
-    public SurefireExecution(Plugin surefire, String originalArgLine, MavenProject mavenProject,
-                             MavenSession mavenSession, BuildPluginManager pluginManager, String flakesyncDir,
-                             String localRepository, String testName, int delay, String methodName) {
-        this(surefire, originalArgLine, "clean_" + Utils.getFreshExecutionId(), mavenProject, mavenSession,
-                pluginManager, flakesyncDir, testName, localRepository);
-
-        this.phase = PHASE.CRITICAL_POINT_SEARCH;
-
-        this.delay = delay;
-        this.methodName = methodName;
-
-        this.domNode = this.applyFlakeSyncConfig((Xpp3Dom) this.surefire.getConfiguration());
-        this.setupArgline(TYPE.ROOT_METHOD_ANALYSIS);
-    }
-
-    // MOJO BarrierPointMojo: Downward Maven
-    public SurefireExecution(Plugin surefire, String originalArgLine, MavenProject mavenProject,
-                             MavenSession mavenSession, BuildPluginManager pluginManager, String flakesyncDir,
-                             String localRepository, String testName, int delay, String startLine, boolean execMon) {
-        this(surefire, originalArgLine, "clean_" + Utils.getFreshExecutionId(), mavenProject, mavenSession,
-                pluginManager, flakesyncDir, testName, localRepository);
-
-        if (!execMon) {
-            this.phase = PHASE.BARRIER_POINT_SEARCH;
-
-            this.delay = delay;
-            this.startLine = startLine;
-
-            this.domNode = this.applyFlakeSyncConfig((Xpp3Dom) this.surefire.getConfiguration());
-            this.setupArgline(TYPE.DOWNWARD_MAVEN_EXEC);
-            System.out.println(this.domNode);
-        } else {
-            this.phase = PHASE.BARRIER_POINT_SEARCH;
-
-            this.delay = delay;
-            this.startLine = startLine;
-
-            this.domNode = this.applyFlakeSyncConfig((Xpp3Dom) this.surefire.getConfiguration());
-            this.setupArgline(TYPE.EXECUTION_MONITOR);
-        }
-    }
-
-    // MOJO BarrierPointMojo: Instrument/add barrier point
-    public SurefireExecution(Plugin surefire, String originalArgLine, MavenProject mavenProject,
-                             MavenSession mavenSession, BuildPluginManager pluginManager, String flakesyncDir,
-                             String localRepository, String testName, int delay, String startLine, String yieldingPoint,
-                             int threshold) {
-        this(surefire, originalArgLine, "clean_" + Utils.getFreshExecutionId(), mavenProject, mavenSession, pluginManager,
-            flakesyncDir, testName, localRepository);
-
-        this.phase = PHASE.BARRIER_POINT_SEARCH;
-
-        this.delay = delay;
-        this.startLine = startLine;
-        this.yieldingPoint = yieldingPoint;
-        this.threshold = threshold;
-
-        this.domNode = this.applyFlakeSyncConfig((Xpp3Dom) this.surefire.getConfiguration());
-        this.setupArgline(TYPE.ADD_BARRIER_POINT);
-    }
-
-    public Configuration getConfiguration() {
-        return this.configuration;
+        this.delay = 0;
+        String executionId = "clean_" + Utils.getFreshExecutionId();
+        this.configuration = new Configuration(executionId, flakesyncDir);
+        this.domNode = this.applyFlakeSyncConfig((Xpp3Dom) surefire.getConfiguration(), executionId);
     }
 
     public void run() throws Throwable {
+
         try {
             System.out.println(domNode);
             MojoExecutor.executeMojo(this.surefire, MojoExecutor.goal("test"), domNode,
-                MojoExecutor.executionEnvironment(this.mavenProject, this.mavenSession, this.pluginManager));
+                    MojoExecutor.executionEnvironment(this.mavenProject, this.mavenSession, this.pluginManager));
         } catch (MojoExecutionException mojoException) {
             if (mojoException.getCause() instanceof PluginExecutionException) {
                 Logger.getGlobal().log(Level.INFO, "Surefire TIMED OUT when running tests for "
                         + this.configuration.executionId + " with delay: " + this.delay);
                 throw mojoException.getCause();
             } else {
-                Logger.getGlobal().log(Level.INFO, "Surefire failed when running tests for " + this.configuration.executionId
-                        + " with delay: " + this.delay);
+                Logger.getGlobal().log(Level.INFO, "Surefire failed when running tests for "
+                        + this.configuration.executionId + " with delay: " + this.delay);
                 throw new MojoExecutionException("escalating");
             }
         }
     }
 
-    private boolean checkSysPropsDeprecated() {
-        System.out.println("Checking system properties deprecated");
-        String[] split = this.surefire.getVersion().split("\\.");
-        System.out.println(split[0]);
-        float version = Float.parseFloat(split[0]) + (Float.parseFloat(split[1]) / (10 * split[1].length()));
-        System.out.println("here's the version as a float: " + version);
-        return version > 2.20;
-    }
-
-    protected void setupArgline(TYPE mode) {
-        // create the flakeSync-delay argLine for surefire based on the current configuration
-        // this adds things like where to save test reports, what directory NonDex
-        // should store results in, what seed and mode should be used.
-
-        this.domNode.addChild((this.makeNode("test", this.testName)));
-
-        String pathToJar = this.localRepository;
-        // TODO: Encode path to agent in some final static variable for ease of access and potential changes to name/version
-        String argLineToSet = "-javaagent:" + pathToJar;
-        if (this.phase == PHASE.LOCATIONS_MINIMIZER) {
-            argLineToSet += CONCURRENT_METHODS_JAR;
-        } else if (this.phase == PHASE.CRITICAL_POINT_SEARCH) {
-            argLineToSet += BOUNDARY_SEARCH_JAR;
-        } else if (this.phase == PHASE.BARRIER_POINT_SEARCH) {
-            argLineToSet += BARRIER_SEARCH_JAR;
-        }
-
-        String properties = (!checkSysPropsDeprecated()) ? ("systemPropertyVariables") : ("systemProperties");
-        System.out.println(properties + "******************");
-
-        for (Xpp3Dom node : this.domNode.getChildren()) {
-            if ("argLine".equals(node.getName()) && !node.getValue().contains(argLineToSet)) {
-                Logger.getGlobal().log(Level.INFO, "Adding argLine to existing argLine specified by the project");
-                String current = sanitizeAndRemoveEnvironmentVars(node.getValue());
-                node.setValue(argLineToSet + " " + current);
-            }
-
-            //if (mode == TYPE.ADD_BARRIER_POINT || mode == TYPE.ADD_BARRIER_POINT_2) {
-            if ("forkedProcessTimeoutInSeconds".equals(node.getName())) {
-                node.setValue(this.delay * 4 + "");
-            }
-            //}
-
-            if (properties.equals(node.getName())) {
-                addPropVars(mode, node);
-            }
-        }
-
-        if ((domNode.getChild("forkedProcessTimeoutInSeconds") == null) /*&& (mode == TYPE.ADD_BARRIER_POINT
-                || mode == TYPE.ADD_BARRIER_POINT_2)*/) {
-            this.domNode.addChild(this.makeNode("forkedProcessTimeoutInSeconds", this.delay * 4 + ""));
-
-        }
-
-        if (domNode.getChild("argLine") == null) {
-            Logger.getGlobal().log(Level.INFO, "Creating new argline for Surefire: *" + argLineToSet + "*");
-            this.domNode.addChild(this.makeNode("argLine", argLineToSet));
-        }
-
-        if (domNode.getChild(properties) == null) {
-            domNode.addChild(this.makeNode(properties, ""));
-            addPropVars(mode, domNode.getChild(properties));
-        }
-
-        // originalArgLine is the argLine set from Maven, not through the surefire config
-        // if such an argLine exists, we modify that one also
-        this.mavenProject.getProperties().setProperty("argLine",
-                this.originalArgLine + " " + argLineToSet);
-    }
-
-    private void addPropVars(TYPE mode, Xpp3Dom node) {
-        if (mode != TYPE.CONCURRENT_METHODS) {
-            if (node.getChild("delay") == null) {
-                node.addChild(this.makeNode("delay", delay + ""));
-            } else {
-                node.getChild("delay").setValue(this.delay + "");
-            }
-        }
-        if (mode == TYPE.ALL_LOCATIONS) {
-            if (node.getChild("concurrentmethods") == null) {
-                node.addChild(this.makeNode("concurrentmethods", "./.flakesync/ResultMethods.txt"));
-            } else {
-                node.getChild("concurrentmethods").setValue("./.flakesync/ResultMethods.txt");
-            }
-
-            if (node.getChild("whitelist") == null) {
-                node.addChild(this.makeNode("whitelist", "./.flakesync/whitelist.txt"));
-            } else {
-                node.getChild("whitelist").setValue("./.flakesync/whitelist.txt");
-            }
-        } else if (mode == TYPE.DELTA_DEBUG) {
-            if (node.getChild("concurrentmethods") == null) {
-                node.addChild(this.makeNode("concurrentmethods", "./.flakesync/ResultMethods.txt"));
-            } else {
-                node.getChild("concurrentmethods").setValue("./.flakesync/ResultMethods.txt");
-            }
-
-            if (node.getChild("whitelist") == null) {
-                node.addChild(this.makeNode("whitelist", "./.flakesync/whitelist.txt"));
-            } else {
-                node.getChild("whitelist").setValue("./.flakesync/whitelist.txt");
-            }
-
-            if (node.getChild("locations") == null) {
-                node.addChild(this.makeNode("locations", this.pathToLocations));
-            } else {
-                node.getChild("locations").setValue(pathToLocations);
-            }
-        } else if (mode == TYPE.GET_STACK_TRACE) {
-            if (node.getChild("locations") == null) {
-                node.addChild(this.makeNode("locations", this.pathToLocations));
-            } else {
-                node.getChild("locations").setValue(this.pathToLocations);
-            }
-        } else if (mode == TYPE.DELAY_INJECTION) {
-            if (node.getChild("locations") == null) {
-                node.addChild(this.makeNode("locations", this.pathToLocations));
-            } else {
-                node.getChild("locations").setValue(this.pathToLocations);
-            }
-
-            if (node.getChild("methodNameForDelayAtBeginning") == null) {
-                node.addChild(this.makeNode("methodNameForDelayAtBeginning", this.methodName));
-            } else {
-                node.getChild("methodNameForDelayAtBeginning").setValue(this.methodName);
-            }
-        } else if (mode == TYPE.ROOT_METHOD_ANALYSIS) {
-            if (node.getChild("locations") == null) {
-                node.addChild(this.makeNode("locations", "null"));
-            } else {
-                node.getChild("locations").setValue("null");
-            }
-
-            if (node.getChild("methodNameForDelayAtBeginning") == null) {
-                node.addChild(this.makeNode("methodNameForDelayAtBeginning", "null"));
-            } else {
-                node.getChild("methodNameForDelayAtBeginning").setValue("null");
-            }
-
-            if (node.getChild("rootMethod") == null) {
-                node.addChild(this.makeNode("rootMethod", "./" + DEFAULT_FLAKESYNC_DIR + "/Locations/Root.txt"));
-            } else {
-                node.getChild("rootMethod").setValue("./" + DEFAULT_FLAKESYNC_DIR + "/Locations/Root.txt");
-            }
-
-            if (node.getChild("methodOnly") == null) {
-                node.addChild(this.makeNode("methodOnly", this.methodName));
-            } else {
-                node.getChild("methodOnly").setValue(this.methodName);
-            }
-
-            System.out.println(node);
-        } else if (mode == TYPE.SEQUENTIAL_DEBUG) {
-            if (node.getChild("locations") == null) {
-                node.addChild(this.makeNode("locations", this.pathToLocations));
-            } else {
-                node.getChild("locations").setValue(this.pathToLocations);
-            }
-        } else if (mode == TYPE.DOWNWARD_MAVEN_EXEC) {
-            if (node.getChild("searchMethodEndLine") == null) {
-                node.addChild(this.makeNode("searchMethodEndLine", "search"));
-            } else {
-                node.getChild("searchMethodEndLine").setValue("search");
-            }
-
-            if (node.getChild("CodeToIntroduceVariable") == null) {
-                node.addChild(this.makeNode("CodeToIntroduceVariable", this.startLine));
-            } else {
-                node.getChild("CodeToIntroduceVariable").setValue(this.startLine);
-            }
-        } else if (mode == TYPE.ADD_BARRIER_POINT) {
-            if (node.getChild("CodeToIntroduceVariable") == null) {
-                node.addChild(this.makeNode("CodeToIntroduceVariable", this.startLine));
-            } else {
-                node.getChild("CodeToIntroduceVariable").setValue(this.startLine);
-            }
-
-            if (node.getChild("YieldingPoint") == null) {
-                node.addChild(this.makeNode("YieldingPoint", this.yieldingPoint));
-            } else {
-                node.getChild("YieldingPoint").setValue(this.yieldingPoint);
-            }
-
-            if (node.getChild("threshold") == null) {
-                node.addChild(this.makeNode("threshold", this.threshold + ""));
-            } else {
-                node.getChild("threshold").setValue(this.threshold + "");
-            }
-
-            if (node.getChild("executionMonitor") != null) {
-                node.getChild("executionMonitor").setValue("null");
-            }
-
-            if (node.getChild("stackTraceCollect") != null) {
-                node.getChild("stackTraceCollect").setValue("false");
-            }
-
-            if (node.getChild("searchForMethodName") != null) {
-                node.getChild("searchForMethodName").setValue("null");
-            }
-        } else if (mode == TYPE.BARRIER_STACKTRACE) {
-            if (node.getChild("CodeToIntroduceVariable") == null) {
-                node.addChild(this.makeNode("CodeToIntroduceVariable", this.pathToLocations));
-            } else {
-                node.getChild("CodeToIntroduceVariable").setValue(this.pathToLocations);
-            }
-
-            if (node.getChild("stackTraceCollect") == null) {
-                node.addChild(this.makeNode("stackTraceCollect", "true"));
-            } else {
-                node.getChild("stackTraceCollect").setValue("true");
-            }
-        } else if (mode == TYPE.ADD_BARRIER_POINT_2) {
-            if (node.getChild("searchForMethodName") == null) {
-                node.addChild(this.makeNode("searchForMethodName", "search"));
-            } else {
-                node.getChild("searchForMethodName").setValue("search");
-            }
-
-            if (node.getChild("CodeToIntroduceVariable") == null) {
-                node.addChild(this.makeNode("CodeToIntroduceVariable", this.startLine));
-            } else {
-                node.getChild("CodeToIntroduceVariable").setValue(this.startLine);
-            }
-
-            if (node.getChild("YieldingPoint") == null) {
-                node.addChild(this.makeNode("YieldingPoint", this.yieldingPoint));
-            } else {
-                node.getChild("YieldingPoint").setValue(this.yieldingPoint);
-            }
-
-            if (node.getChild("stackTraceCollect") != null) {
-                node.getChild("stackTraceCollect").setValue("false");
-            }
-        } else if (mode == TYPE.EXECUTION_MONITOR) {
-            if (node.getChild("CodeToIntroduceVariable") == null) {
-                node.addChild(this.makeNode("CodeToIntroduceVariable", this.startLine));
-            } else {
-                node.getChild("CodeToIntroduceVariable").setValue(this.startLine);
-            }
-
-            if (node.getChild("YieldingPoint") != null) {
-                node.getChild("YieldingPoint").setValue("");
-            }
-
-            if (node.getChild("executionMonitor") == null) {
-                node.addChild(this.makeNode("executionMonitor", "flag"));
-            } else {
-                node.getChild("executionMonitor").setValue("flag");
-            }
-
-            if (node.getChild("stackTraceCollect") != null) {
-                node.getChild("stackTraceCollect").setValue("false");
-            }
-        }
-    }
-
-    protected Xpp3Dom applyFlakeSyncConfig(Xpp3Dom configuration) {
+    protected Xpp3Dom applyFlakeSyncConfig(Xpp3Dom configuration, String executionId) {
         //Xpp3Dom configNode = configuration;
         Xpp3Dom configNode = null;
         if (configNode == null) {
             configNode = new Xpp3Dom("configuration");
         }
-
-        return setReportOutputDirectory(configNode);
+        return setReportOutputDirectory(configNode, executionId);
     }
 
-    public String getExecID() {
-        return this.executionId;
-    }
-
-    protected Xpp3Dom setReportOutputDirectory(Xpp3Dom configNode) {
+    protected Xpp3Dom setReportOutputDirectory(Xpp3Dom configNode, String executionId) {
         configNode = this.addAttributeToConfig(configNode, "reportsDirectory",
                 this.configuration.getExecutionDir().toString());
         configNode = this.addAttributeToConfig(configNode, "disableXmlReport", "false");
@@ -576,7 +123,6 @@ public class SurefireExecution {
                 return configNode;
             }
         }
-
         configNode.addChild(this.makeNode(nodeName, value));
         return configNode;
     }
@@ -587,9 +133,40 @@ public class SurefireExecution {
         return node;
     }
 
-    // removes all substring matching the format of a maven property
-    // when this method is invoked Maven should have resolved all properties that are defined
-    // if any property is present it means it couldn't be resolved so this will remove it
+    protected void setupArgline(PHASE phase, String originalArgLine) {
+
+        String pathToJar = this.localRepository;
+        // TODO: Encode path to agent in some final static variable for ease of access and potential changes to name/version
+        String argLineToSet = "-javaagent:" + pathToJar;
+        if (phase == PHASE.LOCATIONS_MINIMIZER) {
+            argLineToSet += CONCURRENT_METHODS_JAR;
+        } else if (phase == PHASE.CRITICAL_POINT_SEARCH) {
+            argLineToSet += BOUNDARY_SEARCH_JAR;
+        } else if (phase == PHASE.BARRIER_POINT_SEARCH) {
+            argLineToSet += BARRIER_SEARCH_JAR;
+        }
+
+        String properties = (!checkSysPropsDeprecated()) ? ("systemPropertyVariables") : ("systemProperties");
+
+        for (Xpp3Dom node : this.domNode.getChildren()) {
+            if ("argLine".equals(node.getName()) && !node.getValue().contains(argLineToSet)) {
+                Logger.getGlobal().log(Level.INFO, "Adding argLine to existing argLine specified by the project");
+                String current = sanitizeAndRemoveEnvironmentVars(node.getValue());
+                node.setValue(argLineToSet + " " + current);
+            }
+        }
+
+        if (domNode.getChild("argLine") == null) {
+            Logger.getGlobal().log(Level.INFO, "Creating new argline for Surefire: *" + argLineToSet + "*");
+            this.domNode.addChild(this.makeNode("argLine", argLineToSet));
+        }
+
+
+        // originalArgLine is the argLine set from Maven, not through the surefire config
+        // if such an argLine exists, we modify that one also
+        this.mavenProject.getProperties().setProperty("argLine", originalArgLine + " " + argLineToSet);
+    }
+
     protected static String sanitizeAndRemoveEnvironmentVars(String toSanitize) {
         String pattern = "\\$\\{([A-Za-z0-9\\.\\-]+)\\}";
         Pattern expr = Pattern.compile(pattern);
@@ -601,14 +178,39 @@ public class SurefireExecution {
         return toSanitize.trim();
     }
 
+    private boolean checkSysPropsDeprecated() {
+        System.out.println("Checking system properties deprecated");
+        String[] split = this.surefire.getVersion().split("\\.");
+        System.out.println(split[0]);
+        float version = Float.parseFloat(split[0]) + (Float.parseFloat(split[1]) / (10 * split[1].length()));
+        System.out.println("here's the version as a float: " + version);
+        return version > 2.20;
+    }
+
+    private void addAgentMode(String mode) {
+        String properties = (!checkSysPropsDeprecated()) ? ("systemPropertyVariables") : ("systemProperties");
+        Xpp3Dom propertiesNode = addAttributeToConfig(this.domNode, properties, "").getChild(properties);
+        addAttributeToConfig(propertiesNode, "agentmode", mode);
+    }
+
+    private void addTestName(String testName) {
+        addAttributeToConfig(this.domNode, "test", testName);
+    }
+
+    private void addProcessTimeout(int delay) {
+        addAttributeToConfig(this.domNode, "forkedProcessTimeoutInSeconds", String.valueOf(4 * delay));
+    }
+
     public static class SurefireFactory {
         public static SurefireExecution createConcurrentMethodsExec(Plugin surefire, String originalArgLine,
-                                                             MavenProject mavenProject, MavenSession mavenSession,
-                                                             BuildPluginManager pluginManager, String flakesyncDir,
-                                                             String testName, String localRepository) {
-
-            SurefireExecution execution = new SurefireExecution(surefire, originalArgLine, mavenProject,
-                    mavenSession, pluginManager, flakesyncDir, testName, localRepository);
+                                                                     MavenProject mavenProject, MavenSession mavenSession,
+                                                                     BuildPluginManager pluginManager, String flakesyncDir,
+                                                                     String testName, String localRepository) {
+            SurefireExecution execution = new SurefireExecution(surefire, mavenProject, mavenSession, pluginManager,
+                    flakesyncDir, localRepository);
+            execution.addTestName(testName);
+            execution.setupArgline(PHASE.LOCATIONS_MINIMIZER, originalArgLine);
+            execution.addAgentMode("CONCURRENT_METHODS");
 
             return execution;
         }

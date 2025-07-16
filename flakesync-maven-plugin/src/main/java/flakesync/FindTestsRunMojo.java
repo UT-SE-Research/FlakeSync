@@ -57,7 +57,7 @@ public class FindTestsRunMojo extends FlakeSyncAbstractMojo {
             this.executeSurefireExecution(null, cleanExec);
         } catch (Throwable exception) {
             System.out.println("Error executing test: The test did not run");
-            throw new RuntimeException();
+            exception.printStackTrace();
         }
 
     }
