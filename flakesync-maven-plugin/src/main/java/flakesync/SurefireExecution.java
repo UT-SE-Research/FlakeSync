@@ -113,10 +113,10 @@ public class SurefireExecution {
 
     //MOJO FindTestsRunMojo: For finding concurrent methods and number of threads running
     private SurefireExecution(Plugin surefire, String originalArgLine, MavenProject mavenProject,
-                             MavenSession mavenSession, BuildPluginManager pluginManager, String flakesyncDir, String testName,
-                             String localRepository) {
-        this(surefire, originalArgLine, "clean_" + Utils.getFreshExecutionId(), mavenProject, mavenSession, pluginManager,
-                flakesyncDir, testName, localRepository);
+                              MavenSession mavenSession, BuildPluginManager pluginManager, String flakesyncDir,
+                              String testName, String localRepository) {
+        this(surefire, originalArgLine, "clean_" + Utils.getFreshExecutionId(), mavenProject, mavenSession,
+                pluginManager, flakesyncDir, testName, localRepository);
 
         this.phase = PHASE.LOCATIONS_MINIMIZER;
 
@@ -129,11 +129,11 @@ public class SurefireExecution {
 
     //MOJO RunWithDelaysMojo: For getting complete list of locations(not minimal)
     public SurefireExecution(Plugin surefire, String originalArgLine, MavenProject mavenProject,
-                             MavenSession mavenSession, BuildPluginManager pluginManager, String flakesyncDir, String localRepository,
-                             String testName, int delay) {
+                             MavenSession mavenSession, BuildPluginManager pluginManager, String flakesyncDir,
+                             String localRepository, String testName, int delay) {
 
-        this(surefire, originalArgLine, "clean_" + Utils.getFreshExecutionId(), mavenProject, mavenSession, pluginManager,
-            flakesyncDir, testName, localRepository);
+        this(surefire, originalArgLine, "clean_" + Utils.getFreshExecutionId(), mavenProject, mavenSession,
+                pluginManager, flakesyncDir, testName, localRepository);
 
         this.delay = delay;
         this.phase = PHASE.LOCATIONS_MINIMIZER;
@@ -146,8 +146,8 @@ public class SurefireExecution {
                              MavenSession mavenSession, BuildPluginManager pluginManager,
                              String flakesyncDir, String localRepository, String testName, int delay,
                              String pathToLocations, int mode) {
-        this(surefire, originalArgLine, "clean_" + Utils.getFreshExecutionId(), mavenProject, mavenSession, pluginManager,
-                flakesyncDir, testName, localRepository);
+        this(surefire, originalArgLine, "clean_" + Utils.getFreshExecutionId(), mavenProject, mavenSession,
+                pluginManager, flakesyncDir, testName, localRepository);
 
         this.delay = delay;
         this.pathToLocations = pathToLocations;
@@ -172,15 +172,19 @@ public class SurefireExecution {
                 this.phase = PHASE.CRITICAL_POINT_SEARCH;
                 this.domNode = this.applyFlakeSyncConfig((Xpp3Dom) this.surefire.getConfiguration());
                 this.setupArgline(TYPE.SEQUENTIAL_DEBUG);
+                break;
+            default:
+                throw new RuntimeException("Unsupported mode: " + mode);
         }
     }
 
     // MOJO CritSearchMojo: Delay Injection
     public SurefireExecution(Plugin surefire, String originalArgLine, MavenProject mavenProject,
-                             MavenSession mavenSession, BuildPluginManager pluginManager, String flakesyncDir, String localRepository,
-                             String testName, int delay, String pathToLocations, String methodName, boolean crit) {
-        this(surefire, originalArgLine, "clean_" + Utils.getFreshExecutionId(), mavenProject, mavenSession, pluginManager,
-            flakesyncDir, testName, localRepository);
+                             MavenSession mavenSession, BuildPluginManager pluginManager, String flakesyncDir,
+                             String localRepository, String testName, int delay, String pathToLocations,
+                             String methodName, boolean crit) {
+        this(surefire, originalArgLine, "clean_" + Utils.getFreshExecutionId(), mavenProject, mavenSession,
+                pluginManager, flakesyncDir, testName, localRepository);
 
         if (crit) {
             this.phase = PHASE.CRITICAL_POINT_SEARCH;
@@ -205,10 +209,10 @@ public class SurefireExecution {
 
     //MOJO CritSearchMojo: Root Method Analysis
     public SurefireExecution(Plugin surefire, String originalArgLine, MavenProject mavenProject,
-                             MavenSession mavenSession, BuildPluginManager pluginManager, String flakesyncDir, String localRepository,
-                             String testName, int delay, String methodName) {
-        this(surefire, originalArgLine, "clean_" + Utils.getFreshExecutionId(), mavenProject, mavenSession, pluginManager,
-            flakesyncDir, testName, localRepository);
+                             MavenSession mavenSession, BuildPluginManager pluginManager, String flakesyncDir,
+                             String localRepository, String testName, int delay, String methodName) {
+        this(surefire, originalArgLine, "clean_" + Utils.getFreshExecutionId(), mavenProject, mavenSession,
+                pluginManager, flakesyncDir, testName, localRepository);
 
         this.phase = PHASE.CRITICAL_POINT_SEARCH;
 
@@ -221,10 +225,10 @@ public class SurefireExecution {
 
     // MOJO BarrierPointMojo: Downward Maven
     public SurefireExecution(Plugin surefire, String originalArgLine, MavenProject mavenProject,
-                             MavenSession mavenSession, BuildPluginManager pluginManager, String flakesyncDir, String localRepository,
-                             String testName, int delay, String startLine, boolean execMon) {
-        this(surefire, originalArgLine, "clean_" + Utils.getFreshExecutionId(), mavenProject, mavenSession, pluginManager,
-            flakesyncDir, testName, localRepository);
+                             MavenSession mavenSession, BuildPluginManager pluginManager, String flakesyncDir,
+                             String localRepository, String testName, int delay, String startLine, boolean execMon) {
+        this(surefire, originalArgLine, "clean_" + Utils.getFreshExecutionId(), mavenProject, mavenSession,
+                pluginManager, flakesyncDir, testName, localRepository);
 
         if (!execMon) {
             this.phase = PHASE.BARRIER_POINT_SEARCH;
@@ -248,8 +252,9 @@ public class SurefireExecution {
 
     // MOJO BarrierPointMojo: Instrument/add barrier point
     public SurefireExecution(Plugin surefire, String originalArgLine, MavenProject mavenProject,
-                             MavenSession mavenSession, BuildPluginManager pluginManager, String flakesyncDir, String localRepository,
-                             String testName, int delay, String startLine, String yieldingPoint, int threshold) {
+                             MavenSession mavenSession, BuildPluginManager pluginManager, String flakesyncDir,
+                             String localRepository, String testName, int delay, String startLine, String yieldingPoint,
+                             int threshold) {
         this(surefire, originalArgLine, "clean_" + Utils.getFreshExecutionId(), mavenProject, mavenSession, pluginManager,
             flakesyncDir, testName, localRepository);
 
