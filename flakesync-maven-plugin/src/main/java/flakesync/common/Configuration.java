@@ -42,7 +42,7 @@ public class Configuration {
     public final String flakesyncDir;
     public final String flakesyncJarDir;
 
-    public final String testName;
+    //public final String testName;
 
     public final Level loggingLevel;
 
@@ -63,7 +63,7 @@ public class Configuration {
             String flakesyncJarDir, String testName, String executionId, Level loggingLevel, boolean printStackTrace) {
         this.flakesyncDir = flakesyncDir;
         this.flakesyncJarDir = flakesyncDir;
-        this.testName = testName;
+        //this.testName = testName;
         this.executionId = executionId;
         this.shouldPrintStackTrace = printStackTrace;
         this.loggingLevel = loggingLevel;
@@ -73,7 +73,11 @@ public class Configuration {
     public Configuration(String executionId, String flakesyncDir, String testName) {
         this(flakesyncDir, ConfigurationDefaults.DEFAULT_FLAKESYNC_JAR_DIR,
                 testName, executionId, Logger.getGlobal().getLoggingLevel());
+    }
 
+    public Configuration(String executionId, String flakesyncDir) {
+        this(flakesyncDir, ConfigurationDefaults.DEFAULT_FLAKESYNC_JAR_DIR,
+                "", executionId, Logger.getGlobal().getLoggingLevel());
     }
 
     @Override
@@ -82,17 +86,12 @@ public class Configuration {
             ConfigurationDefaults.PROPERTY_FLAKESYNC_DIR + "=" + this.flakesyncDir,
             ConfigurationDefaults.PROPERTY_FLAKESYNC_JAR_DIR + "=" + this.flakesyncJarDir,
             ConfigurationDefaults.PROPERTY_EXECUTION_ID + "=" + this.executionId,
-            ConfigurationDefaults.PROPERTY_LOGGING_LEVEL + "=" + this.loggingLevel,
-            "test=" + (this.testName == null ? "" : this.testName)};
+            ConfigurationDefaults.PROPERTY_LOGGING_LEVEL + "=" + this.loggingLevel};
         return String.join(String.format("%n"), props);
     }
 
     public void createExecutionDirIfNeeded() {
         Paths.get(this.flakesyncDir, this.executionId).toFile().mkdirs();
-    }
-
-    public Path getFlakesyncDir() {
-        return Paths.get(this.flakesyncDir, this.executionId);
     }
 
     public Path getExecutionDir() {
