@@ -5,14 +5,10 @@ if [[ $1 == "" ]]; then
     exit 1
 fi
 
-OUTFILE=$(pwd)/out.txt
-
-rm -f ${OUTFILE}
-touch ${OUTFILE}
 
 # Overall exit code for the entire test script
 exitcode=0
-
+CURRENT_DIR=$(pwd)
 while read line; do
     if [[ ${line} =~ ^\# ]]; then
        #echo "line starts with Hash"
@@ -24,6 +20,11 @@ while read line; do
     commit=$(echo ${line} | cut -d',' -f2)
     module=$(echo ${line} | cut -d',' -f3)
     testname=$(echo ${line} | cut -d',' -f4)
+
+    
+    OUTFILE=$(pwd)/out_${testname}.txt
+    rm -f ${OUTFILE}
+    touch ${OUTFILE}
 
     # Clone project into a directory called project
     git clone https://github.com/$slug input/${slug} >> ${OUTFILE}
@@ -55,6 +56,8 @@ while read line; do
        echo "${slug} ${test_name} Concurrent Methods: Fail"
        exitcode=1
     fi
+    
+    cd ${CURRENT_DIR}
 done < $1
 
 exit ${exitcode}
