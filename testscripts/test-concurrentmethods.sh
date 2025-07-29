@@ -38,15 +38,24 @@ while read line; do
     # Run command
     mvn edu.utexas.ece:flakesync-maven-plugin:1.0-SNAPSHOT:concurrentfind -Dflakesync.testName=${testname} -pl $module >> ${OUTFILE}
 
-    # Check that the results are consistent (TBD)
+    # Check that the results are consistent
     # Assume expected results are in a known file
 
     errors=0
+    # First check if ResultMethods.txt was even created 
+    if [ -f ./${module}/.flakesync/ResultMethods.txt ]; then
+	:
+    else 
+        echo "ERROR: Result file not created"
+    	((errors++))
+    fi
+ 
     while read line_exp; do
-        if grep -q ${line_exp} ./${module}/.flakesync/ResultMethods.txt; then
-            echo ""
+        if grep -q -e ${line_exp//\[/\\\[} ./${module}/.flakesync/ResultMethods.txt; then
+            :
         else
             ((errors++))
+            echo ${line_exp}
         fi
     done < ../../../expected/concurrentmethods/${slug}/ResultMethods.txt
 

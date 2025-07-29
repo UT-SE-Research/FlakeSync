@@ -1,1 +1,4 @@
-apache/incubator-uniffle,6fb2a9a63132ab9abbde2f1f9240f9caf2f5d0f0,common,org.apache.uniffle.common.rpc.GrpcServerTest#testGrpcExecutorPool
+apache/incubator-uniffle,6fb2a9a63132ab9abbde2f1f9240f9caf2f5d0f0,common,org.apache.uniffle.common.rpc.GrpcServerTest#testGrpcExecutorPool 
+Accenture/mercury,8586dc79f8bf75a929896f0aac03fe95824d9578,system/platform-core,org.platformlambda.core.MulticastTest#routingTest
+Alluxio/alluxio,78c063ae181279d81cbc0808a684864a8c8b311c,.,tachyon.DataServerTest#readTest
+davidmoten/rxjava2-extras,7663d3b19295f12c35f80594efa1e507e98650b1,.,com.github.davidmoten.rx2.FlowablesTest#testCache
