@@ -44,7 +44,7 @@ while read line; do
     errors=0
     # First check if ResultMethods.txt was even created 
     if [ -f ./${module}/.flakesync/ResultMethods.txt ]; then
-	:
+	cat ./${module}/.flakesync/ResultMethods.txt
     else 
         echo "ERROR: Result file not created"
     	((errors++))
