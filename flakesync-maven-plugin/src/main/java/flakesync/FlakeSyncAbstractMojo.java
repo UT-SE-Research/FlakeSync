@@ -84,7 +84,6 @@ public abstract class FlakeSyncAbstractMojo extends AbstractMojo {
 
     @Override
     public void execute() throws MojoExecutionException, MojoFailureException {
-        System.out.println("REPO: " + this.localRepository);
         Logger.getGlobal().setLoggingLevel(Level.parse(this.loggingLevel));
         String rtPathStr = "";
         if (Utils.checkJDK8()) {
@@ -108,7 +107,6 @@ public abstract class FlakeSyncAbstractMojo extends AbstractMojo {
 
         Properties localProperties = this.mavenProject.getProperties();
         this.originalArgLine = localProperties.getProperty("argLine", "");
-        System.out.println("This is the original argline: " + this.originalArgLine);
 
     }
 
