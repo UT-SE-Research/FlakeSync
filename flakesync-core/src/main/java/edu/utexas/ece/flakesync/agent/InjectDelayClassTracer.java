@@ -46,8 +46,6 @@ public class InjectDelayClassTracer extends ClassVisitor {
 
     public static Set<String> locations = new HashSet<>();
 
-    private static Set<String> whiteList = new HashSet<>();
-
     private String className;
 
     public InjectDelayClassTracer(ClassVisitor cv) {
@@ -56,15 +54,11 @@ public class InjectDelayClassTracer extends ClassVisitor {
 
     // White list consists of specific class names, same format as outputted by the EnterExitClassTracer logic
     public static boolean whiteListContains(String name) {
-        System.out.println("Checking if whitelist exists: " + System.getProperty("whitelist"));
-        //if (whiteList.isEmpty()) {
-        whiteList = new HashSet<String>();
         try {
             BufferedReader reader = new BufferedReader(
                     new FileReader(new File(System.getProperty("whitelist"))));
             String line = reader.readLine();
             while (line != null) {
-                whiteList.add(line);
                 // read next line
                 if (name.replaceAll("/", ".").contains(line)) {
                     return true;
@@ -75,8 +69,6 @@ public class InjectDelayClassTracer extends ClassVisitor {
         } catch (IOException ioe) {
             ioe.printStackTrace();
         }
-        //}
-        //return whiteList.contains(name);
         return false;
     }
 
