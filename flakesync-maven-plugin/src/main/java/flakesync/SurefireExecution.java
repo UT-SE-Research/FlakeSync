@@ -84,7 +84,6 @@ public class SurefireExecution {
     public void run() throws Throwable {
 
         try {
-            System.out.println(domNode);
             MojoExecutor.executeMojo(this.surefire, MojoExecutor.goal("test"), domNode,
                     MojoExecutor.executionEnvironment(this.mavenProject, this.mavenSession, this.pluginManager));
         } catch (MojoExecutionException mojoException) {
@@ -146,18 +145,14 @@ public class SurefireExecution {
             argLineToSet += BARRIER_SEARCH_JAR;
         }
 
-        String properties = (!checkSysPropsDeprecated()) ? ("systemPropertyVariables") : ("systemProperties");
-
         for (Xpp3Dom node : this.domNode.getChildren()) {
             if ("argLine".equals(node.getName()) && !node.getValue().contains(argLineToSet)) {
-                Logger.getGlobal().log(Level.INFO, "Adding argLine to existing argLine specified by the project");
                 String current = sanitizeAndRemoveEnvironmentVars(node.getValue());
                 node.setValue(argLineToSet + " " + current);
             }
         }
 
         if (domNode.getChild("argLine") == null) {
-            Logger.getGlobal().log(Level.INFO, "Creating new argline for Surefire: *" + argLineToSet + "*");
             this.domNode.addChild(this.makeNode("argLine", argLineToSet));
         }
 
@@ -179,11 +174,9 @@ public class SurefireExecution {
     }
 
     private boolean checkSysPropsDeprecated() {
-        System.out.println("Checking system properties deprecated");
         String[] split = this.surefire.getVersion().split("\\.");
         System.out.println(split[0]);
         float version = Float.parseFloat(split[0]) + (Float.parseFloat(split[1]) / (10 * split[1].length()));
-        System.out.println("here's the version as a float: " + version);
         return version > 2.20;
     }
 
