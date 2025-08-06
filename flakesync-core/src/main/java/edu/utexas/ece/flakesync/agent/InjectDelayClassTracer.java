@@ -56,24 +56,28 @@ public class InjectDelayClassTracer extends ClassVisitor {
 
     // White list consists of specific class names, same format as outputted by the EnterExitClassTracer logic
     public static boolean whiteListContains(String name) {
-
-        if (whiteList.isEmpty()) {
-            whiteList = new HashSet<>();
-            try {
-                BufferedReader reader = new BufferedReader(
-                        new FileReader(new File(System.getProperty("concurrentmethods"))));
-                String line = reader.readLine();
-                while (line != null) {
-                    whiteList.add(line);
-                    // read next line
-                    line = reader.readLine();
+        System.out.println("Checking if whitelist exists: " + System.getProperty("whitelist"));
+        //if (whiteList.isEmpty()) {
+        whiteList = new HashSet<String>();
+        try {
+            BufferedReader reader = new BufferedReader(
+                    new FileReader(new File(System.getProperty("whitelist"))));
+            String line = reader.readLine();
+            while (line != null) {
+                whiteList.add(line);
+                // read next line
+                if (name.replaceAll("/", ".").contains(line)) {
+                    return true;
                 }
-                reader.close();
-            } catch (IOException ioe) {
-                ioe.printStackTrace();
+                line = reader.readLine();
             }
+            reader.close();
+        } catch (IOException ioe) {
+            ioe.printStackTrace();
         }
-        return whiteList.contains(name);
+        //}
+        //return whiteList.contains(name);
+        return false;
     }
 
     @Override
