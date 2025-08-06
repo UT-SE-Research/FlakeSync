@@ -82,7 +82,7 @@ public class SurefireExecution {
     }
 
     public void run() throws Throwable {
-
+        System.out.println(domNode);
         try {
             MojoExecutor.executeMojo(this.surefire, MojoExecutor.goal("test"), domNode,
                     MojoExecutor.executionEnvironment(this.mavenProject, this.mavenSession, this.pluginManager));
@@ -190,6 +190,12 @@ public class SurefireExecution {
         addAttributeToConfig(this.domNode, "test", testName);
     }
 
+    private void addDelay(String delay) {
+        String properties = (!checkSysPropsDeprecated()) ? ("systemPropertyVariables") : ("systemProperties");
+        Xpp3Dom propertiesNode = addAttributeToConfig(this.domNode, properties, "").getChild(properties);
+        addAttributeToConfig(propertiesNode, "delay", delay);
+    }
+
     private void addProcessTimeout(int delay) {
         addAttributeToConfig(this.domNode, "forkedProcessTimeoutInSeconds", String.valueOf(4 * delay));
     }
@@ -204,6 +210,20 @@ public class SurefireExecution {
             execution.addTestName(testName);
             execution.setupArgline(PHASE.LOCATIONS_MINIMIZER, originalArgLine);
             execution.addAgentMode("CONCURRENT_METHODS");
+
+            return execution;
+        }
+
+        public static SurefireExecution createDelayAllExec(Plugin surefire, String originalArgLine,
+                                                           MavenProject mavenProject, MavenSession mavenSession,
+                                                           BuildPluginManager pluginManager, String flakesyncDir,
+                                                           String localRepository, String testName, int delay) {
+            SurefireExecution execution = new SurefireExecution(surefire, mavenProject, mavenSession, pluginManager,
+                    flakesyncDir, localRepository);
+            execution.addTestName(testName);
+            execution.addDelay(delay + "");
+            execution.setupArgline(PHASE.LOCATIONS_MINIMIZER, originalArgLine);
+            execution.addAgentMode("ALL_LOCATIONS");
 
             return execution;
         }

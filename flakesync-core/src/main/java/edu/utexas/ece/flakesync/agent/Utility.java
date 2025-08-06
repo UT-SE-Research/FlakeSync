@@ -60,6 +60,7 @@ public class Utility {
 
     public static void delay() {
         try {
+            System.out.println("delaying: " + delay);
             Thread.sleep(delay);
         } catch (InterruptedException ie) {
             System.out.println("Exception");
