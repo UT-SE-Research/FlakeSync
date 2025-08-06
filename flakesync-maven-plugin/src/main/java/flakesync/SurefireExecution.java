@@ -196,6 +196,18 @@ public class SurefireExecution {
         addAttributeToConfig(propertiesNode, "delay", delay);
     }
 
+    private void addWhitelist() {
+        String properties = (!checkSysPropsDeprecated()) ? ("systemPropertyVariables") : ("systemProperties");
+        Xpp3Dom propertiesNode = addAttributeToConfig(this.domNode, properties, "").getChild(properties);
+        addAttributeToConfig(propertiesNode, "whitelist", "./.flakesync/whitelist.txt");
+    }
+
+    private void addCM() {
+        String properties = (!checkSysPropsDeprecated()) ? ("systemPropertyVariables") : ("systemProperties");
+        Xpp3Dom propertiesNode = addAttributeToConfig(this.domNode, properties, "").getChild(properties);
+        addAttributeToConfig(propertiesNode, "concurrentmethods", "./.flakesync/ResultMethods.txt");
+    }
+
     private void addProcessTimeout(int delay) {
         addAttributeToConfig(this.domNode, "forkedProcessTimeoutInSeconds", String.valueOf(4 * delay));
     }
@@ -222,6 +234,7 @@ public class SurefireExecution {
                     flakesyncDir, localRepository);
             execution.addTestName(testName);
             execution.addDelay(delay + "");
+            execution.addWhitelist();
             execution.setupArgline(PHASE.LOCATIONS_MINIMIZER, originalArgLine);
             execution.addAgentMode("ALL_LOCATIONS");
 
