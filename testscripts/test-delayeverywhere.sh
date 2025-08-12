@@ -35,39 +35,47 @@ while read line; do
     # Build
     mvn install -pl ${module} -am -DskipTests=true >> ${OUTFILE}
 
+   # Setup the smaller set of concurrent methods needed
+   mkdir -p ${module}/.flakesync/
+   cp ../../../expected/concurrentmethods/${slug}/ResultMethods.txt ${module}/.flakesync/ResultMethods.txt
+
     # Run command
-    mvn edu.utexas.ece:flakesync-maven-plugin:1.0-SNAPSHOT:concurrentfind -Dflakesync.testName=${testname} -pl $module >> ${OUTFILE}
+    mvn edu.utexas.ece:flakesync-maven-plugin:1.0-SNAPSHOT:flakedelay -Dflakesync.testName=${testname} -pl $module >> ${OUTFILE}
 
     # Check that the results are consistent
     # Assume expected results are in a known file
 
     errors=0
-    # First check if ResultMethods.txt was even created 
+    
     if [ -f ./${module}/.flakesync/ResultMethods.txt ]; then
-	#cat ./${module}/.flakesync/ResultMethods.txt
-        :
+	:
+    else 
+        echo "ERROR: Missing input file(s)"
+    	((errors++))
+    fi
+    # First check if Locations.txt was even created 
+    if [ -f ./${module}/.flakesync/Locations.txt ]; then
+	:
     else 
         echo "ERROR: Result file not created"
     	((errors++))
     fi
- 
+    
     while read line_exp; do
-        if grep -q -e "${line_exp//\[/\\\[.*}" ./${module}/.flakesync/ResultMethods.txt; then
-            :
-        else
-            ((errors++))
-            echo ${line_exp}
+        if grep -q ${line_exp} ./${module}/.flakesync/Locations.txt; then
+           :
+        else 
+           ((errors++))
         fi
-    done < ../../../expected/concurrentmethods/${slug}/${testname//#/.}-ResultMethods.txt
+    done < ../../../expected/delaylocs/${slug}/Locations.txt
 
-    if [[ errors -eq 0 ]]; then
-       echo "${slug} ${testname} Concurrent Methods: Pass"
-    else
-       echo "${slug} ${testname} Concurrent Methods: Fail"
+
+    if [[ errors -eq 0 ]]; then 
+       echo "${slug} ${test_name} Delay Locations: Pass"
+    else 
+       echo "${slug} ${test_name} Delay Locations: Fail"
        exitcode=1
     fi
-    
-    cd ${CURRENT_DIR}
 done < $1
 
 exit ${exitcode}
