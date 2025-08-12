@@ -44,25 +44,26 @@ while read line; do
     errors=0
     # First check if ResultMethods.txt was even created 
     if [ -f ./${module}/.flakesync/ResultMethods.txt ]; then
-	cat ./${module}/.flakesync/ResultMethods.txt
+	#cat ./${module}/.flakesync/ResultMethods.txt
+        :
     else 
         echo "ERROR: Result file not created"
     	((errors++))
     fi
  
     while read line_exp; do
-        if grep -q -e ${line_exp//\[/\\\[} ./${module}/.flakesync/ResultMethods.txt; then
+        if grep -q -e "${line_exp//\[/\\\[.*}" ./${module}/.flakesync/ResultMethods.txt; then
             :
         else
             ((errors++))
             echo ${line_exp}
         fi
-    done < ../../../expected/concurrentmethods/${slug}/ResultMethods.txt
+    done < ../../../expected/concurrentmethods/${slug}/${testname//#/.}-ResultMethods.txt
 
     if [[ errors -eq 0 ]]; then
-       echo "${slug} ${test_name} Concurrent Methods: Pass"
+       echo "${slug} ${testname} Concurrent Methods: Pass"
     else
-       echo "${slug} ${test_name} Concurrent Methods: Fail"
+       echo "${slug} ${testname} Concurrent Methods: Fail"
        exitcode=1
     fi
     

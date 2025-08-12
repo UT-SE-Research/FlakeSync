@@ -1,8 +1,0 @@
-tachyon/thrift/MasterService$worker_getPriorityDependencyList_result.validate()V
-tachyon/thrift/MasterService$worker_getPriorityDependencyList_result$_Fields.values()[Ltachyon/thrift/MasterService$worker_getPriorityDependencyList_result$_Fields;
-tachyon/thrift/MasterService$Processor$worker_getPriorityDependencyList.getResult(Ltachyon/thrift/MasterService$Iface;Ltachyon/thrift/MasterService$worker_getPriorityDependencyList_args;)Ltachyon/thrift/MasterService$worker_getPriorityDependencyList_result;
-tachyon/thrift/MasterService$worker_getPriorityDependencyList_result.read(Lorg/apache/thrift/protocol/TProtocol;)V
-tachyon/thrift/MasterService$worker_getPriorityDependencyList_result$_Fields.$values()[Ltachyon/thrift/MasterService$worker_getPriorityDependencyList_result$_Fields;
-tachyon/thrift/MasterService$worker_getPriorityDependencyList_result.write(Lorg/apache/thrift/protocol/TProtocol;)V
-tachyon/thrift/MasterService$worker_getPriorityDependencyList_result$_Fields.getFieldName()Ljava/lang/String;
-tachyon/thrift/MasterService$worker_getPriorityDependencyList_result.isSetSuccess()Z
