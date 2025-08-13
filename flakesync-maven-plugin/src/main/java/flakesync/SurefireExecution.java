@@ -204,7 +204,7 @@ public class SurefireExecution {
         addAttributeToConfig(propertiesNode, "whitelist", "./.flakesync/whitelist.txt");
     }
 
-private void addCM(String testname) {
+    private void addCM(String testname) {
         String properties = (!checkSysPropsDeprecated()) ? ("systemPropertyVariables") : ("systemProperties");
         Xpp3Dom propertiesNode = addAttributeToConfig(this.domNode, properties, "").getChild(properties);
         String concurrentMethods = "./.flakesync/" + testname.replace("#", ".")
