@@ -1,0 +1,10 @@
+target/
+**/.DS_Store
+**/*~
+.*.swp
+*.o
+*.hi
+*Zone.Identifier
+.idea/
+*.iml
+.flakesync/

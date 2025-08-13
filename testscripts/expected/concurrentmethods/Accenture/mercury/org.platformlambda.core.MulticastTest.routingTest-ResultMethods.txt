@@ -1,0 +1,1 @@
+org/platformlambda/core/system/EventEmitter.lambda$new$0(Ljava/lang/String;)V

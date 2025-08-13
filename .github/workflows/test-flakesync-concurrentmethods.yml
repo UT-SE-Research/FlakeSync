@@ -1,10 +1,10 @@
 
-name: auto-run-test-flakesync
+name: auto-run-test-flakesync-concurrentmethods
 
 on: [push, pull_request]
 
 jobs:
-  install:
+  test-concurrentmethods:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
@@ -17,3 +17,6 @@ jobs:
 
       - name: Installs packages
         run: mvn install -B
+
+      - name: test
+        run: cd testscripts/; bash test-concurrentmethods.sh input/inputs.csv
