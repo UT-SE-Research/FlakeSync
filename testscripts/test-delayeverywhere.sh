@@ -37,10 +37,10 @@ while read line; do
 
    # Setup the smaller set of concurrent methods needed
    mkdir -p ${module}/.flakesync/
-   cp ../../../expected/concurrentmethods/${slug}/ResultMethods.txt ${module}/.flakesync/ResultMethods.txt
+   cp ../../../expected/delaylocs/${slug}/${testname//#/.}-ResultMethods.txt ${module}/.flakesync/ResultMethods.txt
 
     # Run command
-    mvn edu.utexas.ece:flakesync-maven-plugin:1.0-SNAPSHOT:flakedelay -Dflakesync.testName=${testname} -pl $module >> ${OUTFILE}
+    mvn edu.utexas.ece:flakesync-maven-plugin:1.0-SNAPSHOT:delaylocs -Dflakesync.testName=${testname} -pl $module >> ${OUTFILE}
 
     # Check that the results are consistent
     # Assume expected results are in a known file
@@ -67,13 +67,13 @@ while read line; do
         else 
            ((errors++))
         fi
-    done < ../../../expected/delaylocs/${slug}/Locations.txt
+    done < ../../../expected/delaylocs/${slug}/${testname//#/.}-Locations.txt
 
 
     if [[ errors -eq 0 ]]; then 
-       echo "${slug} ${test_name} Delay Locations: Pass"
+       echo "${slug} ${testname} Delay Locations: Pass"
     else 
-       echo "${slug} ${test_name} Delay Locations: Fail"
+       echo "${slug} ${testname} Delay Locations: Fail"
        exitcode=1
     fi
 done < $1
