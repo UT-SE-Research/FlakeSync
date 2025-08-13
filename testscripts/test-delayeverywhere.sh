@@ -39,7 +39,7 @@ while read line; do
 
    # Setup the smaller set of concurrent methods needed
    mkdir -p ${module}/.flakesync/
-   cp ${EXPECTED_DIR}/${slug}/${testname//#/.}-ResultMethods.txt ${module}/.flakesync/ResultMethods.txt
+   cp ${EXPECTED_DIR}/${slug}/${testname//#/.}-ResultMethods.txt ${module}/.flakesync/${testname//#/.}-ResultMethods.txt
 
     # Run command
     mvn edu.utexas.ece:flakesync-maven-plugin:1.0-SNAPSHOT:delaylocs -Dflakesync.testName=${testname} -pl $module >> ${OUTFILE}
@@ -49,14 +49,14 @@ while read line; do
 
     errors=0
     
-    if [ -f ./${module}/.flakesync/ResultMethods.txt ]; then
+    if [ -f ./${module}/.flakesync/${testname//#/.}-ResultMethods.txt ]; then
 	:
     else 
         echo "ERROR: Missing input file(s)"
     	((errors++))
     fi
     # First check if Locations.txt was even created 
-    if [ -f ./${module}/.flakesync/Locations.txt ]; then
+    if [ -f ./${module}/.flakesync/${testname//#/.}-Locations.txt ]; then
 	:
     else 
         echo "ERROR: Result file not created"
@@ -64,7 +64,7 @@ while read line; do
     fi
     
     while read line_exp; do
-        if grep -q ${line_exp} ./${module}/.flakesync/Locations.txt; then
+        if grep -q ${line_exp} ./${module}/.flakesync/${testname//#/.}-Locations.txt; then
            :
         else 
            ((errors++))
