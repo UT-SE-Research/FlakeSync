@@ -26,6 +26,8 @@ while read line; do
     rm -f ${OUTFILE}
     touch ${OUTFILE}
 
+    EXPECTED_DIR=${CURRENT_DIR}/expected/delaylocs/
+
     # Clone project into a directory called project
     git clone https://github.com/$slug input/${slug} >> ${OUTFILE}
     cd input/${slug}
@@ -37,7 +39,7 @@ while read line; do
 
    # Setup the smaller set of concurrent methods needed
    mkdir -p ${module}/.flakesync/
-   cp ../../../expected/delaylocs/${slug}/${testname//#/.}-ResultMethods.txt ${module}/.flakesync/ResultMethods.txt
+   cp ${EXPECTED_DIR}/${slug}/${testname//#/.}-ResultMethods.txt ${module}/.flakesync/ResultMethods.txt
 
     # Run command
     mvn edu.utexas.ece:flakesync-maven-plugin:1.0-SNAPSHOT:delaylocs -Dflakesync.testName=${testname} -pl $module >> ${OUTFILE}
@@ -67,7 +69,7 @@ while read line; do
         else 
            ((errors++))
         fi
-    done < ../../../expected/delaylocs/${slug}/${testname//#/.}-Locations.txt
+    done < ${EXPECTED_DIR}/${slug}/${testname//#/.}-Locations.txt
 
 
     if [[ errors -eq 0 ]]; then 
