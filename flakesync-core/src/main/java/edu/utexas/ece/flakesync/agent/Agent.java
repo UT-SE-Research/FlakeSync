@@ -120,7 +120,8 @@ public class Agent {
         inst.addTransformer(new ClassFileTransformer() {
             @Override
             public byte[] transform(ClassLoader classLoader, String className, Class<?> classBeingRedefined,
-                                    ProtectionDomain protectionDomain, byte[] bytes) throws IllegalClassFormatException {
+                ProtectionDomain protectionDomain, byte[] bytes) throws IllegalClassFormatException {
+
                 className = className.replaceAll("[/]", ".");
 
                 final ClassReader reader = new ClassReader(bytes);
@@ -164,8 +165,10 @@ public class Agent {
 
                 try {
                     if (System.getProperty("agentmode").equals("CONCURRENT_METHODS")) {
-                        Paths.get(OUTPUT_DIR_NAME, CONCURRENT_METHODS).toFile().createNewFile();
-                        Path fp = Paths.get(OUTPUT_DIR_NAME, CONCURRENT_METHODS);
+                        String fileName = System.getProperty("test").replace("#", ".")
+                                + "-" + CONCURRENT_METHODS;
+                        Paths.get(OUTPUT_DIR_NAME, fileName).toFile().createNewFile();
+                        Path fp = Paths.get(OUTPUT_DIR_NAME, fileName);
                         File omf = new File(fp.toUri());
                         FileWriter outputMethodsFile = new FileWriter(omf);
                         bfMethods = new BufferedWriter(outputMethodsFile);

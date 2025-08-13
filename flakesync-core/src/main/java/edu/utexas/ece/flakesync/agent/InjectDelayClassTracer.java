@@ -99,7 +99,8 @@ public class InjectDelayClassTracer extends ClassVisitor {
                     // Insert some random delay call right before invoking the method
                     locations.add(location);
                     super.visitMethodInsn(Opcodes.INVOKESTATIC,
-                            "edu/utexas/ece/flakesync/agent/Utility", "delay", "()V", false);
+                        "edu/utexas/ece/flakesync/agent/Utility", "delay", "()V", false);
+
                 }
                 super.visitMethodInsn(opcode, owner, name, desc, itf);
             }

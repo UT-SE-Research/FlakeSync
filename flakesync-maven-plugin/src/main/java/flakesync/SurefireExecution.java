@@ -187,7 +187,9 @@ public class SurefireExecution {
     }
 
     private void addTestName(String testName) {
-        addAttributeToConfig(this.domNode, "test", testName);
+        String properties = (!checkSysPropsDeprecated()) ? ("systemPropertyVariables") : ("systemProperties");
+        Xpp3Dom propertiesNode = addAttributeToConfig(this.domNode, properties, "").getChild(properties);
+        addAttributeToConfig(propertiesNode, "test", testName);
     }
 
     private void addDelay(String delay) {
@@ -202,10 +204,12 @@ public class SurefireExecution {
         addAttributeToConfig(propertiesNode, "whitelist", "./.flakesync/whitelist.txt");
     }
 
-    private void addCM() {
+private void addCM(String testname) {
         String properties = (!checkSysPropsDeprecated()) ? ("systemPropertyVariables") : ("systemProperties");
         Xpp3Dom propertiesNode = addAttributeToConfig(this.domNode, properties, "").getChild(properties);
-        addAttributeToConfig(propertiesNode, "concurrentmethods", "./.flakesync/ResultMethods.txt");
+        String concurrentMethods = "./.flakesync/" + testname.replace("#", ".")
+                + "-ResultMethods.txt";
+        addAttributeToConfig(propertiesNode, "concurrentmethods", concurrentMethods);
     }
 
     private void addProcessTimeout(int delay) {
@@ -233,6 +237,7 @@ public class SurefireExecution {
             SurefireExecution execution = new SurefireExecution(surefire, mavenProject, mavenSession, pluginManager,
                     flakesyncDir, localRepository);
             execution.addTestName(testName);
+            execution.addCM(testName);
             execution.addDelay(delay + "");
             execution.addWhitelist();
             execution.setupArgline(PHASE.LOCATIONS_MINIMIZER, originalArgLine);
