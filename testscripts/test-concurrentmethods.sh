@@ -43,7 +43,7 @@ while read line; do
 
     errors=0
     # First check if ResultMethods.txt was even created 
-    if [ -f ./${module}/.flakesync/ResultMethods.txt ]; then
+    if [ -f ./${module}/.flakesync/${testname//#/.}-ResultMethods.txt ]; then
 	#cat ./${module}/.flakesync/ResultMethods.txt
         :
     else 
@@ -52,7 +52,7 @@ while read line; do
     fi
  
     while read line_exp; do
-        if grep -q -e "${line_exp//\[/\\\[.*}" ./${module}/.flakesync/ResultMethods.txt; then
+        if grep -q -e "${line_exp//\[/\\\[.*}" ./${module}/.flakesync/${testname//#/.}-ResultMethods.txt; then
             :
         else
             ((errors++))

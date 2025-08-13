@@ -188,6 +188,9 @@ public class SurefireExecution {
 
     private void addTestName(String testName) {
         addAttributeToConfig(this.domNode, "test", testName);
+        String properties = (!checkSysPropsDeprecated()) ? ("systemPropertyVariables") : ("systemProperties");
+        Xpp3Dom propertiesNode = addAttributeToConfig(this.domNode, properties, "").getChild(properties);
+        addAttributeToConfig(propertiesNode, "test", testName);
     }
 
     private void addDelay(String delay) {
