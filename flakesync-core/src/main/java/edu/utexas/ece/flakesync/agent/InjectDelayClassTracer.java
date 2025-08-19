@@ -56,7 +56,7 @@ public class InjectDelayClassTracer extends ClassVisitor {
     public static boolean whiteListContains(String name) {
         try {
             BufferedReader reader = new BufferedReader(
-                    new FileReader(new File(System.getProperty("whitelist"))));
+                    new FileReader(new File(System.getProperty("concurrentmethods"))));
             String line = reader.readLine();
             while (line != null) {
                 // read next line
