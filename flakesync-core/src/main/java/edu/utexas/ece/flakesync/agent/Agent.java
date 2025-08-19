@@ -180,8 +180,10 @@ public class Agent {
                         }
                         bfMethods.flush();
                     } else if (System.getProperty("agentmode").equals("ALL_LOCATIONS")) {
-                        Paths.get(OUTPUT_DIR_NAME, LOCATIONS).toFile().createNewFile();
-                        Path fp = Paths.get(OUTPUT_DIR_NAME, LOCATIONS);
+                        String fileName = System.getProperty("test").replace("#", ".")
+                                + "-" + LOCATIONS;
+                        Paths.get(OUTPUT_DIR_NAME, fileName).toFile().createNewFile();
+                        Path fp = Paths.get(OUTPUT_DIR_NAME, fileName);
                         File locsFile = new File(fp.toUri());
                         FileWriter outputLocationsFile = new FileWriter(locsFile);
                         bfLocations = new BufferedWriter(outputLocationsFile);
