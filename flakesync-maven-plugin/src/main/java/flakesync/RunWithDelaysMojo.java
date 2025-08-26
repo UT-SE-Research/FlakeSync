@@ -91,7 +91,9 @@ public class RunWithDelaysMojo extends FlakeSyncAbstractMojo {
 
     private boolean createWhiteList() {
         System.out.println("Inside createWhiteList");
-        File whitelist = new File(this.mavenProject.getBasedir() + "/.flakesync/whitelist.txt");
+        File whitelist = new File(
+                String.valueOf(Paths.get(String.valueOf(this.baseDir),
+                        String.valueOf(Constants.getWhitelistFilepath(this.testName)))));
         File outputDir = new File(this.mavenProject.getBuild().getOutputDirectory());
 
         try {

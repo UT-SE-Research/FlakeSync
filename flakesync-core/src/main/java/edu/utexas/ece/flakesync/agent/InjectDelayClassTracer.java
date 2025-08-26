@@ -60,7 +60,7 @@ public class InjectDelayClassTracer extends ClassVisitor {
             String line = reader.readLine();
             while (line != null) {
                 // read next line
-                if (name.replaceAll("/", ".").contains(line)) {
+                if (line.contains(name)) {
                     return true;
                 }
                 line = reader.readLine();
@@ -81,7 +81,7 @@ public class InjectDelayClassTracer extends ClassVisitor {
     @Override
     public MethodVisitor visitMethod(int access, String name, String desc, String signature, String[] exceptions) {
         final String cn = this.className;
-        final String containingMethod = cn + "." + name + desc;
+        final String containingMethod = cn + "." + name;
         return new MethodVisitor(Opcodes.ASM9, super.visitMethod(access, name, desc, signature, exceptions)) {
             int lineNumber;
 
@@ -94,7 +94,6 @@ public class InjectDelayClassTracer extends ClassVisitor {
             @Override
             public void visitMethodInsn(int opcode, String owner, String name, String desc, boolean itf) {
                 String location = cn + "#" + lineNumber;
-
                 if (whiteListContains(containingMethod)) {
                     // Insert some random delay call right before invoking the method
                     locations.add(location);

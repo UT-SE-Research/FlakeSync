@@ -28,6 +28,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 package edu.utexas.ece.flakesync.agent;
 
+import flakesync.Constants;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.ClassWriter;
@@ -55,11 +56,6 @@ public class Agent {
     private static String delay;
     private static List<String> blackList;
     private static List<String> whiteList = new ArrayList<>();
-
-    //TODO: Pass these as property variables instead of hard-coding them here
-    private static String OUTPUT_DIR_NAME = ".flakesync";
-    private static String CONCURRENT_METHODS = "ResultMethods.txt";
-    private static String LOCATIONS = "Locations.txt";
 
 
     static {
@@ -151,7 +147,7 @@ public class Agent {
                 return null;
             }
         });
-        Paths.get(OUTPUT_DIR_NAME).toFile().mkdirs();
+        Paths.get(Constants.DEFAULT_FLAKESYNC_DIR).toFile().mkdirs();
         setupShutdownWriter();
     }
 
@@ -165,10 +161,8 @@ public class Agent {
 
                 try {
                     if (System.getProperty("agentmode").equals("CONCURRENT_METHODS")) {
-                        String fileName = System.getProperty("test").replace("#", ".")
-                                + "-" + CONCURRENT_METHODS;
-                        Paths.get(OUTPUT_DIR_NAME, fileName).toFile().createNewFile();
-                        Path fp = Paths.get(OUTPUT_DIR_NAME, fileName);
+                        Path fp = Constants.getConcurrentMethodsFilepath(
+                                System.getProperty(".test"));
                         File omf = new File(fp.toUri());
                         FileWriter outputMethodsFile = new FileWriter(omf);
                         bfMethods = new BufferedWriter(outputMethodsFile);
@@ -180,12 +174,11 @@ public class Agent {
                         }
                         bfMethods.flush();
                     } else if (System.getProperty("agentmode").equals("ALL_LOCATIONS")) {
-                        Paths.get(OUTPUT_DIR_NAME, LOCATIONS).toFile().createNewFile();
-                        Path fp = Paths.get(OUTPUT_DIR_NAME, LOCATIONS);
+                        Path fp = Constants.getAllLocationsFilepath(
+                                System.getProperty(".test"));
                         File locsFile = new File(fp.toUri());
                         FileWriter outputLocationsFile = new FileWriter(locsFile);
                         bfLocations = new BufferedWriter(outputLocationsFile);
-
                         synchronized (InjectDelayClassTracer.locations) {
                             for (String location : InjectDelayClassTracer.locations) {
                                 bfLocations.write(location + "&" + delay);
