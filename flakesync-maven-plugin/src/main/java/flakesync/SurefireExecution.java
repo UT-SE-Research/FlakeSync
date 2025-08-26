@@ -214,6 +214,13 @@ public class SurefireExecution {
                 Constants.getConcurrentMethodsFilepath(testname)));
     }
 
+    private void addLocs(String testname) {
+        String properties = (!checkSysPropsDeprecated()) ? ("systemPropertyVariables") : ("systemProperties");
+        Xpp3Dom propertiesNode = addAttributeToConfig(this.domNode, properties, "").getChild(properties);
+        addAttributeToConfig(propertiesNode, "locations", String.valueOf(
+                Constants.getAllLocationsFilepath(testname)));
+    }
+
     private void addProcessTimeout(int delay) {
         addAttributeToConfig(this.domNode, "forkedProcessTimeoutInSeconds", String.valueOf(4 * delay));
     }
@@ -244,6 +251,22 @@ public class SurefireExecution {
             execution.addWhitelist(testName);
             execution.setupArgline(PHASE.LOCATIONS_MINIMIZER, originalArgLine);
             execution.addAgentMode("ALL_LOCATIONS");
+
+            return execution;
+        }
+
+        public static SurefireExecution createDeltaDebugExec(Plugin surefire, String originalArgLine,
+                                                             MavenProject mavenProject, MavenSession mavenSession,
+                                                             BuildPluginManager pluginManager, String flakesyncDir,
+                                                             String localRepository, String testName, int delay) {
+            SurefireExecution execution = new SurefireExecution(surefire, mavenProject, mavenSession, pluginManager,
+                    flakesyncDir, localRepository);
+            execution.addTestName(testName);
+            execution.addLocs(testName);
+            execution.addDelay(delay + "");
+            execution.addWhitelist(testName);
+            execution.setupArgline(PHASE.LOCATIONS_MINIMIZER, originalArgLine);
+            execution.addAgentMode("DELTA_DEBUG");
 
             return execution;
         }
