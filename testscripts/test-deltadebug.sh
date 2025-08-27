@@ -40,7 +40,7 @@ while read line; do
    # Setup the test set of locations needed
    mkdir -p ${module}/.flakesync/
    cp ${EXPECTED_DIR}/${slug}/${testname//#/.}-Locations_all.txt ${module}/.flakesync/${testname//#/.}-Locations.txt
-   
+   cp ${EXPECTED_DIR}/${slug}/${testname//#/.}-whitelist.txt ${module}/.flakesync/${testname//#/.}-whitelist.txt   
    
     if [ -f ./${module}/.flakesync/${testname//#/.}-Locations.txt ]; then
 	:
@@ -56,21 +56,36 @@ while read line; do
     # Assume expected results are in a known file
     errors=0
     
-    # First check if Locations.txt was even created 
+    # First check if Locations_minimized.txt was even created 
     if [ -f ./${module}/.flakesync/${testname//#/.}-Locations_minimized.txt ]; then
 	:
     else 
         echo "ERROR: Result file not created"
     	((errors++))
     fi
-    
+   
+    #First check that there is only one location in the file
+    LINE_COUNT=$(wc -l < ./${module}/.flakesync/${testname//#/.}-Locations_minimized.txt)
+    if [[ ${LINE_COUNT} -gt 1 ]]; then
+       echo "Did not narrow down to one location"	
+       ((errors++))
+    fi
+   
     while read line_exp; do
-        if grep -q ${line_exp} ./${module}/.flakesync/${testname//#/.}-Locations_minimized.txt; then
+        if grep -q ${line_exp} ${EXPECTED_DIR}/${slug}/${testname//#/.}-Locations_all.txt; then
            :
         else 
+           echo "Chosen location is not a good one"
+	   ((errors++))
+        fi
+    done < ./${module}/.flakesync/${testname//#/.}-Locations_minimized.txt
+
+    while read line_exp; do
+        if grep -q ${line_exp} ./${module}/.flakesync/${testname//#/.}-Locations_minimized.txt; then
+           echo "Chosen location is a bad one"
            ((errors++))
         fi
-    done < ${EXPECTED_DIR}/${slug}/${testname//#/.}-Locations_minimized.txt
+    done < ${EXPECTED_DIR}/${slug}/${testname//#/.}-Locations_minimized_bad.txt
 
 
     if [[ errors -eq 0 ]]; then 

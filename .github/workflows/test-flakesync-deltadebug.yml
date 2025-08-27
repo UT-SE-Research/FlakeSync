@@ -1,10 +1,10 @@
 
-name: auto-run-test-flakesync-concurrentmethods
+name: auto-run-test-flakesync-deltadebug
 
 on: [push, pull_request]
 
 jobs:
-  test-concurrentmethods:
+  test-deltadebug:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
@@ -19,4 +19,4 @@ jobs:
         run: mvn install -B
 
       - name: test
-        run: cd testscripts/; bash test-delayeverywhere.sh input/inputs.csv
+        run: cd testscripts/; bash test-deltadebug.sh input/inputs.csv

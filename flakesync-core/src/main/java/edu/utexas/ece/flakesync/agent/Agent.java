@@ -138,6 +138,7 @@ public class Agent {
                             reader.accept(visitor, 0);
                             return writer.toByteArray();
                         } else if (System.getProperty("agentmode").equals("DELTA_DEBUG")) {
+                            System.out.println("in deltadebug");
                             visitor = new DeltaDebugClassTracer(writer);
                             reader.accept(visitor, 0);
                             return writer.toByteArray();
