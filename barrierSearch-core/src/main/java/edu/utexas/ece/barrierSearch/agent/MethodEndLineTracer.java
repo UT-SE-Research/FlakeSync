@@ -1,11 +1,10 @@
-package barrierSearch.agent;
+package edu.utexas.ece.barrierSearch.agent;
 
 import org.objectweb.asm.ClassVisitor;
-import org.objectweb.asm.FieldVisitor;
 import org.objectweb.asm.Label;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
-import java.util.HashMap;
+
 public class MethodEndLineTracer extends ClassVisitor {
     public static String methodEndLine;
     private String className;

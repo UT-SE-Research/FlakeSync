@@ -1,4 +1,4 @@
-package barrierSearch.agent;
+package edu.utexas.ece.barrierSearch.agent;
 
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
@@ -7,23 +7,11 @@ import java.lang.instrument.ClassFileTransformer;
 import java.lang.instrument.IllegalClassFormatException;
 import java.lang.instrument.Instrumentation;
 import java.security.ProtectionDomain;
-import java.io.FileReader;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.lang.management.ManagementFactory;
-import java.io.BufferedWriter;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.io.InputStream;
-import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Paths;
-import java.nio.file.StandardOpenOption;
-import java.security.ProtectionDomain;
 import java.util.List;
 import java.util.ArrayList;
 
@@ -71,28 +59,31 @@ public class Agent {
                                     ProtectionDomain protectionDomain, byte[] bytes) throws IllegalClassFormatException {
                 if (s == null) return null;
                 s = s.replaceAll("[/]",".");
+
                 String codeToIntroduceVariable = System.getProperty("CodeToIntroduceVariable");
-                //System.out.println("code to introduce variable="+codeToIntroduceVariable);
+                System.out.println(s);
                 String codeUnderTest=codeToIntroduceVariable.split("#")[0]; // code-undet-test class
                 final ClassReader reader = new ClassReader(bytes);
                 final ClassWriter writer = new ClassWriter(reader, ClassWriter.COMPUTE_FRAMES|ClassWriter.COMPUTE_MAXS );
                 ClassVisitor visitor;
 
-                if (!blackListContains(s) && System.getProperty("stackTraceCollect") != null) { // Going to add delay and collect the stacktrace
-                    //System.err.println("FROM STACKTRACE ***************************"+codeToIntroduceVariable);
+                if (System.getProperty("stackTraceCollect") != null && System.getProperty("stackTraceCollect").equals("true") && !blackListContains(s)) { // Going to add delay and collect the stacktrace
+                    System.out.println("FROM STACKTRACE ***************************"+codeToIntroduceVariable);
                     visitor = new StackTraceTracer(writer, codeToIntroduceVariable);
                     reader.accept(visitor, 0);
                     return writer.toByteArray();
                 }
-                else if (!blackListContains(s) && System.getProperty("executionMonitor") != null) {
-                    //synchronized (edu.utexas.ece.barrierSearch.agent.Utility.class) {
+                else if (System.getProperty("executionMonitor") != null && System.getProperty("executionMonitor").equals("flag") && !blackListContains(s)) {
+                    //synchronized (edu.utexas.ece.edu.utexas.ece.barrierSearch.agent.Utility.class) {
+                    System.out.println("Starting execution monitor steps");
                     visitor = new ExecutionMonitorTracer(writer, codeToIntroduceVariable);
                     reader.accept(visitor, 0);
                     //}
                     return writer.toByteArray();
                 }
-                else if (!blackListContains(s) && System.getProperty("searchMethodEndLine") != null) {
-                    //synchronized (edu.utexas.ece.barrierSearch.agent.Utility.class) {
+                else if (System.getProperty("searchMethodEndLine") != null && System.getProperty("searchMethodEndLine").equals("search") && !blackListContains(s)) {
+                    //synchronized (edu.utexas.ece.edu.utexas.ece.barrierSearch.agent.Utility.class) {
+                    System.out.println("Starting search method steps");
                     visitor = new MethodEndLineTracer(writer, codeToIntroduceVariable);
                     reader.accept(visitor, 0);
                     //}
@@ -101,14 +92,17 @@ public class Agent {
                 else {
                     String yieldPointInfo = System.getProperty("YieldingPoint"); // YIELDING_POINT may or may not be a test_method's location
                     String tcls=yieldPointInfo.split("#")[0]; // test-class
-                    if (!blackListContains(s) && (s.equals(codeUnderTest) || s.equals(tcls)) ) {  // Need substring match, test-class name is not coming here
-                        System.out.println("ELSE****ALLOWED CLASS="+s +",yieldPointInfo="+tcls+",codeUnderTest="+codeUnderTest);
+                    //RandomClassTracer.yieldEntered = false;
+                    //RandomClassTracer.delayed = false;
+                    //RandomClassTracer.updateFlag = false;
+                    if ((s.equals(codeUnderTest) || s.equals(tcls)) && !blackListContains(s)) {  // Need substring match, test-class name is not coming here
+                        if(s.equals(tcls)) System.out.println("ELSE****ALLOWED CLASS="+s +",yieldPointInfo="+tcls+",codeUnderTest="+codeUnderTest);
                         visitor = new RandomClassTracer(writer, yieldPointInfo, codeToIntroduceVariable);
                         reader.accept(visitor, 0);
 
                         if (RandomClassTracer.methodAndLine != null) {
                             try {
-                                java.io.BufferedWriter bf = new java.io.BufferedWriter(new java.io.FileWriter("SearchedMethodANDLine.txt"));
+                                java.io.BufferedWriter bf = new java.io.BufferedWriter(new java.io.FileWriter("./.flakesync/SearchedMethodANDLine.txt"));
                                 bf.write(RandomClassTracer.methodAndLine +"\n");
                                 bf.flush();
                             } catch (Exception ex) {}
@@ -116,7 +110,7 @@ public class Agent {
                         }
 
                         try{
-                            java.io.BufferedWriter bfFlag = new java.io.BufferedWriter(new java.io.FileWriter("FlagDelayANDUpdateANDYielding.txt"));
+                            java.io.BufferedWriter bfFlag = new java.io.BufferedWriter(new java.io.FileWriter("./.flakesync/FlagDelayANDUpdateANDYielding.txt"));
                             bfFlag.write("Delay="+RandomClassTracer.delayed +"\n");
                             bfFlag.write("Update="+RandomClassTracer.updateFlag +"\n");
                             bfFlag.write("Yield="+RandomClassTracer.yieldEntered +"\n");
@@ -126,6 +120,7 @@ public class Agent {
                         //System.out.println("FROM AGENT="+RandomClassTracer.methodAndLine);
                         return writer.toByteArray();
                     }
+                    //System.out.println("Not doing anything right now");
                 }
                 return null;
 
@@ -134,6 +129,7 @@ public class Agent {
 
         //if (System.getProperty("executionMonitor") != null) {
         //}
+
         printStartStopTimes(); // WIll print in a file
         //registerShutdownHook();
     }
@@ -148,7 +144,7 @@ public class Agent {
                 // }
                 if (MethodEndLineTracer.methodEndLine != null) {
                     try {
-                        java.io.BufferedWriter bf = new java.io.BufferedWriter(new java.io.FileWriter("SearchedMethodEndLine.txt"));
+                        java.io.BufferedWriter bf = new java.io.BufferedWriter(new java.io.FileWriter("./.flakesync/SearchedMethodEndLine.txt"));
                         bf.write("methodEndLine="+MethodEndLineTracer.methodEndLine +"\n");
                         bf.flush();
 
@@ -158,7 +154,7 @@ public class Agent {
 
                 if (Utility.executionCount > 0) {
                     try {
-                        java.io.BufferedWriter bf = new java.io.BufferedWriter(new java.io.FileWriter("ExecutionMonitor.txt"));
+                        java.io.BufferedWriter bf = new java.io.BufferedWriter(new java.io.FileWriter("./.flakesync/ExecutionMonitor.txt"));
                         bf.write("#execution="+Utility.executionCount +"\n");
                         bf.flush();
 

@@ -1,7 +1,6 @@
-package barrierSearch.agent;
+package edu.utexas.ece.barrierSearch.agent;
 
 import org.objectweb.asm.ClassVisitor;
-import org.objectweb.asm.FieldVisitor;
 import org.objectweb.asm.Label;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
@@ -60,7 +59,8 @@ public class StackTraceTracer extends ClassVisitor {
             public void visitMethodInsn(int opcode, String owner, String name, String desc, boolean itf) {
                 String methodName = owner + "." + name + desc;
                 String location = cn_dot + "#" + lineNumber;
-                //System.out.println("cn_dot=" +cn_dot + ",codeUnderTestClassName="+codeUnderTestClassName);
+                System.out.println("cn_dot=" +cn_dot + ",codeUnderTestClassName="+codeUnderTestClassName);
+                System.out.println((System.getProperty("stackTraceCollect") != null) + "" + (cn_dot.equals(codeUnderTestClassName)) + "" +  (lineNumber == codeUnderTestLineNumber) + "");
                 if ((System.getProperty("stackTraceCollect") != null) && cn_dot.equals(codeUnderTestClassName) &&  lineNumber == codeUnderTestLineNumber) {
                     delayed=true;
                     System.out.println("visitMethodInsn.....,Need to inject delay,location"+location + "delay="+System.getProperty("delay"));
@@ -72,7 +72,7 @@ public class StackTraceTracer extends ClassVisitor {
             @Override
             public void visitInsn(int opcode){ //The lines which are non-methodcall
                 String location = cn_dot + "#" + lineNumber;
-                //System.out.println("cn_dot=" +cn_dot + ",codeUnderTestClassName="+codeUnderTestClassName);
+                System.out.println("cn_dot=" +cn_dot + ",codeUnderTestClassName="+codeUnderTestClassName);
                 if ((System.getProperty("stackTraceCollect") != null) && cn_dot.equals(codeUnderTestClassName) &&  lineNumber == codeUnderTestLineNumber) {
                     delayed=true;
                     System.out.println("visitInsn............;cn="+cn+",location="+location+",delay="+System.getProperty("delay"));
