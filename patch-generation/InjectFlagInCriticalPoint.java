@@ -119,7 +119,7 @@ public class InjectFlagInCriticalPoint {
                 System.out.println("[DEBUG] Inserted hasExecuted = true; at line (1-based): " + (targetLine + 1));
             }
             Files.write(Paths.get(filePath), String.join("\n", lines).getBytes());
-            System.out.println("✅ hasExecuted = true; inserted at lineNumber + 5, preserving all original code.");
+            System.out.println("hasExecuted = true; inserted at lineNumber + 5, preserving all original code.");
         } catch (Exception e) {
             e.printStackTrace();
             System.exit(1);
