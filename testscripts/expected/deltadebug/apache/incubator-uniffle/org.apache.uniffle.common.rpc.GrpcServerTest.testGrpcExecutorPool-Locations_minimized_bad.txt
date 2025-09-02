@@ -1,6 +1,3 @@
 org/apache/uniffle/common/metrics/GRPCMetrics#95&100
 org/apache/uniffle/common/rpc/GrpcServer$GrpcThreadPoolExecutor#173&100
-org/apache/uniffle/common/rpc/GrpcServer$GrpcThreadPoolExecutor#176&100
-org/apache/uniffle/common/metrics/GRPCMetrics#88&100
-org/apache/uniffle/common/metrics/GRPCMetrics#85&100
-org/apache/uniffle/common/rpc/GrpcServer$GrpcThreadPoolExecutor#150&100
+org/apache/uniffle/common/rpc/GrpcServer$GrpcThreadPoolExecutor#65&100
