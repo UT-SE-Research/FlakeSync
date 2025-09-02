@@ -43,12 +43,15 @@ while read line
     echo "java  -cp .:javaparser-core-3.25.4.jar InjectFlagInCriticalPoint ${single_critic_point} $inputProj/$slug"
     #exit
     java -cp .:javaparser-core-3.25.4.jar InjectFlagInCriticalPoint ${single_critic_point} "$inputProj/$slug" #org/java_websocket/WebSocketImpl#513~org/java_websocket/WebSocketImpl#515[100]
-    exit
+    javac SavePatch.java
+    echo "java SavePatch ${barrier_point} ${single_critic_point}"
+    java SavePatch ${barrier_point} ${class_name_dotted} $inputProj/$slug
+    #exit
     
     cd "$inputProj/$slug"
     mvn clean install -DskipTests
     timeout 2m mvn test -Dtest=${full_test} >> "$logs/${full_test}_patch.csv"
-    exit
+    #exit
     git stash
 
     #exit
