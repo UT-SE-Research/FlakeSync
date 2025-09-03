@@ -76,7 +76,7 @@ public class DeltaDebugMojo extends FlakeSyncAbstractMojo {
 
 
         //Run delta debugging
-        locations = deltaDebug.deltaDebug(locations,2);
+        locations = deltaDebug.deltaDebug(locations, 2);
         writeLocationsToFile(locations);
     }
 
@@ -86,10 +86,10 @@ public class DeltaDebugMojo extends FlakeSyncAbstractMojo {
         try {
             FileWriter outputLocationsFile = new FileWriter(file);
             BufferedWriter bw = new BufferedWriter(outputLocationsFile);
+            bw.write(delay);
 
             for (String location : locs) {
                 bw.write(location);
-                bw.write("&" + this.delay);
                 bw.newLine();
             }
             bw.flush();
@@ -105,10 +105,10 @@ public class DeltaDebugMojo extends FlakeSyncAbstractMojo {
                     String.valueOf(Constants.getAllLocationsFilepath(testName)))));
             BufferedReader reader = new BufferedReader(new FileReader(file));
             String line = reader.readLine();
+            delay = Integer.parseInt(line);
+            line = reader.readLine();
             while (line != null) {
-                String data = line.split("&")[0];
-                delay = Integer.parseInt((line.split("&")[1]));
-                locsList.add(data);
+                locsList.add(line);
                 // Read next line
                 line = reader.readLine();
             }
