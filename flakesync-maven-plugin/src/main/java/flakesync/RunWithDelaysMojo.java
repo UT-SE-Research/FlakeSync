@@ -71,8 +71,7 @@ public class RunWithDelaysMojo extends FlakeSyncAbstractMojo {
             } catch (MojoExecutionException mee) {
                 break;
             } catch (Throwable exception) {
-                System.out.println(exception);
-                throw new RuntimeException();
+                System.out.println("Surefire Execution failed: " + exception);
             }
         }
     }

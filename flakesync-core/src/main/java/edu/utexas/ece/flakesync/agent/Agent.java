@@ -181,6 +181,7 @@ public class Agent {
                         FileWriter outputLocationsFile = new FileWriter(locsFile);
                         bfLocations = new BufferedWriter(outputLocationsFile);
                         bfLocations.write(delay);
+                        bfLocations.newLine();
                         synchronized (InjectDelayClassTracer.locations) {
                             for (String location : InjectDelayClassTracer.locations) {
                                 bfLocations.write(location);
