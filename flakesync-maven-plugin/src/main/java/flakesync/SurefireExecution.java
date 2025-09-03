@@ -83,7 +83,6 @@ public class SurefireExecution {
     }
 
     public void run() throws Throwable {
-        System.out.println(domNode);
         try {
             MojoExecutor.executeMojo(this.surefire, MojoExecutor.goal("test"), domNode,
                     MojoExecutor.executionEnvironment(this.mavenProject, this.mavenSession, this.pluginManager));
@@ -267,6 +266,21 @@ public class SurefireExecution {
             execution.addWhitelist(testName);
             execution.setupArgline(PHASE.LOCATIONS_MINIMIZER, originalArgLine);
             execution.addAgentMode("DELTA_DEBUG");
+
+            return execution;
+        }
+
+        public static SurefireExecution getSTExex(Plugin surefire, String originalArgLine,
+                                                  MavenProject mavenProject, MavenSession mavenSession,
+                                                  BuildPluginManager pluginManager, String flakesyncDir,
+                                                  String localRepository, String testName, int delay) {
+            SurefireExecution execution = new SurefireExecution(surefire, mavenProject, mavenSession, pluginManager,
+                    flakesyncDir, localRepository);
+            execution.addTestName(testName);
+            execution.addLocs(testName);
+            execution.addDelay(delay + "");
+            execution.setupArgline(PHASE.CRITICAL_POINT_SEARCH, originalArgLine);
+            execution.addAgentMode("GET_STACKTRACE");
 
             return execution;
         }
