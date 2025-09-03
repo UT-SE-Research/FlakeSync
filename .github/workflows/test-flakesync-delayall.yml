@@ -1,5 +1,5 @@
 
-name: auto-run-test-flakesync-concurrentmethods
+name: auto-run-test-flakesync-delayeverywhere
 
 on: [push, pull_request]
 
