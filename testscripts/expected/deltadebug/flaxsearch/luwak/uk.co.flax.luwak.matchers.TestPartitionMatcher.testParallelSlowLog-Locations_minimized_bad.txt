@@ -1,4 +1,4 @@
-uk/co/flax/luwak/DocumentBatch#1&100
-uk/co/flax/luwak/CandidateMatcher#1&100
-uk/co/flax/luwak/util/ForceNoBulkScoringQuery$1#1&100
-uk/co/flax/luwak/matchers/CollectingMatcher$MatchCollector$MatchLeafCollector#1&100
+uk/co/flax/luwak/DocumentBatch#1
+uk/co/flax/luwak/CandidateMatcher#1
+uk/co/flax/luwak/util/ForceNoBulkScoringQuery$1#1
+uk/co/flax/luwak/matchers/CollectingMatcher$MatchCollector$MatchLeafCollector#1

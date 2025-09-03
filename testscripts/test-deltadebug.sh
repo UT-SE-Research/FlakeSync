@@ -72,17 +72,8 @@ while read line; do
     fi
    
     while read line_exp; do
-        if grep -q ${line_exp} ${EXPECTED_DIR}/${slug}/${testname//#/.}-Locations_all.txt; then
-           :
-        else 
-           echo "Chosen location is not a good one"
-	   ((errors++))
-        fi
-    done < ./${module}/.flakesync/${testname//#/.}-Locations_minimized.txt
-
-    while read line_exp; do
         if grep -q ${line_exp} ./${module}/.flakesync/${testname//#/.}-Locations_minimized.txt; then
-           echo "Chosen location is a bad one"
+           echo "Chosen location is a bad one: "${line_exp}
            ((errors++))
         fi
     done < ${EXPECTED_DIR}/${slug}/${testname//#/.}-Locations_minimized_bad.txt

@@ -54,7 +54,7 @@ public class DeltaDebugClassTracer extends ClassVisitor {
                 BufferedReader reader = new BufferedReader(new FileReader(new File(System.getProperty("locations"))));
                 String line = reader.readLine();
                 while (line != null) {
-                    providedLocations.add(line.substring(0, line.indexOf('&')));
+                    providedLocations.add(line);
                     // read next line
                     line = reader.readLine();
                 }
