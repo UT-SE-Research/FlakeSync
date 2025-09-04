@@ -28,6 +28,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 package flakesync;
 
+import flakesync.Constants;
 import flakesync.common.Configuration;
 import flakesync.common.Level;
 import flakesync.common.Logger;
@@ -190,7 +191,7 @@ public class SurefireExecution {
         addAttributeToConfig(this.domNode, "test", testName);
         String properties = (!checkSysPropsDeprecated()) ? ("systemPropertyVariables") : ("systemProperties");
         Xpp3Dom propertiesNode = addAttributeToConfig(this.domNode, properties, "").getChild(properties);
-        addAttributeToConfig(propertiesNode, "test", testName);
+        addAttributeToConfig(propertiesNode, ".test", testName);
     }
 
     private void addDelay(String delay) {
@@ -199,18 +200,18 @@ public class SurefireExecution {
         addAttributeToConfig(propertiesNode, "delay", delay);
     }
 
-    private void addWhitelist() {
+    private void addWhitelist(String testname) {
         String properties = (!checkSysPropsDeprecated()) ? ("systemPropertyVariables") : ("systemProperties");
         Xpp3Dom propertiesNode = addAttributeToConfig(this.domNode, properties, "").getChild(properties);
-        addAttributeToConfig(propertiesNode, "whitelist", "./.flakesync/whitelist.txt");
+        addAttributeToConfig(propertiesNode, "whitelist", String.valueOf(
+                Constants.getWhitelistFilepath(testname)));
     }
 
     private void addCM(String testname) {
         String properties = (!checkSysPropsDeprecated()) ? ("systemPropertyVariables") : ("systemProperties");
         Xpp3Dom propertiesNode = addAttributeToConfig(this.domNode, properties, "").getChild(properties);
-        String concurrentMethods = "./.flakesync/" + testname.replace("#", ".")
-                + "-ResultMethods.txt";
-        addAttributeToConfig(propertiesNode, "concurrentmethods", concurrentMethods);
+        addAttributeToConfig(propertiesNode, "concurrentmethods", String.valueOf(
+                Constants.getConcurrentMethodsFilepath(testname)));
     }
 
     private void addProcessTimeout(int delay) {
@@ -240,7 +241,7 @@ public class SurefireExecution {
             execution.addTestName(testName);
             execution.addCM(testName);
             execution.addDelay(delay + "");
-            execution.addWhitelist();
+            execution.addWhitelist(testName);
             execution.setupArgline(PHASE.LOCATIONS_MINIMIZER, originalArgLine);
             execution.addAgentMode("ALL_LOCATIONS");
 

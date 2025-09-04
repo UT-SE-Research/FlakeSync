@@ -30,6 +30,11 @@
       <groupId>org.ow2.asm</groupId>
       <artifactId>asm-commons</artifactId>
     </dependency>
+    <dependency>
+      <groupId>edu.utexas.ece</groupId>
+      <artifactId>flakesync-utils</artifactId>
+      <version>1.0-SNAPSHOT</version>
+    </dependency>
   </dependencies>
 
   <build>
