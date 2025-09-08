@@ -84,6 +84,7 @@ public class SurefireExecution {
 
     public void run() throws Throwable {
         try {
+            System.out.println(domNode);
             MojoExecutor.executeMojo(this.surefire, MojoExecutor.goal("test"), domNode,
                     MojoExecutor.executionEnvironment(this.mavenProject, this.mavenSession, this.pluginManager));
         } catch (MojoExecutionException mojoException) {
@@ -220,6 +221,25 @@ public class SurefireExecution {
                 Constants.getAllLocationsFilepath(testname)));
     }
 
+    private void addLocs(String testname, String locations) {
+        String properties = (!checkSysPropsDeprecated()) ? ("systemPropertyVariables") : ("systemProperties");
+        Xpp3Dom propertiesNode = addAttributeToConfig(this.domNode, properties, "").getChild(properties);
+        addAttributeToConfig(propertiesNode, "locations", locations);
+    }
+
+    private void addRootMethod(String testname) {
+        String properties = (!checkSysPropsDeprecated()) ? ("systemPropertyVariables") : ("systemProperties");
+        Xpp3Dom propertiesNode = addAttributeToConfig(this.domNode, properties, "").getChild(properties);
+        addAttributeToConfig(propertiesNode, "rootMethod", String.valueOf(
+                Constants.getRootMethodFilepath(testname)));
+    }
+
+    private void addMethodName(String property, String methodName) {
+        String properties = (!checkSysPropsDeprecated()) ? ("systemPropertyVariables") : ("systemProperties");
+        Xpp3Dom propertiesNode = addAttributeToConfig(this.domNode, properties, "").getChild(properties);
+        addAttributeToConfig(propertiesNode, "property", methodName);
+    }
+
     private void addProcessTimeout(int delay) {
         addAttributeToConfig(this.domNode, "forkedProcessTimeoutInSeconds", String.valueOf(4 * delay));
     }
@@ -270,17 +290,52 @@ public class SurefireExecution {
             return execution;
         }
 
-        public static SurefireExecution getSTExex(Plugin surefire, String originalArgLine,
+        public static SurefireExecution getDelayLocExec(Plugin surefire, String originalArgLine,
                                                   MavenProject mavenProject, MavenSession mavenSession,
                                                   BuildPluginManager pluginManager, String flakesyncDir,
-                                                  String localRepository, String testName, int delay) {
+                                                  String localRepository, String testName, int delay,
+                                                  String locationsPath) {
             SurefireExecution execution = new SurefireExecution(surefire, mavenProject, mavenSession, pluginManager,
                     flakesyncDir, localRepository);
             execution.addTestName(testName);
-            execution.addLocs(testName);
+            execution.addLocs(testName, locationsPath);
             execution.addDelay(delay + "");
             execution.setupArgline(PHASE.CRITICAL_POINT_SEARCH, originalArgLine);
-            execution.addAgentMode("GET_STACKTRACE");
+            execution.addAgentMode("DELAY_INJECTION_BY_LOC");
+
+            return execution;
+        }
+
+        public static SurefireExecution getRMAExec(Plugin surefire, String originalArgLine,
+                                                        MavenProject mavenProject, MavenSession mavenSession,
+                                                        BuildPluginManager pluginManager, String flakesyncDir,
+                                                        String localRepository, String testName, int delay,
+                                                        String methodName) {
+            SurefireExecution execution = new SurefireExecution(surefire, mavenProject, mavenSession, pluginManager,
+                    flakesyncDir, localRepository);
+            execution.addTestName(testName);
+            execution.addRootMethod(testName);
+            execution.addMethodName("rootMethod", methodName);
+            execution.addDelay(delay + "");
+            execution.setupArgline(PHASE.CRITICAL_POINT_SEARCH, originalArgLine);
+            execution.addAgentMode("ROOT_METHOD_ANALYSIS");
+
+            return execution;
+        }
+
+        public static SurefireExecution getDelayMethodExec(Plugin surefire, String originalArgLine,
+                                                        MavenProject mavenProject, MavenSession mavenSession,
+                                                        BuildPluginManager pluginManager, String flakesyncDir,
+                                                        String localRepository, String testName, int delay,
+                                                        String locationsPath, String methodName) {
+            SurefireExecution execution = new SurefireExecution(surefire, mavenProject, mavenSession, pluginManager,
+                    flakesyncDir, localRepository);
+            execution.addTestName(testName);
+            execution.addLocs(testName, locationsPath);
+            execution.addMethodName("methodNameForDelayAtBeginning", methodName);
+            execution.addDelay(delay + "");
+            execution.setupArgline(PHASE.CRITICAL_POINT_SEARCH, originalArgLine);
+            execution.addAgentMode("DELAY_INJECTION_BY_METHOD");
 
             return execution;
         }

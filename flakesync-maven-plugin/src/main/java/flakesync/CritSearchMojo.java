@@ -41,19 +41,19 @@ public class CritSearchMojo extends FlakeSyncAbstractMojo {
 
         results = new ArrayList<Output>();
 
-        //runs mvn-run-and-find-stack-trace.sh: mvn test -pl $module -Dtest=$4  -Ddelay=$3  -Dlocations=$7
-
         List<String> locations = new ArrayList<String>();
-        this.delay = generateLocsList(locations, this.mavenProject.getBasedir() + "/.flakesync/Locations_minimized.txt");
+        String locationsPath = String.valueOf(Constants.getMinLocationsFilepath(testName));
+        this.delay = generateLocsList(locations, locationsPath);
+        System.out.println("Working delay: " + this.delay);
 
         roots = new HashSet<String>();
 
-
+        locationsPath = String.valueOf(Constants.getWorkingLocationsFilepath(testName));
         try {
-            SurefireExecution cleanExec = SurefireExecution.SurefireFactory.getSTExex(this.surefire, this.originalArgLine,
-                    this.mavenProject, this.mavenSession, this.pluginManager,
+            SurefireExecution cleanExec = SurefireExecution.SurefireFactory.getDelayLocExec(this.surefire,
+                    this.originalArgLine, this.mavenProject, this.mavenSession, this.pluginManager,
                     Paths.get(this.baseDir.getAbsolutePath(), ConfigurationDefaults.DEFAULT_FLAKESYNC_DIR).toString(),
-                    this.localRepository, this.testName, this.delay);
+                    this.localRepository, this.testName, this.delay, locationsPath);
             if (!executeSurefireExecution(null, cleanExec)) {
                 System.out.println("This minimized location is not a good one. Go back and run minimizer.");
                 return;
@@ -61,12 +61,10 @@ public class CritSearchMojo extends FlakeSyncAbstractMojo {
 
 
 
-            System.out.println("NOW WE ARE PARSING THE STACK TRACE");
-            //parse-stack-trace.sh
+            //Parse the stacktrace
             stackTraceLines = new HashSet<String>();
             parseStackTrace();
             System.out.println(stackTraceLines.toString());
-            //Iterating through parsed stack traces
 
             HashSet<String> visited = new HashSet<String>();
 
@@ -85,10 +83,7 @@ public class CritSearchMojo extends FlakeSyncAbstractMojo {
                             itemLocation = itemLocation.split("$")[0];
                         }
 
-
-
                         File directory = new File(this.baseDir + "/.flakesync/Locations/Line/");
-                        System.out.println(directory.mkdirs() + " = whether dir creation worked");
                         String filePath = "/.flakesync/Locations/Line/loc-" + threadId + "-" + i + ".txt";
                         try {
                             File file = new File(this.baseDir + filePath);
@@ -103,12 +98,11 @@ public class CritSearchMojo extends FlakeSyncAbstractMojo {
                             ioe.printStackTrace();
                         }
 
-                        cleanExec = new CleanSurefireExecution(this.surefire, this.originalArgLine, this.mavenProject,
-                            this.mavenSession, this.pluginManager,
-                            Paths.get(this.baseDir.getAbsolutePath(),
-                                    ConfigurationDefaults.DEFAULT_FLAKESYNC_DIR).toString(),
-                                    this.localRepository, this.testName, delay, "." + filePath,
-                                0);
+                        cleanExec = SurefireExecution.SurefireFactory.getDelayLocExec(this.surefire, this.originalArgLine,
+                                this.mavenProject, this.mavenSession, this.pluginManager,
+                                Paths.get(this.baseDir.getAbsolutePath(),
+                                        ConfigurationDefaults.DEFAULT_FLAKESYNC_DIR).toString(), this.localRepository,
+                                this.testName, delay, "." + filePath);
 
                         int result = executeSurefireExecution(allExceptions, cleanExec, itemLocation, threadId);
 
@@ -123,12 +117,11 @@ public class CritSearchMojo extends FlakeSyncAbstractMojo {
                                         + " it looks like the test passed: "
                                         + workingDelay);
 
-                                cleanExec = new CleanSurefireExecution(this.surefire, this.originalArgLine,
-                                        this.mavenProject, this.mavenSession, this.pluginManager,
-                                    Paths.get(this.baseDir.getAbsolutePath(),
-                                        ConfigurationDefaults.DEFAULT_FLAKESYNC_DIR).toString(),
-                                    this.localRepository, this.testName, delay, "." + filePath,
-                                        0);
+                                cleanExec = SurefireExecution.SurefireFactory.getDelayLocExec(this.surefire,
+                                        this.originalArgLine, this.mavenProject, this.mavenSession, this.pluginManager,
+                                        Paths.get(this.baseDir.getAbsolutePath(),
+                                                ConfigurationDefaults.DEFAULT_FLAKESYNC_DIR).toString(),
+                                        this.localRepository, this.testName, delay, "." + filePath);
 
                                 result = executeSurefireExecution(allExceptions, cleanExec, itemLocation, threadId);
                                 if (result < 3) { //We got a failure, we can break
@@ -195,9 +188,9 @@ public class CritSearchMojo extends FlakeSyncAbstractMojo {
 
             String beginningLineName;
             try {
-                CleanSurefireExecution rootMethodAnalysisExecution =
-                        new CleanSurefireExecution(this.surefire, this.originalArgLine, this.mavenProject,
-                                this.mavenSession, this.pluginManager,
+                SurefireExecution rootMethodAnalysisExecution =
+                        SurefireExecution.SurefireFactory.getRMAExec(this.surefire, this.originalArgLine,
+                                this.mavenProject, this.mavenSession, this.pluginManager,
                                 Paths.get(this.baseDir.getAbsolutePath(),
                                         ConfigurationDefaults.DEFAULT_FLAKESYNC_DIR).toString(),
                                         this.localRepository, this.testName, delay, methodName);
@@ -309,25 +302,21 @@ public class CritSearchMojo extends FlakeSyncAbstractMojo {
     private int generateLocsList(List<String> locsList, String path) {
         int delay = 0;
         try {
-            // Input file
-            File file = new File(path);
-
+            File file = new File(this.mavenProject.getBasedir() + path.substring(1));
             BufferedReader reader = new BufferedReader(new FileReader(file));
 
             // Output file
             FileWriter outputLocationsFile = new FileWriter(this.mavenProject.getBasedir()
-                + "/.flakesync/Locations_tmp.txt");
+                + String.valueOf(Constants.getWorkingLocationsFilepath(testName)).substring(1));
             BufferedWriter bw = new BufferedWriter(outputLocationsFile);
 
             String line = reader.readLine();
+            delay = Integer.parseInt(line);
+            line = reader.readLine();
             while (line != null) {
-                String data = line.split("&")[0];
-                delay = Integer.parseInt(line.split("&")[1]);
-                locsList.add(data);
-
-                bw.write(data);
+                locsList.add(line);
+                bw.write(line);
                 bw.newLine();
-
                 // Read next line
                 line = reader.readLine();
             }
@@ -342,7 +331,7 @@ public class CritSearchMojo extends FlakeSyncAbstractMojo {
 
     private void parseStackTrace() {
         try {
-            File file = new File(this.mavenProject.getBasedir() + "/.flakesync/Stacktrace.txt");
+            File file = new File(String.valueOf(Constants.getStackTraceFilepath(testName)));
             BufferedReader reader = new BufferedReader(new FileReader(file));
             String parsedInfo = "";
             String line = reader.readLine();
@@ -371,7 +360,7 @@ public class CritSearchMojo extends FlakeSyncAbstractMojo {
 
     private String searchStackTrace(String searchKey1, String searchKey2) {
         try {
-            File file = new File(this.mavenProject.getBasedir() + "/.flakesync/Stacktrace.txt");
+            File file = new File(String.valueOf(Constants.getStackTraceFilepath(testName)));
             BufferedReader reader = new BufferedReader(new FileReader(file));
             String parsedInfo = "";
             String line = reader.readLine();
@@ -417,11 +406,11 @@ public class CritSearchMojo extends FlakeSyncAbstractMojo {
                 writer.newLine();
                 writer.flush();
 
-                CleanSurefireExecution execution = new CleanSurefireExecution(this.surefire, this.originalArgLine,
-                    this.mavenProject, this.mavenSession, this.pluginManager,
-                    Paths.get(this.baseDir.getAbsolutePath(), ConfigurationDefaults.DEFAULT_FLAKESYNC_DIR).toString(),
-                    this.localRepository, this.testName, this.delay,
-                        "./.flakesync/Locations/Root-" + lowerLineNumber + ".txt", methodName, false);
+                SurefireExecution execution = SurefireExecution.SurefireFactory.getDelayMethodExec(this.surefire,
+                        this.originalArgLine, this.mavenProject, this.mavenSession, this.pluginManager,
+                        Paths.get(this.baseDir.getAbsolutePath(), ConfigurationDefaults.DEFAULT_FLAKESYNC_DIR).toString(),
+                        this.localRepository, this.testName, this.delay,
+                        "./.flakesync/Locations/Root-" + lowerLineNumber + ".txt", methodName);
 
                 beginningFail = executeSurefireExecution(null, execution);
 
@@ -476,10 +465,12 @@ public class CritSearchMojo extends FlakeSyncAbstractMojo {
                     writer.newLine();
                     writer.flush();
 
-                    CleanSurefireExecution execution = new CleanSurefireExecution(this.surefire, this.originalArgLine,
-                        this.mavenProject, this.mavenSession, this.pluginManager,
-                        Paths.get(this.baseDir.getAbsolutePath(), ConfigurationDefaults.DEFAULT_FLAKESYNC_DIR).toString(),
-                        this.localRepository, this.testName, this.delay, "./.flakesync/Locations/Root-" + i + ".txt", 3);
+                    SurefireExecution execution = SurefireExecution.SurefireFactory.getDelayLocExec(this.surefire,
+                            this.originalArgLine, this.mavenProject, this.mavenSession, this.pluginManager,
+                            Paths.get(this.baseDir.getAbsolutePath(),
+                                    ConfigurationDefaults.DEFAULT_FLAKESYNC_DIR).toString(),
+                            this.localRepository, this.testName, this.delay,
+                            "./.flakesync/Locations/Root-" + i + ".txt");
 
                     boolean failed = executeSurefireExecution(null, execution);
 
@@ -519,7 +510,7 @@ public class CritSearchMojo extends FlakeSyncAbstractMojo {
     }
 
     private int executeSurefireExecution(MojoExecutionException allExceptions,
-            CleanSurefireExecution execution, String itemLoc, int threadID)
+            SurefireExecution execution, String itemLoc, int threadID)
             throws Throwable {
         try {
             execution.run();

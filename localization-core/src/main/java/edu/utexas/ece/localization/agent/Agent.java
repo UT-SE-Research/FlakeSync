@@ -143,10 +143,10 @@ public class Agent {
                                     ProtectionDomain protectionDomain, byte[] bytes) throws IllegalClassFormatException {
                 className = className.replaceAll("[/]",".");
 
+                String mode = System.getProperty("agentmode");
+
                 // Use locationlist if it is defined as a property; otherwise rely on blacklist
-                if (System.getProperty("rootMethod") != null && !blackListContains(className)
-                        && System.getProperty("methodNameForDelayAtBeginning").equals("null")
-                        && System.getProperty("locations").equals("null")) {
+                if (mode.equals("ROOT_METHOD_ANALYSIS")) { //This is Root Method Analysis
                     boolean methodExists = rootMethodContains(className);
                     if (methodExists) {
                         final ClassReader reader = new ClassReader(bytes);
@@ -156,41 +156,20 @@ public class Agent {
                         reader.accept(visitor, 0);
                         return writer.toByteArray();
                     }
-
-                } else if (System.getProperty("searchForMethodName") != null && !blackListContains(className)) {
-                    boolean methodExists = rootClassLineContains(className);
-                    if (methodExists) {
-                        final ClassReader reader = new ClassReader(bytes);
-                        final ClassWriter writer = new ClassWriter(reader,
-                                ClassWriter.COMPUTE_FRAMES | ClassWriter.COMPUTE_MAXS);
-                        ClassVisitor visitor = new FunctionNameTracer(writer);
-                        reader.accept(visitor, 0);
-                        return writer.toByteArray();
-                    }
-                } else if (System.getProperty("findRootOfRunMethod") != null && !blackListContains(className)) {
-                    // Needed for finding root method of a run()
+                } else if (mode.equals("DELAY_INJECTION_BY_METHOD")) {
                     final ClassReader reader = new ClassReader(bytes);
                     final ClassWriter writer = new ClassWriter(reader,
                             ClassWriter.COMPUTE_FRAMES | ClassWriter.COMPUTE_MAXS);
                     ClassVisitor visitor = new FunctionNameTracer(writer);
                     reader.accept(visitor, 0);
                     return writer.toByteArray();
-                } else if (!System.getProperty("locations").equals("null")) {
-                    if (locationListContains(className) && !blackListContains(className)) {
-                        final ClassReader reader = new ClassReader(bytes);
-                        final ClassWriter writer = new ClassWriter(reader,
-                                ClassWriter.COMPUTE_FRAMES | ClassWriter.COMPUTE_MAXS);
-                        if (System.getProperty("methodNameForDelayAtEnd") != null
-                                || System.getProperty("methodNameForDelayAtBeginning") != null) {
-                            ClassVisitor visitor = new FunctionNameTracer(writer);
-                            reader.accept(visitor, 0);
-                            return writer.toByteArray();
-                        } else {
-                            ClassVisitor visitor = new RandomClassTracer(writer);
-                            reader.accept(visitor, 0);
-                            return writer.toByteArray();
-                        }
-                    }
+                } else if (mode.equals("DELAY_INJECTION_BY_LOC")) {
+                    final ClassReader reader = new ClassReader(bytes);
+                    final ClassWriter writer = new ClassWriter(reader,
+                            ClassWriter.COMPUTE_FRAMES | ClassWriter.COMPUTE_MAXS);
+                    ClassVisitor visitor = new RandomClassTracer(writer);
+                    reader.accept(visitor, 0);
+                    return writer.toByteArray();
                 }
                 return null;
             }

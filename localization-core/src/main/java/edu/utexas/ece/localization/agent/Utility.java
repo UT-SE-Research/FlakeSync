@@ -80,11 +80,10 @@ public class Utility {
     }
 
     public static void collectStackTrace(String testName, String className) {
-        System.out.println("Is this even getting called, please tell me it is");
         className = className.replaceAll("[/]",".");
         System.out.println("collectStackTrace*** ClassName=" + className);
         String[] classNameItems = className.split("#", 2);
-        String fileName = "./.flakesync/StackTrace.txt";
+        String fileName = "./.flakesync/" + testName + ".txt";
         try {
             FileWriter outputFile = new FileWriter(fileName, true);
             BufferedWriter bf = new BufferedWriter(outputFile);
@@ -97,7 +96,7 @@ public class Utility {
                 threadId = Thread.currentThread().getId();
                 String elem = threadId + "," + ste2String;
                 String[] blackListedElement = {"edu.utexas.ece.localization.agent.Utility", "java.", "org.apache.lucene",
-                        "org.junit", "org.apache.maven.surefire"};
+                    "org.junit", "org.apache.maven.surefire"};
                 for (int i = 0; i < blackListedElement.length; i++) {
                     if (elem.contains(blackListedElement[i])) {
                         foundInBlackList = true;
