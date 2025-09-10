@@ -11,10 +11,12 @@ public class Constants {
     public static final String CONCURRENT_METHODS_FILE = "ResultMethods.txt";
     public static final String LOCATIONS_FILE = "Locations.txt";
     public static final String LOCATIONS_MIN_FILE = "Locations_minimized.txt";
-    public static final String LOCATIONS_TEMP_FILE = "Locations_temp.txt";
+    public static final String LOCATIONS_TEMP_FILE = "Locations_tmp.txt";
     public static final String ROOTS_DIR = "Locations";
+    public static final String LINES_DIR = "Lines";
     public static final String STACKTRACE_FILE = "StackTrace.txt";
     public static final String ROOT_METHOD_FILE = "Root.txt";
+    public static final String METHOD_START_END_FILE = "MethodStartAndEndLine.txt";
     public static final String WHITELIST_FILE = "whitelist.txt";
 
 
@@ -64,5 +66,24 @@ public class Constants {
             rootsDir.mkdirs();
         }
         return Paths.get(".", DEFAULT_FLAKESYNC_DIR, ROOTS_DIR, fileName);
+    }
+
+    public static Path getIndRootFilepath(String baseDir, String testname, int idx) {
+        String fileName = testname.replace("#", ".") + "-" + ROOT_METHOD_FILE;
+        return Paths.get(baseDir, DEFAULT_FLAKESYNC_DIR, ROOTS_DIR, "Root-" + idx + ".txt");
+    }
+
+    public static Path getIndLocFilepath(String baseDir, String testname, int threadID, int idx) {
+        String fileName = testname.replace("#", ".") + "-loc-" + threadID + "-" + idx + ".txt";
+        File rootsDir = new File(String.valueOf(Paths.get(baseDir, DEFAULT_FLAKESYNC_DIR, ROOTS_DIR)));
+        rootsDir.mkdirs();
+        File linesDir = new File(String.valueOf(Paths.get(baseDir, DEFAULT_FLAKESYNC_DIR, ROOTS_DIR, LINES_DIR)));
+        linesDir.mkdirs();
+        return Paths.get(baseDir, DEFAULT_FLAKESYNC_DIR, ROOTS_DIR, LINES_DIR, fileName);
+    }
+
+    public static String getMethodStartEndLineFile(String baseDir, String testName) {
+        String fileName = testName.replace("#", ".") + "-" + METHOD_START_END_FILE;
+        return String.valueOf(Paths.get(baseDir, DEFAULT_FLAKESYNC_DIR, fileName));
     }
 }

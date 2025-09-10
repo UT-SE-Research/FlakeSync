@@ -44,7 +44,6 @@ public class CritSearchMojo extends FlakeSyncAbstractMojo {
         List<String> locations = new ArrayList<String>();
         String locationsPath = String.valueOf(Constants.getMinLocationsFilepath(testName));
         this.delay = generateLocsList(locations, locationsPath);
-        System.out.println("Working delay: " + this.delay);
 
         roots = new HashSet<String>();
 
@@ -58,8 +57,6 @@ public class CritSearchMojo extends FlakeSyncAbstractMojo {
                 System.out.println("This minimized location is not a good one. Go back and run minimizer.");
                 return;
             }
-
-
 
             //Parse the stacktrace
             stackTraceLines = new HashSet<String>();
@@ -83,15 +80,15 @@ public class CritSearchMojo extends FlakeSyncAbstractMojo {
                             itemLocation = itemLocation.split("$")[0];
                         }
 
-                        File directory = new File(this.baseDir + "/.flakesync/Locations/Line/");
-                        String filePath = "/.flakesync/Locations/Line/loc-" + threadId + "-" + i + ".txt";
+                        File file = new File(String.valueOf( Constants.getIndLocFilepath(
+                                this.mavenProject.getBasedir().toString(), this.testName, threadId, i)));
                         try {
-                            File file = new File(this.baseDir + filePath);
                             file.createNewFile();
+                            System.out.println(file.getAbsolutePath());
                             FileWriter fw = new FileWriter(file);
                             BufferedWriter bw = new BufferedWriter(fw);
 
-                            bw.write(itemLocation + ":" + this.testName);
+                            bw.write(itemLocation);
                             bw.newLine();
                             bw.flush();
                         } catch (IOException ioe) {
@@ -102,7 +99,8 @@ public class CritSearchMojo extends FlakeSyncAbstractMojo {
                                 this.mavenProject, this.mavenSession, this.pluginManager,
                                 Paths.get(this.baseDir.getAbsolutePath(),
                                         ConfigurationDefaults.DEFAULT_FLAKESYNC_DIR).toString(), this.localRepository,
-                                this.testName, delay, "." + filePath);
+                                this.testName, delay,
+                                String.valueOf(Constants.getIndLocFilepath(".", this.testName, threadId, i)));
 
                         int result = executeSurefireExecution(allExceptions, cleanExec, itemLocation, threadId);
 
@@ -121,7 +119,8 @@ public class CritSearchMojo extends FlakeSyncAbstractMojo {
                                         this.originalArgLine, this.mavenProject, this.mavenSession, this.pluginManager,
                                         Paths.get(this.baseDir.getAbsolutePath(),
                                                 ConfigurationDefaults.DEFAULT_FLAKESYNC_DIR).toString(),
-                                        this.localRepository, this.testName, delay, "." + filePath);
+                                        this.localRepository, this.testName, workingDelay,
+                                        String.valueOf(Constants.getIndLocFilepath(".", this.testName, threadId, i)));
 
                                 result = executeSurefireExecution(allExceptions, cleanExec, itemLocation, threadId);
                                 if (result < 3) { //We got a failure, we can break
@@ -174,10 +173,10 @@ public class CritSearchMojo extends FlakeSyncAbstractMojo {
             System.out.println("METHOD NAME: " + methodName);
             String className = tmp.substring(0, tmp.lastIndexOf("/"));
             //Create the root file
-            //Java API to get delimiters to generate paths, concatenate with current OS delimiter
             try {
                 System.out.println("Root file contents:     " + className + "#" + methodName + ":" + testName);
-                FileWriter rootFile = new FileWriter(mavenProject.getBasedir() + "/.flakesync/Locations/Root.txt");
+                FileWriter rootFile = new FileWriter(mavenProject.getBasedir()
+                        + String.valueOf(Constants.getRootMethodFilepath(testName)).substring(1));
                 BufferedWriter bw1 = new BufferedWriter(rootFile);
                 bw1.write(className + "#" + methodName + ":" + testName);
                 bw1.newLine();
@@ -331,7 +330,8 @@ public class CritSearchMojo extends FlakeSyncAbstractMojo {
 
     private void parseStackTrace() {
         try {
-            File file = new File(String.valueOf(Constants.getStackTraceFilepath(testName)));
+            File file = new File(this.mavenProject.getBasedir()
+                    + String.valueOf(Constants.getStackTraceFilepath(testName)).substring(1));
             BufferedReader reader = new BufferedReader(new FileReader(file));
             String parsedInfo = "";
             String line = reader.readLine();
@@ -342,7 +342,6 @@ public class CritSearchMojo extends FlakeSyncAbstractMojo {
                     this.stackTraceLines.add(parsedInfo);
                     parsedInfo = "";
                 } else {
-                    System.out.println(line);
                     String tmp = data[1].substring(0, data[1].indexOf('('));
                     String className = tmp.substring(0, tmp.lastIndexOf('/'));
                     int lineNumber = Integer.parseInt(data[1].split(":")[1]
@@ -360,7 +359,8 @@ public class CritSearchMojo extends FlakeSyncAbstractMojo {
 
     private String searchStackTrace(String searchKey1, String searchKey2) {
         try {
-            File file = new File(String.valueOf(Constants.getStackTraceFilepath(testName)));
+            File file = new File(this.mavenProject.getBasedir()
+                    + String.valueOf(Constants.getStackTraceFilepath(testName)).substring(1));
             BufferedReader reader = new BufferedReader(new FileReader(file));
             String parsedInfo = "";
             String line = reader.readLine();
@@ -382,25 +382,21 @@ public class CritSearchMojo extends FlakeSyncAbstractMojo {
     private String delayInjection() throws Throwable {
         String beginningLineName = null;
         try {
-            File lines = new File(this.mavenProject.getBasedir() + "/.flakesync/MethodStartAndEndLine.txt");
+            String pathName = String.valueOf(Constants.getMethodStartEndLineFile(
+                    String.valueOf(this.mavenProject.getBasedir()), testName));
+            File lines = new File(pathName);
             BufferedReader reader = new BufferedReader(new FileReader(lines));
             String line = reader.readLine();
             while (line != null) {
                 // Parse method name from line
-                System.out.println("hahahah" + line);
                 String[] tmp = line.split("#");
                 String methodName = tmp[3];
                 String className = tmp[0];
                 String lowerLineNumber = tmp[1].substring(0, tmp[1].indexOf('-'));
 
-                System.out.println(
-                        "Trying to run delay injection "
-                        + methodName + " "
-                        + lowerLineNumber
-                );
-
-                File rootFile = new File(this.mavenProject.getBasedir() + "/.flakesync/Locations/Root-"
-                    + lowerLineNumber + ".txt");
+                pathName = String.valueOf(Constants.getIndRootFilepath(String.valueOf(this.mavenProject.getBasedir()),
+                        testName, Integer.parseInt(lowerLineNumber)));
+                File rootFile = new File(pathName);
                 BufferedWriter writer = new BufferedWriter(new FileWriter(rootFile));
                 writer.write(className + "#" + lowerLineNumber);
                 writer.newLine();
@@ -410,14 +406,16 @@ public class CritSearchMojo extends FlakeSyncAbstractMojo {
                         this.originalArgLine, this.mavenProject, this.mavenSession, this.pluginManager,
                         Paths.get(this.baseDir.getAbsolutePath(), ConfigurationDefaults.DEFAULT_FLAKESYNC_DIR).toString(),
                         this.localRepository, this.testName, this.delay,
-                        "./.flakesync/Locations/Root-" + lowerLineNumber + ".txt", methodName);
+                        String.valueOf(Constants.getIndRootFilepath(".",  testName, Integer.parseInt(lowerLineNumber))),
+                        methodName);
 
                 beginningFail = executeSurefireExecution(null, execution);
 
                 if (beginningFail) {
                     beginningLineName = "";
-                    File result = new File(this.mavenProject.getBasedir() + "/.flakesync/Locations/Root-"
-                        + lowerLineNumber + ".txt");
+                    pathName = String.valueOf(Constants.getIndRootFilepath(String.valueOf(this.mavenProject.getBasedir()),
+                            testName, Integer.parseInt(lowerLineNumber)));
+                    File result = new File(pathName);
                     BufferedReader resultsReader = new BufferedReader(new FileReader(result));
                     String next = resultsReader.readLine();
                     while (next != null) {
@@ -437,28 +435,27 @@ public class CritSearchMojo extends FlakeSyncAbstractMojo {
     }
 
     private String sequentialDebug(String start) throws Throwable {
-        System.out.println("SEQUENTIAL DEBUGGING:    " + start);
         String upperBoundary = "";
         ArrayList<String> currentLines = new ArrayList<String>();
         if (start != null) {
             currentLines.add(start);
         }
         try {
-            File lines = new File(this.mavenProject.getBasedir() + "/.flakesync/MethodStartAndEndLine.txt");
+            String path = Constants.getMethodStartEndLineFile(String.valueOf(this.mavenProject.getBasedir()), testName);
+            File lines = new File(path);
             BufferedReader reader = new BufferedReader(new FileReader(lines));
             String line = reader.readLine();
             int cluster = 1;
             while (line != null) {
-                System.out.println("huhuhuh" + line);
                 String[] tmp = line.split("#");
                 String className = tmp[0];
                 String lowerLineNumber = tmp[1].substring(0, tmp[1].indexOf('-'));
                 String upperLineNumber = tmp[2];
 
                 for (int i = Integer.parseInt(lowerLineNumber); i < Integer.parseInt(upperLineNumber); i++) {
-                    System.out.println( "Trying to run sequential debug " + className + " " + i);
-
-                    File rootFile = new File(this.mavenProject.getBasedir() + "/.flakesync/Locations/Root-" + i + ".txt");
+                    String path2 = String.valueOf(Constants.getIndRootFilepath(
+                            String.valueOf(this.mavenProject.getBasedir()), testName, i));
+                    File rootFile = new File(path2);
                     rootFile.createNewFile();
                     BufferedWriter writer = new BufferedWriter(new FileWriter(rootFile));
                     writer.write(className + "#" + i);
@@ -470,7 +467,7 @@ public class CritSearchMojo extends FlakeSyncAbstractMojo {
                             Paths.get(this.baseDir.getAbsolutePath(),
                                     ConfigurationDefaults.DEFAULT_FLAKESYNC_DIR).toString(),
                             this.localRepository, this.testName, this.delay,
-                            "./.flakesync/Locations/Root-" + i + ".txt");
+                            String.valueOf(Constants.getIndRootFilepath(".", testName, i)));
 
                     boolean failed = executeSurefireExecution(null, execution);
 

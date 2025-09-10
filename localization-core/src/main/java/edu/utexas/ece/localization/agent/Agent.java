@@ -1,5 +1,6 @@
 package edu.utexas.ece.localization.agent;
 
+import flakesync.Constants;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.ClassWriter;
@@ -145,31 +146,35 @@ public class Agent {
 
                 String mode = System.getProperty("agentmode");
 
-                // Use locationlist if it is defined as a property; otherwise rely on blacklist
-                if (mode.equals("ROOT_METHOD_ANALYSIS")) { //This is Root Method Analysis
-                    boolean methodExists = rootMethodContains(className);
-                    if (methodExists) {
+                if (!blackListContains(className)) {
+                    // Use locationlist if it is defined as a property; otherwise rely on blacklist
+                    if (mode.equals("ROOT_METHOD_ANALYSIS")) { //This is Root Method Analysis
+                        boolean methodExists = rootMethodContains(className);
+                        if (methodExists) {
+                            final ClassReader reader = new ClassReader(bytes);
+                            final ClassWriter writer = new ClassWriter(reader,
+                                    ClassWriter.COMPUTE_FRAMES | ClassWriter.COMPUTE_MAXS);
+                            ClassVisitor visitor = new FunctionTracer(writer);
+                            reader.accept(visitor, 0);
+                            return writer.toByteArray();
+                        }
+                    } else if (mode.equals("DELAY_INJECTION_BY_METHOD")) {
                         final ClassReader reader = new ClassReader(bytes);
                         final ClassWriter writer = new ClassWriter(reader,
                                 ClassWriter.COMPUTE_FRAMES | ClassWriter.COMPUTE_MAXS);
-                        ClassVisitor visitor = new FunctionTracer(writer);
+                        ClassVisitor visitor = new FunctionNameTracer(writer);
                         reader.accept(visitor, 0);
                         return writer.toByteArray();
+                    } else if (mode.equals("DELAY_INJECTION_BY_LOC")) {
+                        if (locationListContains(className)) {
+                            final ClassReader reader = new ClassReader(bytes);
+                            final ClassWriter writer = new ClassWriter(reader,
+                                    ClassWriter.COMPUTE_FRAMES | ClassWriter.COMPUTE_MAXS);
+                            ClassVisitor visitor = new RandomClassTracer(writer);
+                            reader.accept(visitor, 0);
+                            return writer.toByteArray();
+                        }
                     }
-                } else if (mode.equals("DELAY_INJECTION_BY_METHOD")) {
-                    final ClassReader reader = new ClassReader(bytes);
-                    final ClassWriter writer = new ClassWriter(reader,
-                            ClassWriter.COMPUTE_FRAMES | ClassWriter.COMPUTE_MAXS);
-                    ClassVisitor visitor = new FunctionNameTracer(writer);
-                    reader.accept(visitor, 0);
-                    return writer.toByteArray();
-                } else if (mode.equals("DELAY_INJECTION_BY_LOC")) {
-                    final ClassReader reader = new ClassReader(bytes);
-                    final ClassWriter writer = new ClassWriter(reader,
-                            ClassWriter.COMPUTE_FRAMES | ClassWriter.COMPUTE_MAXS);
-                    ClassVisitor visitor = new RandomClassTracer(writer);
-                    reader.accept(visitor, 0);
-                    return writer.toByteArray();
                 }
                 return null;
             }
@@ -211,7 +216,8 @@ public class Agent {
                     BufferedWriter bfLocations = null;
                     boolean firstElement = true;
                     try {
-                        FileWriter outputLocationsFile = new FileWriter("./.flakesync/MethodStartAndEndLine.txt");
+                        String path = String.valueOf(Constants.getMethodStartEndLineFile(".", System.getProperty(".test")));
+                        FileWriter outputLocationsFile = new FileWriter(path);
                         bfLocations = new BufferedWriter(outputLocationsFile);
 
                         HashSet<String> alreadyWritten = new HashSet<>();

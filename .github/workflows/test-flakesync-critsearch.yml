@@ -1,5 +1,5 @@
 
-name: auto-run-test-flakesync-deltadebug
+name: auto-run-test-flakesync-critsearch
 
 on: [push, pull_request]
 
@@ -19,4 +19,4 @@ jobs:
         run: mvn install -B
 
       - name: test
-        run: cd testscripts/; bash test-deltadebug.sh input/inputs.csv
+        run: cd testscripts/; bash test-critsearch.sh input/inputs.csv

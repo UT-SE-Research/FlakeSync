@@ -22,21 +22,14 @@ public class RandomClassTracer extends ClassVisitor {
     private String className;
 
     static {
+        testName = System.getProperty(".test");
         if (System.getProperty("locations") != null) {
             try {
                 BufferedReader reader = new BufferedReader(new FileReader(new File(System.getProperty("locations"))));
                 String line = reader.readLine();
                 System.out.println(line);
                 while (line != null) {
-                    if (line.contains(":")) {
-                        String[] arr = line.split(":", 2);
-                        providedLocations.add(arr[0]);
-                        testName = arr[1];
-                    } else {
-                        // This will only be needed from analyzeRoot.sh,
-                        // because in that case only a linenumber with the class name is given
-                        providedLocations.add(line);
-                    }
+                    providedLocations.add(line);
                     line = reader.readLine();
                 }
                 reader.close();
@@ -92,11 +85,11 @@ public class RandomClassTracer extends ClassVisitor {
             @Override
             public void visitInsn(int opcode) {
                 String location = cn + "#" + lineNumber;
-                //System.out.println("From RandomClassTraced *** location =" + location);
+                System.out.println("From RandomClassTraced *** location =" + location);
                 // If locations are provided, delay only at those locations
                 if (!Agent.blackListContains(className)) { // To double check if the classname is in the blacklist
                     if ((System.getProperty("locations") != null) && (providedLocations.contains(location))) {
-                        //System.out.println("****Enter-DELAYING " + location + " FOR TESTNAME " + testName );
+                        System.out.println("****Enter-DELAYING " + location + " FOR TESTNAME " + testName );
                         if (testName != "") {
                             // Sending testName as parameter
                             String methodSignature = "(Ljava/lang/String;Ljava/lang/String;)V";

@@ -1,5 +1,7 @@
 package edu.utexas.ece.localization.agent;
 
+import flakesync.Constants;
+
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
@@ -49,7 +51,6 @@ public class Utility {
     }
 
     public static void delay(String testName, String className) {
-        System.out.println("2. Delaying " + testName + " " + className);
         collectStackTrace(testName, className);
         try {
             Thread.sleep(delay);
@@ -60,7 +61,6 @@ public class Utility {
     }
 
     public static void delayInDifferentPlacesInMethod(String location) {
-        System.out.println("4. Delay injected for testName ");
         try {
             Thread.sleep(delay);
         } catch (InterruptedException ie) {
@@ -70,7 +70,6 @@ public class Utility {
     }
 
     public static void onlyDelay(String location) {
-        System.out.println("3. Delay injected for location, delay= " + delay);
         try {
             Thread.sleep(delay);
         } catch (InterruptedException ie) {
@@ -80,10 +79,11 @@ public class Utility {
     }
 
     public static void collectStackTrace(String testName, String className) {
+        System.out.println("HOW DO I GET THIS TO BE CALLED");
         className = className.replaceAll("[/]",".");
         System.out.println("collectStackTrace*** ClassName=" + className);
         String[] classNameItems = className.split("#", 2);
-        String fileName = "./.flakesync/" + testName + ".txt";
+        String fileName = String.valueOf(Constants.getStackTraceFilepath(testName));
         try {
             FileWriter outputFile = new FileWriter(fileName, true);
             BufferedWriter bf = new BufferedWriter(outputFile);
@@ -91,6 +91,7 @@ public class Utility {
             long threadId = 0000;
             for (StackTraceElement ste: Thread.currentThread().getStackTrace()) {
                 String ste2String = ste.toString();
+                System.out.println(ste2String);
                 boolean foundInBlackList = false;
 
                 threadId = Thread.currentThread().getId();
@@ -105,6 +106,7 @@ public class Utility {
                 }
                 if (!(foundInBlackList)) {
                     String elemWithSlash =  elem.replace(".", "/");
+                    System.out.println("&&&&&&&&&" + elemWithSlash);
                     bf.write(elemWithSlash);
                     bf.newLine();
                 }

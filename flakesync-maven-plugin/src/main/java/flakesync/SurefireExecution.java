@@ -237,7 +237,7 @@ public class SurefireExecution {
     private void addMethodName(String property, String methodName) {
         String properties = (!checkSysPropsDeprecated()) ? ("systemPropertyVariables") : ("systemProperties");
         Xpp3Dom propertiesNode = addAttributeToConfig(this.domNode, properties, "").getChild(properties);
-        addAttributeToConfig(propertiesNode, "property", methodName);
+        addAttributeToConfig(propertiesNode, property, methodName);
     }
 
     private void addProcessTimeout(int delay) {
@@ -315,7 +315,7 @@ public class SurefireExecution {
                     flakesyncDir, localRepository);
             execution.addTestName(testName);
             execution.addRootMethod(testName);
-            execution.addMethodName("rootMethod", methodName);
+            execution.addMethodName("methodOnly", methodName);
             execution.addDelay(delay + "");
             execution.setupArgline(PHASE.CRITICAL_POINT_SEARCH, originalArgLine);
             execution.addAgentMode("ROOT_METHOD_ANALYSIS");
