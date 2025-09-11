@@ -69,14 +69,14 @@ public class SurefireExecution {
     }
 
     private SurefireExecution(Plugin surefire, MavenProject mavenProject, MavenSession mavenSession,
-                               BuildPluginManager pluginManager, String flakesyncDir, String localRepository) {
+                               BuildPluginManager pluginManager, String flakesyncDir, String localRepository, int delay) {
         this.surefire = surefire;
         this.mavenProject = mavenProject;
         this.mavenSession = mavenSession;
         this.pluginManager = pluginManager;
         this.flakesyncDir = flakesyncDir;
         this.localRepository = localRepository;
-        this.delay = 0;
+        this.delay = delay;
         String executionId = "clean_" + Utils.getFreshExecutionId();
         this.configuration = new Configuration(executionId, flakesyncDir);
         this.domNode = this.applyFlakeSyncConfig((Xpp3Dom) surefire.getConfiguration(), executionId);
@@ -250,7 +250,7 @@ public class SurefireExecution {
                                                                      BuildPluginManager pluginManager, String flakesyncDir,
                                                                      String testName, String localRepository) {
             SurefireExecution execution = new SurefireExecution(surefire, mavenProject, mavenSession, pluginManager,
-                    flakesyncDir, localRepository);
+                    flakesyncDir, localRepository, 0);
             execution.addTestName(testName);
             execution.setupArgline(PHASE.LOCATIONS_MINIMIZER, originalArgLine);
             execution.addAgentMode("CONCURRENT_METHODS");
@@ -263,7 +263,7 @@ public class SurefireExecution {
                                                            BuildPluginManager pluginManager, String flakesyncDir,
                                                            String localRepository, String testName, int delay) {
             SurefireExecution execution = new SurefireExecution(surefire, mavenProject, mavenSession, pluginManager,
-                    flakesyncDir, localRepository);
+                    flakesyncDir, localRepository, delay);
             execution.addTestName(testName);
             execution.addCM(testName);
             execution.addDelay(delay + "");
@@ -279,7 +279,7 @@ public class SurefireExecution {
                                                              BuildPluginManager pluginManager, String flakesyncDir,
                                                              String localRepository, String testName, int delay) {
             SurefireExecution execution = new SurefireExecution(surefire, mavenProject, mavenSession, pluginManager,
-                    flakesyncDir, localRepository);
+                    flakesyncDir, localRepository, delay);
             execution.addTestName(testName);
             execution.addLocs(testName);
             execution.addDelay(delay + "");
@@ -296,7 +296,7 @@ public class SurefireExecution {
                                                   String localRepository, String testName, int delay,
                                                   String locationsPath) {
             SurefireExecution execution = new SurefireExecution(surefire, mavenProject, mavenSession, pluginManager,
-                    flakesyncDir, localRepository);
+                    flakesyncDir, localRepository, delay);
             execution.addTestName(testName);
             execution.addLocs(testName, locationsPath);
             execution.addDelay(delay + "");
@@ -312,7 +312,7 @@ public class SurefireExecution {
                                                         String localRepository, String testName, int delay,
                                                         String methodName) {
             SurefireExecution execution = new SurefireExecution(surefire, mavenProject, mavenSession, pluginManager,
-                    flakesyncDir, localRepository);
+                    flakesyncDir, localRepository, delay);
             execution.addTestName(testName);
             execution.addRootMethod(testName);
             execution.addMethodName("methodOnly", methodName);
@@ -329,7 +329,7 @@ public class SurefireExecution {
                                                         String localRepository, String testName, int delay,
                                                         String locationsPath, String methodName) {
             SurefireExecution execution = new SurefireExecution(surefire, mavenProject, mavenSession, pluginManager,
-                    flakesyncDir, localRepository);
+                    flakesyncDir, localRepository, delay);
             execution.addTestName(testName);
             execution.addLocs(testName, locationsPath);
             execution.addMethodName("methodNameForDelayAtBeginning", methodName);

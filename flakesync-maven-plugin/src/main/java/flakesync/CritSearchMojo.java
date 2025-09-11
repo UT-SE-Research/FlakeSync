@@ -99,7 +99,7 @@ public class CritSearchMojo extends FlakeSyncAbstractMojo {
                                 this.mavenProject, this.mavenSession, this.pluginManager,
                                 Paths.get(this.baseDir.getAbsolutePath(),
                                         ConfigurationDefaults.DEFAULT_FLAKESYNC_DIR).toString(), this.localRepository,
-                                this.testName, delay,
+                                this.testName, workingDelay,
                                 String.valueOf(Constants.getIndLocFilepath(".", this.testName, threadId, i)));
 
                         int result = executeSurefireExecution(allExceptions, cleanExec, itemLocation, threadId);
@@ -130,9 +130,9 @@ public class CritSearchMojo extends FlakeSyncAbstractMojo {
                             }
 
                             // We reached the max delay without a failure, something is wrong here
-                            results.add(new Output(testName, itemLocation, false, delay));
+                            results.add(new Output(testName, itemLocation, false, workingDelay));
                         } else {
-                            results.add(new Output(testName, itemLocation, true, delay));
+                            results.add(new Output(testName, itemLocation, true, workingDelay));
                         }
                     }
                 }
@@ -150,11 +150,11 @@ public class CritSearchMojo extends FlakeSyncAbstractMojo {
 
 
         // Now we analyze the root methods
-        HashSet<String> rootsFromFile;
+        /*HashSet<String> rootsFromFile;
         rootsFromFile = getRoots();
         if (!rootsFromFile.isEmpty()) {
             roots = rootsFromFile;
-        }
+        }*/
 
         FileWriter resultsFile = null;
         try {
@@ -247,7 +247,7 @@ public class CritSearchMojo extends FlakeSyncAbstractMojo {
 
     }
 
-    private HashSet<String> getRoots() {
+    /*private HashSet<String> getRoots() {
         HashSet<String> roots = new HashSet<String>();
 
         File file = new File(mavenProject.getBasedir()
@@ -269,7 +269,7 @@ public class CritSearchMojo extends FlakeSyncAbstractMojo {
         }
 
         return roots;
-    }
+    }*/
 
     private void createResultsFile1() {
         try {
@@ -515,7 +515,7 @@ public class CritSearchMojo extends FlakeSyncAbstractMojo {
             String className = itemLoc.split("#")[0];
             String lineNumber = itemLoc.split("#")[1];
             String rootLine = searchStackTrace(className, ":" + lineNumber);
-            rootLine += "[" + this.delay + "]";
+            rootLine += "[" + execution.delay + "]";
             System.out.println(threadID + "," + className + ".*:" + lineNumber);
             System.out.println("Formatted rootLine: " + rootLine);
             roots.add(rootLine);
