@@ -91,7 +91,6 @@ public class Utility {
             long threadId = 0000;
             for (StackTraceElement ste: Thread.currentThread().getStackTrace()) {
                 String ste2String = ste.toString();
-                System.out.println(ste2String);
                 boolean foundInBlackList = false;
 
                 threadId = Thread.currentThread().getId();
@@ -106,7 +105,6 @@ public class Utility {
                 }
                 if (!(foundInBlackList)) {
                     String elemWithSlash =  elem.replace(".", "/");
-                    System.out.println("&&&&&&&&&" + elemWithSlash);
                     bf.write(elemWithSlash);
                     bf.newLine();
                 }
