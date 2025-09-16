@@ -82,6 +82,10 @@ public class SurefireExecution {
         this.domNode = this.applyFlakeSyncConfig((Xpp3Dom) surefire.getConfiguration(), executionId);
     }
 
+    public String getExecutionId() {
+        return this.configuration.executionId;
+    }
+
     public void run() throws Throwable {
         System.out.println(domNode);
         try {
@@ -214,6 +218,37 @@ public class SurefireExecution {
                 Constants.getConcurrentMethodsFilepath(testname)));
     }
 
+    private void addSearchMethod() {
+        String properties = (!checkSysPropsDeprecated()) ? ("systemPropertyVariables") : ("systemProperties");
+        Xpp3Dom propertiesNode = addAttributeToConfig(this.domNode, properties, "").getChild(properties);
+        addAttributeToConfig(propertiesNode, "searchMethodEndLine", "search");
+    }
+
+    private void addCodeToIntroVar(String line) {
+        String properties = (!checkSysPropsDeprecated()) ? ("systemPropertyVariables") : ("systemProperties");
+        Xpp3Dom propertiesNode = addAttributeToConfig(this.domNode, properties, "").getChild(properties);
+        addAttributeToConfig(propertiesNode, "CodeToIntroduceVariable", line);
+    }
+
+    private void addCollectST() {
+        String properties = (!checkSysPropsDeprecated()) ? ("systemPropertyVariables") : ("systemProperties");
+        Xpp3Dom propertiesNode = addAttributeToConfig(this.domNode, properties, "").getChild(properties);
+        addAttributeToConfig(propertiesNode, "collectStackTrace", "true");
+    }
+
+    private void addYieldPt(String yieldPt, int threshold) {
+        String properties = (!checkSysPropsDeprecated()) ? ("systemPropertyVariables") : ("systemProperties");
+        Xpp3Dom propertiesNode = addAttributeToConfig(this.domNode, properties, "").getChild(properties);
+        addAttributeToConfig(propertiesNode, "YieldingPoint", yieldPt);
+        addAttributeToConfig(propertiesNode, "threshold", threshold + "");
+    }
+
+    private void addMonitorFlag() {
+        String properties = (!checkSysPropsDeprecated()) ? ("systemPropertyVariables") : ("systemProperties");
+        Xpp3Dom propertiesNode = addAttributeToConfig(this.domNode, properties, "").getChild(properties);
+        addAttributeToConfig(propertiesNode, "executionMonitor", "flag");
+    }
+
     private void addProcessTimeout(int delay) {
         addAttributeToConfig(this.domNode, "forkedProcessTimeoutInSeconds", String.valueOf(4 * delay));
     }
@@ -245,6 +280,87 @@ public class SurefireExecution {
             execution.setupArgline(PHASE.LOCATIONS_MINIMIZER, originalArgLine);
             execution.addAgentMode("ALL_LOCATIONS");
 
+            return execution;
+        }
+
+        public static SurefireExecution createDownwardMvnExec(Plugin surefire, String originalArgLine,
+                                                              MavenProject mavenProject, MavenSession mavenSession,
+                                                              BuildPluginManager pluginManager, String flakesyncDir,
+                                                              String localRepository, String testName, int delay,
+                                                              String line) {
+            SurefireExecution execution = new SurefireExecution(surefire, mavenProject, mavenSession, pluginManager,
+                    flakesyncDir, localRepository);
+            execution.addTestName(testName);
+            execution.addDelay(delay + "");
+            execution.addSearchMethod();
+            execution.addCodeToIntroVar(line);
+            execution.setupArgline(PHASE.BARRIER_POINT_SEARCH, originalArgLine);
+            execution.addAgentMode("DOWNWARD_MVN");
+            return execution;
+        }
+
+        public static SurefireExecution createBarrierSTExec(Plugin surefire, String originalArgLine,
+                                                            MavenProject mavenProject, MavenSession mavenSession,
+                                                            BuildPluginManager pluginManager, String flakesyncDir,
+                                                            String localRepository, String testName, int delay,
+                                                            String line) {
+            SurefireExecution execution = new SurefireExecution(surefire, mavenProject, mavenSession, pluginManager,
+                    flakesyncDir, localRepository);
+            execution.addTestName(testName);
+            execution.addDelay(delay + "");
+            execution.addCodeToIntroVar(line);
+            execution.addCollectST();
+            execution.setupArgline(PHASE.BARRIER_POINT_SEARCH, originalArgLine);
+            execution.addAgentMode("BARRIER_ST");
+            return execution;
+        }
+
+        public static SurefireExecution createYieldExec1(Plugin surefire, String originalArgLine,
+                                                        MavenProject mavenProject, MavenSession mavenSession,
+                                                        BuildPluginManager pluginManager, String flakesyncDir,
+                                                        String localRepository, String testName, int delay,
+                                                        String startLoc, String yieldPt, int threshold) {
+            SurefireExecution execution = new SurefireExecution(surefire, mavenProject, mavenSession, pluginManager,
+                    flakesyncDir, localRepository);
+            execution.addTestName(testName);
+            execution.addDelay(delay + "");
+            execution.addCodeToIntroVar(startLoc);
+            execution.addYieldPt(yieldPt, threshold);
+            execution.setupArgline(PHASE.BARRIER_POINT_SEARCH, originalArgLine);
+            execution.addAgentMode("ADD_YIELD_PT");
+            return execution;
+        }
+
+        public static SurefireExecution createYieldExec2(Plugin surefire, String originalArgLine,
+                                                         MavenProject mavenProject, MavenSession mavenSession,
+                                                         BuildPluginManager pluginManager, String flakesyncDir,
+                                                         String localRepository, String testName, int delay,
+                                                         String startLoc, String yieldPt) {
+            SurefireExecution execution = new SurefireExecution(surefire, mavenProject, mavenSession, pluginManager,
+                    flakesyncDir, localRepository);
+            execution.addTestName(testName);
+            execution.addDelay(delay + "");
+            execution.addCodeToIntroVar(startLoc);
+            execution.addYieldPt(yieldPt, 1);
+            execution.addSearchMethod();
+            execution.setupArgline(PHASE.BARRIER_POINT_SEARCH, originalArgLine);
+            execution.addAgentMode("ADD_YIELD_PT");
+            return execution;
+        }
+
+        public static SurefireExecution createExecMon(Plugin surefire, String originalArgLine,
+                                                      MavenProject mavenProject, MavenSession mavenSession,
+                                                      BuildPluginManager pluginManager, String flakesyncDir,
+                                                      String localRepository, String testName, int delay,
+                                                      String line) {
+            SurefireExecution execution = new SurefireExecution(surefire, mavenProject, mavenSession, pluginManager,
+                    flakesyncDir, localRepository);
+            execution.addTestName(testName);
+            execution.addDelay(delay + "");
+            execution.addCodeToIntroVar(line);
+            execution.addMonitorFlag();
+            execution.setupArgline(PHASE.BARRIER_POINT_SEARCH, originalArgLine);
+            execution.addAgentMode("EXEC_MONITOR");
             return execution;
         }
     }
