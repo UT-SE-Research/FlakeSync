@@ -66,7 +66,7 @@ while read line; do
    
     #First check that there is only one location in the file
     LINE_COUNT=$(wc -l < ./${module}/.flakesync/${testname//#/.}-Locations_minimized.txt)
-    if [[ ${LINE_COUNT} -gt 1 ]]; then
+    if [[ ${LINE_COUNT} -gt 2 ]]; then
        echo "Did not narrow down to one location"	
        ((errors++))
     fi

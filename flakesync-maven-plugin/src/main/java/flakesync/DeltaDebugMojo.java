@@ -86,7 +86,7 @@ public class DeltaDebugMojo extends FlakeSyncAbstractMojo {
         try {
             FileWriter outputLocationsFile = new FileWriter(file);
             BufferedWriter bw = new BufferedWriter(outputLocationsFile);
-            bw.write(delay);
+            bw.write(delay + "\n");
 
             for (String location : locs) {
                 bw.write(location);
