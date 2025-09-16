@@ -39,7 +39,7 @@ while read line; do
 
    # Setup the smaller set of concurrent methods needed
    mkdir -p ${module}/.flakesync/
-   cp ${EXPECTED_DIR}/critsearch/${slug}/${testname//#/.}-Locations_minimized.txt ${module}/.flakesync/${testname//#/.}-Locations_minimized.txt
+   cp ${EXPECTED_DIR}/${slug}/${testname//#/.}-Locations_minimized.txt ${module}/.flakesync/${testname//#/.}-Locations_minimized.txt
 
 
     errors=0
@@ -58,21 +58,37 @@ while read line; do
     # Assume expected results are in a known file
 
 
-    # First check if Locations.txt was even created 
-    if [ -f ./${module}/.flakesync/${testname//#/.}-Locations.txt ]; then
+    # First check if Results-CritSearch/RootMethods or Results-CritSearch/CritPoints were even created 
+    if [ -f ./${module}/.flakesync/Results-CritSearch/${testname//#/.}-RootMethods.txt ]; then
 	:
     else 
         echo "ERROR: Result file not created"
     	((errors++))
     fi
+
+    if [ -f ./${module}/.flakesync/Results-CritSearch/${testname//#/.}-CritPoints.txt ]; then
+        :
+    else
+        echo "ERROR: Result file not created"
+        ((errors++))
+    fi
+
     
     while read line_exp; do
-        if grep -q ${line_exp} ./${module}/.flakesync/Results-Boundary/Boundary-${testname//#/.}-Result.csv; then
+        if grep -q ${line_exp} ./${module}/.flakesync/Results-CritSearch/${testname//#/.}-RootMethods.csv; then
            :
         else 
            ((errors++))
         fi
-    done < ${EXPECTED_DIR}/${slug}/Boundary-${testname//#/.}-Result.csv
+    done < ${EXPECTED_DIR}/${slug}/${testname//#/.}-RootMethods.csv
+
+    while read line_exp; do
+        if grep -q ${line_exp} ./${module}/.flakesync/Results-CritSearch/${testname//#/.}-CritPoints.csv; then
+           :
+        else 
+           ((errors++))
+        fi
+    done < ${EXPECTED_DIR}/${slug}/${testname//#/.}-CritPoints.csv
 
 
     if [[ errors -eq 0 ]]; then 
