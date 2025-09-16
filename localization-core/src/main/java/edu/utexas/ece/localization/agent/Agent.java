@@ -28,12 +28,12 @@ import java.util.List;
 public class Agent {
 
     private static List<String> blackList;
-    private static List<String> locationList = new ArrayList<>();
-    private static List<String> rootMethodList = new ArrayList<>();
-    private static List<String> classLineList = new ArrayList<>();
+    private static List<String> locationList = new ArrayList<String>();
+    private static List<String> rootMethodList = new ArrayList<String>();
+    private static List<String> classLineList = new ArrayList<String>();
 
     static {
-        blackList = new ArrayList<>();
+        blackList = new ArrayList<String>();
         try {
             // get the file url, not working in JAR file.
             ClassLoader classloader = Agent.class.getClassLoader();
@@ -68,7 +68,7 @@ public class Agent {
     // White list consists of specific class names (not package prefixing as black list relies on)
     public static boolean locationListContains(String name) {
         if (locationList.isEmpty()) {
-            locationList = new ArrayList<>();
+            locationList = new ArrayList<String>();
             try {
                 System.out.println("Location arg is given: " + System.getProperty("locations"));
                 BufferedReader reader = new BufferedReader(new FileReader(new File(System.getProperty("locations"))));
@@ -90,7 +90,7 @@ public class Agent {
 
     public static boolean rootClassLineContains(String name) {
         if (classLineList.isEmpty()) {
-            classLineList = new ArrayList<>();
+            classLineList = new ArrayList<String>();
             try {
                 BufferedReader reader = new BufferedReader(new FileReader(
                         new File(System.getProperty("searchForMethodName"))));
@@ -116,7 +116,7 @@ public class Agent {
     // White list consists of specific class names (not package prefixing as black list relies on)
     public static boolean rootMethodContains(String name) {
         if (rootMethodList.isEmpty()) {
-            rootMethodList = new ArrayList<>();
+            rootMethodList = new ArrayList<String>();
             try {
                 BufferedReader reader = new BufferedReader(new FileReader(new File(System.getProperty("rootMethod"))));
                 String line = reader.readLine();

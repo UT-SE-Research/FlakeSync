@@ -26,12 +26,9 @@ public class Utility {
     }
 
     public static void stack(Thread th) {
-        System.out.println("CALLING STACK");
         try {
             java.lang.reflect.Field targetField = Thread.class.getDeclaredField("target");
             targetField.setAccessible(true);
-            System.out.println("TARGET FIELD " + targetField.get(th).getClass());
-            System.out.println("FOUND IT");
             for (StackTraceElement ste : Thread.currentThread().getStackTrace()) {
                 stackTraceList.add(ste.toString());
             }
@@ -41,7 +38,6 @@ public class Utility {
     }
 
     public static void injectDelay() {
-        System.out.println("1. Delaying");
         try {
             Thread.sleep(delay);
         } catch (InterruptedException ie) {
@@ -51,7 +47,6 @@ public class Utility {
     }
 
     public static void delay(String testName, String className) {
-        System.out.println("2. Delaying " + delay);
         try {
             Thread.sleep(delay);
             collectStackTrace(testName, className);
@@ -80,9 +75,7 @@ public class Utility {
     }
 
     public static void collectStackTrace(String testName, String className) {
-        System.out.println("HOW DO I GET THIS TO BE CALLED");
         className = className.replaceAll("[/]",".");
-        System.out.println("collectStackTrace*** ClassName=" + className);
         String[] classNameItems = className.split("#", 2);
         String fileName = String.valueOf(Constants.getStackTraceFilepath(testName));
         try {
