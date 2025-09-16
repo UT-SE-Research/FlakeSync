@@ -327,7 +327,7 @@ public class SurefireExecution {
             execution.addCodeToIntroVar(startLoc);
             execution.addYieldPt(yieldPt, threshold);
             execution.setupArgline(PHASE.BARRIER_POINT_SEARCH, originalArgLine);
-            execution.addAgentMode("ADD_YIELD_PT");
+            execution.addAgentMode("ADD_YIELD_PT1");
             return execution;
         }
 
@@ -344,7 +344,7 @@ public class SurefireExecution {
             execution.addYieldPt(yieldPt, 1);
             execution.addSearchMethod();
             execution.setupArgline(PHASE.BARRIER_POINT_SEARCH, originalArgLine);
-            execution.addAgentMode("ADD_YIELD_PT");
+            execution.addAgentMode("ADD_YIELD_PT2");
             return execution;
         }
 

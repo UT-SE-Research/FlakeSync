@@ -1,17 +1,16 @@
 package edu.utexas.ece.barrierSearch.agent;
 
+import flakesync.Constants;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.ClassWriter;
+
+import java.io.*;
 import java.lang.instrument.ClassFileTransformer;
 import java.lang.instrument.IllegalClassFormatException;
 import java.lang.instrument.Instrumentation;
 import java.security.ProtectionDomain;
-import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.io.BufferedReader;
-import java.io.InputStreamReader;
-import java.io.InputStream;
 import java.util.List;
 import java.util.ArrayList;
 
@@ -61,48 +60,45 @@ public class Agent {
                 s = s.replaceAll("[/]",".");
 
                 String codeToIntroduceVariable = System.getProperty("CodeToIntroduceVariable");
-                //System.out.println(s);
-                String codeUnderTest=codeToIntroduceVariable.split("#")[0]; // code-undet-test class
+                String codeUnderTest=codeToIntroduceVariable.split("#")[0]; // code-under-test class
                 final ClassReader reader = new ClassReader(bytes);
                 final ClassWriter writer = new ClassWriter(reader, ClassWriter.COMPUTE_FRAMES|ClassWriter.COMPUTE_MAXS );
                 ClassVisitor visitor;
 
-                if (System.getProperty("stackTraceCollect") != null && System.getProperty("stackTraceCollect").equals("true") && !blackListContains(s)) { // Going to add delay and collect the stacktrace
-                    //System.out.println("FROM STACKTRACE ***************************"+codeToIntroduceVariable);
+                String mode = System.getProperty("agentmode");
+                if (mode.equals("BARRIER_ST") && !blackListContains(s)) {
                     visitor = new StackTraceTracer(writer, codeToIntroduceVariable);
                     reader.accept(visitor, 0);
                     return writer.toByteArray();
-                }
-                else if (System.getProperty("executionMonitor") != null && System.getProperty("executionMonitor").equals("flag") && !blackListContains(s)) {
-                    //synchronized (edu.utexas.ece.edu.utexas.ece.barrierSearch.agent.Utility.class) {
-                    System.out.println("Starting execution monitor steps");
-                    visitor = new ExecutionMonitorTracer(writer, codeToIntroduceVariable);
-                    reader.accept(visitor, 0);
-                    //}
+                } else if (mode.equals("EXEC_MONITOR") && !blackListContains(s)) {
+                    synchronized (edu.utexas.ece.barrierSearch.agent.Utility.class) {
+                        visitor = new ExecutionMonitorTracer(writer, codeToIntroduceVariable);
+                        reader.accept(visitor, 0);
+                    }
+                    return writer.toByteArray();
+                } else if ((mode.equals("DOWNWARD_MVN") || mode.equals("ADD_YIELD_PT2"))
+                        && !blackListContains(s)) {
+                    synchronized (edu.utexas.ece.barrierSearch.agent.Utility.class) {
+                        System.out.println("Starting search method steps");
+                        visitor = new MethodEndLineTracer(writer, codeToIntroduceVariable);
+                        reader.accept(visitor, 0);
+                    }
                     return writer.toByteArray();
                 }
-                else if (System.getProperty("searchMethodEndLine") != null && System.getProperty("searchMethodEndLine").equals("search") && !blackListContains(s)) {
-                    //synchronized (edu.utexas.ece.edu.utexas.ece.barrierSearch.agent.Utility.class) {
-                    System.out.println("Starting search method steps");
-                    visitor = new MethodEndLineTracer(writer, codeToIntroduceVariable);
-                    reader.accept(visitor, 0);
-                    //}
-                    return writer.toByteArray();
-                }
-                else {
+                else if(mode.equals("ADD_YIELD_PT1")){
                     String yieldPointInfo = System.getProperty("YieldingPoint"); // YIELDING_POINT may or may not be a test_method's location
                     String tcls=yieldPointInfo.split("#")[0]; // test-class
-                    //RandomClassTracer.yieldEntered = false;
-                    //RandomClassTracer.delayed = false;
-                    //RandomClassTracer.updateFlag = false;
-                    if ((s.equals(codeUnderTest) || s.equals(tcls)) && !blackListContains(s)) {  // Need substring match, test-class name is not coming here
-                        if(s.equals(tcls)) System.out.println("ELSE****ALLOWED CLASS="+s +",yieldPointInfo="+tcls+",codeUnderTest="+codeUnderTest);
+
+                    if ((s.equals(codeUnderTest) || s.equals(tcls)) && !blackListContains(s)) { // Need substring match, test-class name is not coming here
                         visitor = new RandomClassTracer(writer, yieldPointInfo, codeToIntroduceVariable);
                         reader.accept(visitor, 0);
 
                         if (RandomClassTracer.methodAndLine != null) {
                             try {
-                                java.io.BufferedWriter bf = new java.io.BufferedWriter(new java.io.FileWriter("./.flakesync/SearchedMethodANDLine.txt"));
+                                java.io.BufferedWriter bf = new java.io.BufferedWriter(new java.io.FileWriter(
+                                        String.valueOf(Constants.getSearchMethodANDLineFilepath(".",
+                                                System.getProperty(".test")))
+                                ));
                                 bf.write(RandomClassTracer.methodAndLine +"\n");
                                 bf.flush();
                             } catch (Exception ex) {}
@@ -110,41 +106,37 @@ public class Agent {
                         }
 
                         try{
-                            java.io.BufferedWriter bfFlag = new java.io.BufferedWriter(new java.io.FileWriter("./.flakesync/FlagDelayANDUpdateANDYielding.txt"));
+                            java.io.BufferedWriter bfFlag = new java.io.BufferedWriter(new java.io.FileWriter(
+                                    String.valueOf(Constants.getBarrierPointsResultsFilepath(".",
+                                            System.getProperty(".test")))
+                            ));
                             bfFlag.write("Delay="+ RandomClassTracer.delayed +"\n");
                             bfFlag.write("Update="+ RandomClassTracer.updateFlag +"\n");
                             bfFlag.write("Yield="+ RandomClassTracer.yieldEntered +"\n");
                             bfFlag.flush();
 
                         } catch (Exception ex) {}
-                        //System.out.println("FROM AGENT="+RandomClassTracer.methodAndLine);
                         return writer.toByteArray();
                     }
-                    System.out.println("Not doing anything right now");
                 }
                 return null;
 
             }
         });
 
-        //if (System.getProperty("executionMonitor") != null) {
-        //}
-
-        printStartStopTimes(); // WIll print in a file
-        //registerShutdownHook();
+        printStartStopTimes();
     }
 
     private static void printStartStopTimes() {
         Thread hook = new Thread() {
             @Override
             public void run() {
-
-                //System.out.println("FROM AGENT and run="+RandomClassTracer.methodAndLine);
-                //if (RandomClassTracer.methodAndLine != null && RandomClassTracer.methodAndLine != "") {
-                // }
                 if (MethodEndLineTracer.methodEndLine != null) {
                     try {
-                        java.io.BufferedWriter bf = new java.io.BufferedWriter(new java.io.FileWriter("./.flakesync/SearchedMethodEndLine.txt"));
+                        java.io.BufferedWriter bf = new java.io.BufferedWriter(new java.io.FileWriter(
+                                String.valueOf(Constants.getSearchMethodEndLineFilepath(".",
+                                        System.getProperty(".test")))
+                        ));
                         bf.write("methodEndLine="+MethodEndLineTracer.methodEndLine +"\n");
                         bf.flush();
 
@@ -154,7 +146,9 @@ public class Agent {
 
                 if (Utility.executionCount > 0) {
                     try {
-                        java.io.BufferedWriter bf = new java.io.BufferedWriter(new java.io.FileWriter("./.flakesync/ExecutionMonitor.txt"));
+                        java.io.BufferedWriter bf = new java.io.BufferedWriter(new java.io.FileWriter(
+                                String.valueOf(Constants.getThresholdFilepath(".", System.getProperty(".test")))
+                        ));
                         bf.write("#execution="+Utility.executionCount +"\n");
                         bf.flush();
 
