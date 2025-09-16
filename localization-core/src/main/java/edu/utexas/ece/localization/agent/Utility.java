@@ -51,9 +51,10 @@ public class Utility {
     }
 
     public static void delay(String testName, String className) {
-        collectStackTrace(testName, className);
+        System.out.println("2. Delaying " + delay);
         try {
             Thread.sleep(delay);
+            collectStackTrace(testName, className);
         } catch (InterruptedException ie) {
             System.out.println("Exception " );
             ie.printStackTrace();

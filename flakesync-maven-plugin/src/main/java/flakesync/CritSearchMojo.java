@@ -16,6 +16,7 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.nio.Buffer;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -25,10 +26,9 @@ import java.util.List;
 @Mojo(name = "critsearch", defaultPhase = LifecyclePhase.TEST, requiresDependencyResolution = ResolutionScope.TEST)
 public class CritSearchMojo extends FlakeSyncAbstractMojo {
 
-    private HashSet<String> stackTraceLines;
-    private ArrayList<Output> results;
-    private HashSet<String> roots;
-    private int delay;
+    private HashSet<String> stackTraceLines = new HashSet<String>();
+    private HashSet<String> roots = new HashSet<String>();
+    private int delay = 100;
     private boolean beginningFail = false;
     private HashMap<Integer, ArrayList<String>> clusters = new HashMap<Integer, ArrayList<String>>();
 
@@ -39,13 +39,10 @@ public class CritSearchMojo extends FlakeSyncAbstractMojo {
         Logger.getGlobal().log(Level.INFO, ("Running CriticalPointMojo"));
         MojoExecutionException allExceptions = null;
 
-        results = new ArrayList<Output>();
-
         List<String> locations = new ArrayList<String>();
         String locationsPath = String.valueOf(Constants.getMinLocationsFilepath(testName));
-        this.delay = generateLocsList(locations, locationsPath);
+        generateLocsList(locations, locationsPath);
 
-        roots = new HashSet<String>();
 
         locationsPath = String.valueOf(Constants.getWorkingLocationsFilepath(testName));
         try {
@@ -61,30 +58,27 @@ public class CritSearchMojo extends FlakeSyncAbstractMojo {
             //Parse the stacktrace
             stackTraceLines = new HashSet<String>();
             parseStackTrace();
-            System.out.println(stackTraceLines.toString());
 
+            //Iterate over stacktrace locations
             HashSet<String> visited = new HashSet<String>();
-
             for (String line : stackTraceLines) {
                 String[] locs = line.split(",");
                 int threadId = Integer.parseInt(locs[locs.length - 1]);
                 for (int i = 0; i < locs.length - 1; i++) {
                     String itemLocation = locs[i];
-                    if (!visited.contains(itemLocation)) {
+                    if (!visited.contains(itemLocation.split("#")[0])) {
+                        visited.add(itemLocation.split("#")[0]);
                         int workingDelay = delay;
-                        visited.add(itemLocation);
 
-                        System.out.println(itemLocation);
                         String className = itemLocation.split("#")[0];
                         if (className.contains("$")) {
                             itemLocation = itemLocation.split("$")[0];
                         }
 
-                        File file = new File(String.valueOf( Constants.getIndLocFilepath(
+                        File file = new File(String.valueOf(Constants.getIndLocFilepath(
                                 this.mavenProject.getBasedir().toString(), this.testName, threadId, i)));
                         try {
                             file.createNewFile();
-                            System.out.println(file.getAbsolutePath());
                             FileWriter fw = new FileWriter(file);
                             BufferedWriter bw = new BufferedWriter(fw);
 
@@ -95,14 +89,7 @@ public class CritSearchMojo extends FlakeSyncAbstractMojo {
                             ioe.printStackTrace();
                         }
 
-                        cleanExec = SurefireExecution.SurefireFactory.getDelayLocExec(this.surefire, this.originalArgLine,
-                                this.mavenProject, this.mavenSession, this.pluginManager,
-                                Paths.get(this.baseDir.getAbsolutePath(),
-                                        ConfigurationDefaults.DEFAULT_FLAKESYNC_DIR).toString(), this.localRepository,
-                                this.testName, workingDelay,
-                                String.valueOf(Constants.getIndLocFilepath(".", this.testName, threadId, i)));
-
-                        int result = executeSurefireExecution(allExceptions, cleanExec, itemLocation, threadId);
+                        int result = runWithDelayAtLoc(itemLocation, workingDelay, threadId, i);
 
                         if (result == 0) {
                             System.out.println("Linkage Error!");
@@ -112,185 +99,105 @@ public class CritSearchMojo extends FlakeSyncAbstractMojo {
                             workingDelay *= 2;
                             while (workingDelay <= maxDelay) {
                                 System.out.println("Let's try this again with a longer delay,"
-                                        + " it looks like the test passed: "
-                                        + workingDelay);
+                                        + " it looks like the test passed: " + workingDelay);
+                                result = runWithDelayAtLoc(itemLocation, workingDelay, threadId, i);
 
-                                cleanExec = SurefireExecution.SurefireFactory.getDelayLocExec(this.surefire,
-                                        this.originalArgLine, this.mavenProject, this.mavenSession, this.pluginManager,
-                                        Paths.get(this.baseDir.getAbsolutePath(),
-                                                ConfigurationDefaults.DEFAULT_FLAKESYNC_DIR).toString(),
-                                        this.localRepository, this.testName, workingDelay,
-                                        String.valueOf(Constants.getIndLocFilepath(".", this.testName, threadId, i)));
-
-                                result = executeSurefireExecution(allExceptions, cleanExec, itemLocation, threadId);
                                 if (result < 3) { //We got a failure, we can break
                                     break;
                                 }
                                 workingDelay *= 2;
                             }
-
-                            // We reached the max delay without a failure, something is wrong here
-                            results.add(new Output(testName, itemLocation, false, workingDelay));
-                        } else {
-                            results.add(new Output(testName, itemLocation, true, workingDelay));
                         }
                     }
+                }
+            }
+
+            //Create a results file with all identified root methods
+            writeRootMethodsToFile();
+
+            //Create the FileWriter for writing the critical points to the results file
+            FileWriter resultsFile = null;
+            BufferedWriter bw;
+            try {
+                resultsFile = new FileWriter(new File(String.valueOf(Constants.getCritPointsResultsFilepath(
+                        String.valueOf(this.mavenProject.getBasedir()), testName
+                ))));
+                bw = new BufferedWriter(resultsFile);
+            } catch (IOException exception) {
+                throw new RuntimeException(exception);
+            }
+
+            //Iterate over each root method to identify specific critical points
+            visited = new HashSet<String>();
+            for (String root : roots) {
+                String[] tmpArr = root.split("/");
+                String methodName = tmpArr[tmpArr.length - 1];
+                String className = root.substring(0, root.lastIndexOf("/"));
+                if (!visited.contains(methodName)) {
+                    visited.add(methodName);
+                    try {
+                        FileWriter rootFile = new FileWriter(mavenProject.getBasedir()
+                                + String.valueOf(Constants.getRootMethodFilepath(testName)).substring(1));
+                        BufferedWriter bw1 = new BufferedWriter(rootFile);
+                        bw1.write(className + "#" + methodName + ":" + testName);
+                        bw1.newLine();
+                        bw1.flush();
+                    } catch (IOException ioe) {
+                        throw new RuntimeException(ioe);
+                    }
+
+                    String beginningLineName;
+                    SurefireExecution rootMethodAnalysisExecution =
+                            SurefireExecution.SurefireFactory.getRMAExec(this.surefire, this.originalArgLine,
+                                    this.mavenProject, this.mavenSession, this.pluginManager,
+                                    Paths.get(this.baseDir.getAbsolutePath(),
+                                            ConfigurationDefaults.DEFAULT_FLAKESYNC_DIR).toString(),
+                                    this.localRepository, this.testName, delay, methodName);
+
+                    executeSurefireExecution(null, rootMethodAnalysisExecution);
+
+                    beginningLineName = delayInjection();
+
+                    if (beginningLineName != null) { // Injecting the delay at this line did in fact work
+                        sequentialDebug(beginningLineName);
+                    } else {
+                        sequentialDebug(null);
+                    }
+                    writeClustersToFile(bw);
                 }
             }
         } catch (Throwable exception) {
             System.out.println(exception);
             throw new RuntimeException();
         }
-
-        if (!roots.isEmpty()) {
-            createResultsFile1();
-        } else {
-            System.out.println("No roots found");
-        }
-
-
-        // Now we analyze the root methods
-        /*HashSet<String> rootsFromFile;
-        rootsFromFile = getRoots();
-        if (!rootsFromFile.isEmpty()) {
-            roots = rootsFromFile;
-        }*/
-
-        FileWriter resultsFile = null;
-        try {
-            resultsFile = new FileWriter(mavenProject.getBasedir() + "/.flakesync/Results-Boundary/Boundary-"
-                    + testName + "-Result.csv");
-        } catch (IOException exception) {
-            throw new RuntimeException(exception);
-        }
-        BufferedWriter bw = new BufferedWriter(resultsFile);
-
-        for (String root : roots) {
-            System.out.println("Root String: " + root);
-            String tmp = root.split(",")[1].split("\\(")[0];
-            String[] tmpArr = tmp.split("/");
-            String methodName = tmpArr[tmpArr.length - 1];
-            System.out.println("METHOD NAME: " + methodName);
-            String className = tmp.substring(0, tmp.lastIndexOf("/"));
-            //Create the root file
-            try {
-                System.out.println("Root file contents:     " + className + "#" + methodName + ":" + testName);
-                FileWriter rootFile = new FileWriter(mavenProject.getBasedir()
-                        + String.valueOf(Constants.getRootMethodFilepath(testName)).substring(1));
-                BufferedWriter bw1 = new BufferedWriter(rootFile);
-                bw1.write(className + "#" + methodName + ":" + testName);
-                bw1.newLine();
-                bw1.flush();
-            } catch (IOException ioe) {
-                throw new RuntimeException(ioe);
-            }
-
-            String beginningLineName;
-            try {
-                SurefireExecution rootMethodAnalysisExecution =
-                        SurefireExecution.SurefireFactory.getRMAExec(this.surefire, this.originalArgLine,
-                                this.mavenProject, this.mavenSession, this.pluginManager,
-                                Paths.get(this.baseDir.getAbsolutePath(),
-                                        ConfigurationDefaults.DEFAULT_FLAKESYNC_DIR).toString(),
-                                        this.localRepository, this.testName, delay, methodName);
-
-                executeSurefireExecution(null, rootMethodAnalysisExecution);
-
-                beginningLineName = delayInjection();
-                System.out.println("HERE ARE THE RESULTS OF DELAY INJECTION: " + beginningLineName);
-
-                String upperBoundary;
-                if (beginningLineName != null) { // Injecting the delay at this line did in fact work
-                    upperBoundary = sequentialDebug(beginningLineName);
-                } else {
-                    upperBoundary = sequentialDebug(null);
-                }
-                System.out.println("HERE ARE THE RESULTS OF SEQUENTIAL DEBUG: " + clusters.size());
-
-            } catch (Throwable exception) {
-                System.out.println(exception);
-                throw new RuntimeException();
-            }
-
-            try {
-                if (!clusters.keySet().isEmpty()) {
-                    System.out.println("Cluster keyset " + clusters.keySet() );
-                    for (int i = 1; i <= clusters.size(); i++) {
-                        System.out.println("Cluster: " + clusters.get(i));
-                        if (clusters.get(i).size() > 1) {
-                            System.out.println("Cluster with more than 1 element");
-                            bw.write(clusters.get(i).get(0).trim() + "-"
-                                + clusters.get(i).get(clusters.get(i).size() - 1).trim() + "[" + delay + "]");
-                            bw.newLine();
-                        } else {
-                            System.out.println("Cluster with < 1 element");
-                            if (clusters.get(i).isEmpty()) {
-                                System.out.println("Cluster without element: NO CRITICAL POINT FOUND");
-                                return;
-                            }
-                            bw.write(clusters.get(i).get(0) + "-" + clusters.get(i).get(0)
-                                + "[" + delay + "]");
-                            bw.newLine();
-                        }
-                    }
-                } else {
-                    if (!beginningFail) {
-                        bw.write(beginningLineName + "-" + beginningLineName + "[" + delay + "]");
-                        bw.newLine();
-                    }
-                }
-                bw.flush();
-            } catch (IOException ioe) {
-                throw new RuntimeException(ioe);
-            }
-        }
-
     }
 
-    /*private HashSet<String> getRoots() {
-        HashSet<String> roots = new HashSet<String>();
+    private int runWithDelayAtLoc(String loc, int workingDelay, int threadId, int idx) throws Throwable {
+        SurefireExecution cleanExec = SurefireExecution.SurefireFactory.getDelayLocExec(this.surefire, this.originalArgLine,
+                this.mavenProject, this.mavenSession, this.pluginManager,
+                Paths.get(this.baseDir.getAbsolutePath(),
+                        ConfigurationDefaults.DEFAULT_FLAKESYNC_DIR).toString(), this.localRepository,
+                this.testName, workingDelay,
+                String.valueOf(Constants.getIndLocFilepath(".", this.testName, threadId, idx)));
 
-        File file = new File(mavenProject.getBasedir()
-            + "/.flakesync/Results-Boundary/" + this.testName + "Result.csv");
+        return executeSurefireExecution(cleanExec, loc, threadId);
+    }
 
+    private void writeRootMethodsToFile() {
         try {
-            BufferedReader reader = new BufferedReader(new FileReader(file));
+            File outputRootMethodsFile = new File(
+                    String.valueOf(Constants.getRootMethodResultsFilepath(String.valueOf(this.mavenProject.getBasedir()),
+                            this.testName)));
+            FileWriter outputFileWriter = new FileWriter(outputRootMethodsFile);
 
-            String line = reader.readLine();
+            BufferedWriter bw = new BufferedWriter(outputFileWriter);
 
-            while (line != null) {
-                if (!line.startsWith("#")) {
-                    roots.add(line.split(",")[1] + "," + line.split(",")[2]);
-                }
-                line = reader.readLine();
-            }
-        } catch (Exception exception) {
-            throw new RuntimeException(exception);
-        }
-
-        return roots;
-    }*/
-
-    private void createResultsFile1() {
-        try {
-            File resultsDir = new File(mavenProject.getBasedir() + "/.flakesync/Results-Boundary/");
-            resultsDir.mkdirs();
-            FileWriter outputLocationsFile = new FileWriter(this.mavenProject.getBasedir()
-                + "/.flakesync/Results-Boundary/" + testName + "Result.csv");
-
-            BufferedWriter bw = new BufferedWriter(outputLocationsFile);
-
-            bw.write("#Test-Name,Thread-ID,Location[delay]");
+            bw.write("#Test-Name,Location[delay]");
             bw.newLine();
-
-            //Is the following info needed?
-            // echo -n "${slug},${sha},${module},${testName}" >> "$currentDir/$result_file_name"
 
             for (String location : roots) {
                 bw.write(testName + "," + location);
                 bw.newLine();
-
-                this.results.add(new Output(testName, location, false, this.delay));
             }
             bw.flush();
         } catch (IOException ioe) {
@@ -298,8 +205,36 @@ public class CritSearchMojo extends FlakeSyncAbstractMojo {
         }
     }
 
-    private int generateLocsList(List<String> locsList, String path) {
-        int delay = 0;
+    private void writeClustersToFile(BufferedWriter bw) {
+        try {
+            if (!clusters.keySet().isEmpty()) {
+                System.out.println("Cluster keyset " + clusters.keySet());
+                for (int i = 1; i <= clusters.size(); i++) {
+                    System.out.println("Cluster: " + clusters.get(i));
+                    if (clusters.get(i).size() > 1) {
+                        System.out.println("Cluster with more than 1 element");
+                        bw.write(clusters.get(i).get(0).trim() + "-"
+                                + clusters.get(i).get(clusters.get(i).size() - 1).trim() + "[" + delay + "]");
+                        bw.newLine();
+                    } else {
+                        System.out.println("Cluster with < 1 element");
+                        if (clusters.get(i).isEmpty()) {
+                            System.out.println("Cluster without element: NO CRITICAL POINT FOUND");
+                            return;
+                        }
+                        bw.write(clusters.get(i).get(0) + "-" + clusters.get(i).get(0)
+                                + "[" + delay + "]");
+                        bw.newLine();
+                    }
+                }
+            }
+            bw.flush();
+        } catch (IOException ioe) {
+            ioe.printStackTrace();
+        }
+    }
+
+    private void generateLocsList(List<String> locsList, String path) {
         try {
             File file = new File(this.mavenProject.getBasedir() + path.substring(1));
             BufferedReader reader = new BufferedReader(new FileReader(file));
@@ -310,13 +245,13 @@ public class CritSearchMojo extends FlakeSyncAbstractMojo {
             BufferedWriter bw = new BufferedWriter(outputLocationsFile);
 
             String line = reader.readLine();
-            delay = Integer.parseInt(line);
+            this.delay = Integer.parseInt(line);
             line = reader.readLine();
             while (line != null) {
                 locsList.add(line);
                 bw.write(line);
                 bw.newLine();
-                // Read next line
+
                 line = reader.readLine();
             }
             bw.flush();
@@ -325,7 +260,6 @@ public class CritSearchMojo extends FlakeSyncAbstractMojo {
         } catch (IOException ioe) {
             ioe.printStackTrace();
         }
-        return delay;
     }
 
     private void parseStackTrace() {
@@ -362,11 +296,11 @@ public class CritSearchMojo extends FlakeSyncAbstractMojo {
             File file = new File(this.mavenProject.getBasedir()
                     + String.valueOf(Constants.getStackTraceFilepath(testName)).substring(1));
             BufferedReader reader = new BufferedReader(new FileReader(file));
-            String parsedInfo = "";
             String line = reader.readLine();
             while (line != null) {
                 if (line.contains(searchKey1) && line.contains(searchKey2)) {
-                    return line;
+                    line = line.split(",")[1];
+                    return line.substring(0, line.indexOf(':'));
                 }
                 // Read next line
                 line = reader.readLine();
@@ -423,7 +357,6 @@ public class CritSearchMojo extends FlakeSyncAbstractMojo {
                         next = resultsReader.readLine();
                     }
                 }
-                // Read next line
                 line = reader.readLine();
             }
             reader.close();
@@ -472,33 +405,22 @@ public class CritSearchMojo extends FlakeSyncAbstractMojo {
                     boolean failed = executeSurefireExecution(null, execution);
 
                     if (failed) {
-                        /*String lineName = "";
-                        File result = new File(this.mavenProject.getBasedir() + "/.flakesync/Locations/Root-" + i + ".txt");
-                        BufferedReader resultsReader = new BufferedReader(new FileReader(result));
-                        String next = resultsReader.readLine();
-                        while (next != null) {
-                            lineName += (next + "\n");
-                            next = resultsReader.readLine();
-                        }*/
                         currentLines.add(className + "#" + i);
+                        break;
                     } else {
                         if (!currentLines.isEmpty()) {
                             clusters.put(cluster, currentLines);
                             cluster++;
                         }
                         currentLines = new ArrayList<String>();
-
                     }
                 }
-                // Read next line
                 line = reader.readLine();
             }
             reader.close();
             if (!currentLines.isEmpty()) {
-                System.out.println("Adding the final cluster: " + currentLines);
                 clusters.put(cluster, currentLines);
             }
-            System.out.println("FINAL final cluster from deq deb: " + clusters);
             return upperBoundary;
         } catch (IOException ioe) {
             ioe.printStackTrace();
@@ -506,8 +428,7 @@ public class CritSearchMojo extends FlakeSyncAbstractMojo {
         return upperBoundary;
     }
 
-    private int executeSurefireExecution(MojoExecutionException allExceptions,
-            SurefireExecution execution, String itemLoc, int threadID)
+    private int executeSurefireExecution(SurefireExecution execution, String itemLoc, int threadID)
             throws Throwable {
         try {
             execution.run();
@@ -516,8 +437,6 @@ public class CritSearchMojo extends FlakeSyncAbstractMojo {
             String lineNumber = itemLoc.split("#")[1];
             String rootLine = searchStackTrace(className, ":" + lineNumber);
             rootLine += "[" + execution.delay + "]";
-            System.out.println(threadID + "," + className + ".*:" + lineNumber);
-            System.out.println("Formatted rootLine: " + rootLine);
             roots.add(rootLine);
             return 1;
         }

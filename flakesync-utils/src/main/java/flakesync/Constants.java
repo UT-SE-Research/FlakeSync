@@ -18,6 +18,9 @@ public class Constants {
     public static final String ROOT_METHOD_FILE = "Root.txt";
     public static final String METHOD_START_END_FILE = "MethodStartAndEndLine.txt";
     public static final String WHITELIST_FILE = "whitelist.txt";
+    public static final String CRIT_SEARCH_RESULTS_DIR = "Results-CritSearch";
+    public static final String RMA_RESULTS_FILE = "RootMethods.csv";
+    public static final String CRIT_POINTS_FILE = "CriticalPoints.csv";
 
 
 
@@ -59,8 +62,8 @@ public class Constants {
         return Paths.get(".", DEFAULT_FLAKESYNC_DIR, fileName);
     }
 
-    public static Path getRootMethodFilepath(String testname) {
-        String fileName = testname.replace("#", ".") + "-" + ROOT_METHOD_FILE;
+    public static Path getRootMethodFilepath(String testName) {
+        String fileName = testName.replace("#", ".") + "-" + ROOT_METHOD_FILE;
         File rootsDir = new File(String.valueOf(Paths.get(DEFAULT_FLAKESYNC_DIR, ROOTS_DIR)));
         if(!rootsDir.exists()) {
             rootsDir.mkdirs();
@@ -68,13 +71,13 @@ public class Constants {
         return Paths.get(".", DEFAULT_FLAKESYNC_DIR, ROOTS_DIR, fileName);
     }
 
-    public static Path getIndRootFilepath(String baseDir, String testname, int idx) {
-        String fileName = testname.replace("#", ".") + "-" + ROOT_METHOD_FILE;
+    public static Path getIndRootFilepath(String baseDir, String testName, int idx) {
+        String fileName = testName.replace("#", ".") + "-" + ROOT_METHOD_FILE;
         return Paths.get(baseDir, DEFAULT_FLAKESYNC_DIR, ROOTS_DIR, "Root-" + idx + ".txt");
     }
 
-    public static Path getIndLocFilepath(String baseDir, String testname, int threadID, int idx) {
-        String fileName = testname.replace("#", ".") + "-loc-" + threadID + "-" + idx + ".txt";
+    public static Path getIndLocFilepath(String baseDir, String testName, int threadID, int idx) {
+        String fileName = testName.replace("#", ".") + "-loc-" + threadID + "-" + idx + ".txt";
         File rootsDir = new File(String.valueOf(Paths.get(baseDir, DEFAULT_FLAKESYNC_DIR, ROOTS_DIR)));
         rootsDir.mkdirs();
         File linesDir = new File(String.valueOf(Paths.get(baseDir, DEFAULT_FLAKESYNC_DIR, ROOTS_DIR, LINES_DIR)));
@@ -85,5 +88,23 @@ public class Constants {
     public static String getMethodStartEndLineFile(String baseDir, String testName) {
         String fileName = testName.replace("#", ".") + "-" + METHOD_START_END_FILE;
         return String.valueOf(Paths.get(baseDir, DEFAULT_FLAKESYNC_DIR, fileName));
+    }
+
+    public static Path getRootMethodResultsFilepath(String baseDir, String testName) {
+        String fileName = testName.replace("#", ".") + "-" + RMA_RESULTS_FILE;
+        File rootsDir = new File(String.valueOf(Paths.get(baseDir, CRIT_SEARCH_RESULTS_DIR)));
+        if(!rootsDir.exists()) {
+            rootsDir.mkdirs();
+        }
+        return Paths.get(baseDir, DEFAULT_FLAKESYNC_DIR, CRIT_SEARCH_RESULTS_DIR, fileName);
+    }
+
+    public static Path getCritPointsResultsFilepath(String baseDir, String testName) {
+        String fileName = testName.replace("#", ".") + "-" + CRIT_POINTS_FILE;
+        File rootsDir = new File(String.valueOf(Paths.get(baseDir, DEFAULT_FLAKESYNC_DIR, CRIT_SEARCH_RESULTS_DIR)));
+        if(!rootsDir.exists()) {
+            rootsDir.mkdirs();
+        }
+        return Paths.get(baseDir, DEFAULT_FLAKESYNC_DIR, CRIT_SEARCH_RESULTS_DIR, fileName);
     }
 }
