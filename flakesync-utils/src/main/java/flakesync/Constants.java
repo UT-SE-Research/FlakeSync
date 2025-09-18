@@ -9,8 +9,10 @@ public class Constants {
     //Agent Input Files
     public static final String CONCURRENT_METHODS_FILE = "ResultMethods.txt";
     public static final String LOCATIONS_FILE = "Locations.txt";
+
     public static final String LOCATIONS_MIN_FILE = "Locations_minimized.txt";
     public static final String LOCATIONS_TEMP_FILE = "Locations_temp.txt";
+
     public static final String WHITELIST_FILE = "whitelist.txt";
 
 
