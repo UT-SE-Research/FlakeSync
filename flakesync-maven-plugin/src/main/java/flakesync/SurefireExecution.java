@@ -218,10 +218,16 @@ public class SurefireExecution {
                 Constants.getConcurrentMethodsFilepath(testname)));
     }
 
-    private void addSearchMethod() {
+    private void addSearchMethodEL() {
         String properties = (!checkSysPropsDeprecated()) ? ("systemPropertyVariables") : ("systemProperties");
         Xpp3Dom propertiesNode = addAttributeToConfig(this.domNode, properties, "").getChild(properties);
         addAttributeToConfig(propertiesNode, "searchMethodEndLine", "search");
+    }
+
+    private void addSearchMethodMN() {
+        String properties = (!checkSysPropsDeprecated()) ? ("systemPropertyVariables") : ("systemProperties");
+        Xpp3Dom propertiesNode = addAttributeToConfig(this.domNode, properties, "").getChild(properties);
+        addAttributeToConfig(propertiesNode, "searchForMethodName", "search");
     }
 
     private void addCodeToIntroVar(String line) {
@@ -233,7 +239,7 @@ public class SurefireExecution {
     private void addCollectST() {
         String properties = (!checkSysPropsDeprecated()) ? ("systemPropertyVariables") : ("systemProperties");
         Xpp3Dom propertiesNode = addAttributeToConfig(this.domNode, properties, "").getChild(properties);
-        addAttributeToConfig(propertiesNode, "collectStackTrace", "true");
+        addAttributeToConfig(propertiesNode, "stackTraceCollect", "true");
     }
 
     private void addYieldPt(String yieldPt, int threshold) {
@@ -292,7 +298,7 @@ public class SurefireExecution {
                     flakesyncDir, localRepository);
             execution.addTestName(testName);
             execution.addDelay(delay + "");
-            execution.addSearchMethod();
+            execution.addSearchMethodEL();
             execution.addCodeToIntroVar(line);
             execution.setupArgline(PHASE.BARRIER_POINT_SEARCH, originalArgLine);
             execution.addAgentMode("DOWNWARD_MVN");
@@ -342,7 +348,7 @@ public class SurefireExecution {
             execution.addDelay(delay + "");
             execution.addCodeToIntroVar(startLoc);
             execution.addYieldPt(yieldPt, 1);
-            execution.addSearchMethod();
+            execution.addSearchMethodMN();
             execution.setupArgline(PHASE.BARRIER_POINT_SEARCH, originalArgLine);
             execution.addAgentMode("ADD_YIELD_PT2");
             return execution;

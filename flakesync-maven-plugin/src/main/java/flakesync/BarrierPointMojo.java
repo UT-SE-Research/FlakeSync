@@ -93,6 +93,7 @@ public class BarrierPointMojo extends FlakeSyncAbstractMojo {
                     //need to programmatically parse stack trace
                     File directory = new File(String.valueOf(Constants.getExecutionDir(
                             String.valueOf(this.mavenProject.getBasedir()), stackTraceExec.getExecutionId())));
+                    System.out.println(directory.getAbsolutePath());
                     File stackTraceFile = findSTFile(directory);
                     if (stackTraceFile == null) {
                         System.out.println("It appears that the stacktrace does not exist");
@@ -182,13 +183,14 @@ public class BarrierPointMojo extends FlakeSyncAbstractMojo {
             throw new RuntimeException(exception);
         } catch (Throwable exception) {
             System.out.println(exception);
-            throw new RuntimeException();
+            throw new RuntimeException(exception);
         }
 
     }
 
     private File findSTFile(File directory) {
         for (File f : directory.listFiles()) {
+            System.out.println(f.getName());
             if (f.getName().contains("TEST-")) {
                 return f;
             }
@@ -204,7 +206,7 @@ public class BarrierPointMojo extends FlakeSyncAbstractMojo {
                 String className = trace.split("at ")[1].split("\\(")[0];
                 className = className.substring(0, className.lastIndexOf("."));
                 String lineNum = trace.split("\\(")[1].split(":")[1].split("\\)")[0];
-                //System.out.println(className + " " + lineNum);
+                System.out.println(className + " " + lineNum);
                 if (!inBlackList(className)) {
                     System.out.println(trace);
                     classes.put(className, lineNum);
@@ -212,10 +214,11 @@ public class BarrierPointMojo extends FlakeSyncAbstractMojo {
             }
             trace = reader.readLine();
         }
+        System.out.println("is it here");
     }
 
     private boolean inBlackList(String className) throws IOException {
-        InputStream blacklist = this.getClass().getResourceAsStream("blacklist.txt");
+        InputStream blacklist = this.getClass().getResourceAsStream("/blacklist.txt");
         Scanner scanner = new Scanner(blacklist);
         while (scanner.hasNextLine()) {
             String line = scanner.nextLine();

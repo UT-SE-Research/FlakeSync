@@ -67,6 +67,7 @@ public class Agent {
 
                 String mode = System.getProperty("agentmode");
                 if (mode.equals("BARRIER_ST") && !blackListContains(s)) {
+                    //System.out.println("running for stacktrace");
                     visitor = new StackTraceTracer(writer, codeToIntroduceVariable);
                     reader.accept(visitor, 0);
                     return writer.toByteArray();
@@ -76,7 +77,7 @@ public class Agent {
                         reader.accept(visitor, 0);
                     }
                     return writer.toByteArray();
-                } else if ((mode.equals("DOWNWARD_MVN") || mode.equals("ADD_YIELD_PT2"))
+                } else if ((mode.equals("DOWNWARD_MVN"))
                         && !blackListContains(s)) {
                     synchronized (edu.utexas.ece.barrierSearch.agent.Utility.class) {
                         System.out.println("Starting search method steps");
@@ -85,7 +86,7 @@ public class Agent {
                     }
                     return writer.toByteArray();
                 }
-                else if(mode.equals("ADD_YIELD_PT1")){
+                else if(mode.equals("ADD_YIELD_PT1") || mode.equals("ADD_YIELD_PT2")){
                     String yieldPointInfo = System.getProperty("YieldingPoint"); // YIELDING_POINT may or may not be a test_method's location
                     String tcls=yieldPointInfo.split("#")[0]; // test-class
 
@@ -94,6 +95,7 @@ public class Agent {
                         reader.accept(visitor, 0);
 
                         if (RandomClassTracer.methodAndLine != null) {
+                            System.out.println("Entered block to make file");
                             try {
                                 java.io.BufferedWriter bf = new java.io.BufferedWriter(new java.io.FileWriter(
                                         String.valueOf(Constants.getSearchMethodANDLineFilepath(".",
@@ -107,7 +109,7 @@ public class Agent {
 
                         try{
                             java.io.BufferedWriter bfFlag = new java.io.BufferedWriter(new java.io.FileWriter(
-                                    String.valueOf(Constants.getBarrierPointsResultsFilepath(".",
+                                    String.valueOf(Constants.getYieldResultFilepath(".",
                                             System.getProperty(".test")))
                             ));
                             bfFlag.write("Delay="+ RandomClassTracer.delayed +"\n");

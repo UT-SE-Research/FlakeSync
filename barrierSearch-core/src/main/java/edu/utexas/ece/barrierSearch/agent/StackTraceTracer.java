@@ -26,6 +26,8 @@ public class StackTraceTracer extends ClassVisitor {
         this.codeToIntroduceVariable = codeToIntroduceVariable;
         codeUnderTestClassName=codeToIntroduceVariable.split("#")[0];
         codeUnderTestLineNumber=Integer.parseInt(codeToIntroduceVariable.split("#")[1]);
+
+        //System.out.println("in stt: " + this.codeToIntroduceVariable + " " + codeUnderTestClassName + " " + codeUnderTestLineNumber);
     }
     @Override
     public void visit(int version, int access, String name, String signature, String superName, String[] interfaces) {
@@ -61,9 +63,9 @@ public class StackTraceTracer extends ClassVisitor {
                 String location = cn_dot + "#" + lineNumber;
                 //System.out.println("cn_dot=" +cn_dot + ",codeUnderTestClassName="+codeUnderTestClassName);
                 //System.out.println((System.getProperty("stackTraceCollect") != null) + "" + (cn_dot.equals(codeUnderTestClassName)) + "" +  (lineNumber == codeUnderTestLineNumber) + "");
-                if ((System.getProperty("stackTraceCollect") != null) && cn_dot.equals(codeUnderTestClassName) &&  lineNumber == codeUnderTestLineNumber) {
+                if ((System.getProperty("stackTraceCollect") != null) && cn_dot.equals(codeUnderTestClassName) &&  (lineNumber == codeUnderTestLineNumber)) {
                     delayed=true;
-                    System.out.println("visitMethodInsn.....,Need to inject delay,location"+location + "delay="+System.getProperty("delay"));
+                    //System.out.println("visitMethodInsn.....,Need to inject delay,location"+location + "delay="+System.getProperty("delay"));
                     super.visitMethodInsn(Opcodes.INVOKESTATIC, "edu/utexas/ece/barrierSearch/agent/Utility", "delay", "()V", false);
                 }
                 super.visitMethodInsn(opcode, owner, name, desc, itf);
@@ -72,10 +74,10 @@ public class StackTraceTracer extends ClassVisitor {
             @Override
             public void visitInsn(int opcode){ //The lines which are non-methodcall
                 String location = cn_dot + "#" + lineNumber;
-                //System.out.println("cn_dot=" +cn_dot + ",codeUnderTestClassName="+codeUnderTestClassName);
-                if ((System.getProperty("stackTraceCollect") != null) && cn_dot.equals(codeUnderTestClassName) &&  lineNumber == codeUnderTestLineNumber) {
+                //System.out.println("location=" + location + ",codeUnderTestClassName="+codeUnderTestClassName);
+                if ((System.getProperty("stackTraceCollect") != null) && cn_dot.equals(codeUnderTestClassName) &&  (lineNumber == codeUnderTestLineNumber)) {
                     delayed=true;
-                    System.out.println("visitInsn............;cn="+cn+",location="+location+",delay="+System.getProperty("delay"));
+                    //System.out.println("visitInsn............;cn="+cn+",location="+location+",delay="+System.getProperty("delay"));
                     super.visitMethodInsn(Opcodes.INVOKESTATIC, "edu/utexas/ece/barrierSearch/agent/Utility", "delay", "()V", false);
                 }
                 super.visitInsn(opcode);
