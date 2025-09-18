@@ -44,7 +44,7 @@ public class CritSearchMojo extends FlakeSyncAbstractMojo {
         generateLocsList(locations, locationsPath);
 
 
-        locationsPath = String.valueOf(Constants.getWorkingLocationsFilepath(testName));
+        locationsPath = String.valueOf(Constants.getMinLocationsFilepath(testName));
         try {
             SurefireExecution cleanExec = SurefireExecution.SurefireFactory.getDelayLocExec(this.surefire,
                     this.originalArgLine, this.mavenProject, this.mavenSession, this.pluginManager,
@@ -131,8 +131,10 @@ public class CritSearchMojo extends FlakeSyncAbstractMojo {
             visited = new HashSet<String>();
             for (String root : roots) {
                 String[] tmpArr = root.split("/");
-                String methodName = tmpArr[tmpArr.length - 1];
+                String methodName = tmpArr[tmpArr.length - 2];
+                methodName = methodName.split("\\(")[0];
                 String className = root.substring(0, root.lastIndexOf("/"));
+                className = className.substring(0, className.lastIndexOf("/"));
                 if (!visited.contains(methodName)) {
                     visited.add(methodName);
                     try {
