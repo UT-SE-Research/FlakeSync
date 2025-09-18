@@ -141,8 +141,8 @@ public class BarrierPointMojo extends FlakeSyncAbstractMojo {
                                     addBarrierPointToResults(bw, line, yieldingPoint, 1);
                                     break;
                                 } else {
-                                    SurefireExecution execMon = SurefireExecution.SurefireFactory.createExecMon(this.surefire,
-                                            this.originalArgLine, this.mavenProject, this.mavenSession,
+                                    SurefireExecution execMon = SurefireExecution.SurefireFactory.createExecMon(
+                                            this.surefire, this.originalArgLine, this.mavenProject, this.mavenSession,
                                             this.pluginManager, Paths.get(this.baseDir.getAbsolutePath(),
                                             ConfigurationDefaults.DEFAULT_FLAKESYNC_DIR).toString(),
                                             this.localRepository, this.testName, delay, endLoc);
