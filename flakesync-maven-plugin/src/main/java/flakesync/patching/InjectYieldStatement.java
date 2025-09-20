@@ -1,10 +1,42 @@
+/*
+The MIT License (MIT)
+Copyright (c) 2025 Nandita Jayanthi
+Copyright (c) 2025 Shanto Rahman
+Copyright (c) 2025 August Shi
+
+
+
+Permission is hereby granted, free of charge, to any person obtaining
+a copy of this software and associated documentation files (the
+"Software"), to deal in the Software without restriction, including
+without limitation the rights to use, copy, modify, merge, publish,
+distribute, sublicense, and/or sell copies of the Software, and to
+permit persons to whom the Software is furnished to do so, subject to
+the following conditions:
+
+The above copyright notice and this permission notice shall be
+included in all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
+LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
+OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
+WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+*/
+
 package flakesync.patching;
 
-import java.io.IOException;
-import java.nio.file.*;
-import java.util.*;
-import java.util.stream.Stream;
 import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Stream;
+
 
 public class InjectYieldStatement {
     public static Path findJavaFilePath(String slug, String className) throws IOException {
@@ -18,29 +50,13 @@ public class InjectYieldStatement {
                     .orElseThrow(() -> new IOException("Could not find Java file for class: " + className));
         }
     }
-    public static void main(String[] args) throws IOException {
-        if (args.length != 4 || !args[0].contains("#")) {
-            System.err.println("Usage: java InjectPrintStatement <ClassName#LineNumber>");
-            System.err.println("Example: java InjectPrintStatement org.java_websocket.issues.Issue677Test#121");
-            System.exit(1);
-        }
 
-        // Parse input: org.java_websocket.issues.Issue677Test#121
-        String[] parts = args[0].split("#");
-        if (parts.length != 2) {
-            System.err.println("Invalid format. Must be ClassName#LineNumber.");
-            System.exit(1);
-        }
-
-        String className = parts[0];  // org.java_websocket.issues.Issue677Test
-        int targetLine = Integer.parseInt(parts[1]);
-        String targetClass = args[1];
-        String testName = args[2];
-        String slug = args[3];
-        System.out.println("TESTNAME: " + testName);
+    public static void injectYieldStatement(String slug, String testName, String className, int targetLine)
+            throws IOException {
 
         // Convert class name to path
-        String filePath = findJavaFilePath(slug, className).toString(); //slug+ "src/test/java/" + className.replace('.', '/') + ".java";
+        //slug+ "src/test/java/" + className.replace('.', '/') + ".java";
+        String filePath = findJavaFilePath(slug, className).toString();
         System.out.println("FILEPATH: " + filePath);
         Path path = Paths.get(filePath);
         List<String> lines = Files.readAllLines(path);
@@ -57,7 +73,7 @@ public class InjectYieldStatement {
         // Inject print statement
         //String injected = indent + "System.out.println(\"[Injected before line " + targetLine + "]\");";
         List<String> injectedLines = new ArrayList<>();
-        injectedLines.add(indent + "while (!"+targetClass+".getExecutedStatus()) {");
+        injectedLines.add(indent + "while (!" + className + ".getExecutedStatus()) {");
         injectedLines.add(indent + "    Thread.yield();");
         injectedLines.add(indent + "}");
         lines.addAll(targetLine - 1, injectedLines);
@@ -89,7 +105,7 @@ public class InjectYieldStatement {
 
         // Inject reset() after the opening brace
         String methodIndent = lines.get(braceLine).replaceAll("^(\\s*).*", "$1");
-        lines.add(braceLine + 1, methodIndent + "    " + targetClass + ".reset();");
+        lines.add(braceLine + 1, methodIndent + "    " + className + ".reset();");
 
 
         // Save file

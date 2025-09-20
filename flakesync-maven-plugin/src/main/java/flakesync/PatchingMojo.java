@@ -28,19 +28,21 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 package flakesync;
 
-
-import flakesync.common.ConfigurationDefaults;
 import flakesync.common.Level;
 import flakesync.common.Logger;
+import flakesync.patching.InjectFlagInCriticalPoint;
+import flakesync.patching.InjectYieldStatement;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
 import org.apache.maven.plugins.annotations.LifecyclePhase;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.ResolutionScope;
 
-import java.nio.file.Paths;
+import java.io.BufferedReader;
+import java.io.FileReader;
+import java.io.IOException;
 
-@Mojo(name = "concurrentfind", defaultPhase = LifecyclePhase.TEST, requiresDependencyResolution = ResolutionScope.TEST)
+@Mojo(name = "patch", defaultPhase = LifecyclePhase.TEST, requiresDependencyResolution = ResolutionScope.TEST)
 public class PatchingMojo extends FlakeSyncAbstractMojo {
 
     @Override
@@ -48,6 +50,38 @@ public class PatchingMojo extends FlakeSyncAbstractMojo {
         super.execute();
         Logger.getGlobal().log(Level.INFO, ("Running PatchingMojo"));
 
+        try {
+            FileReader boundaryResults = new FileReader(String.valueOf(Constants.getBarrierPointsResultsFilepath(
+                    String.valueOf(this.mavenProject.getBasedir()), testName)));
+
+            BufferedReader br = new BufferedReader(boundaryResults);
+            String line = br.readLine();
+            br.readLine(); //Skip line with headers
+            while (line != null) {
+
+                String slug = String.valueOf(this.mavenProject.getBasedir());
+
+                String[] lineItems = line.split(",");
+                String critPoint = lineItems[1];
+                String barrPoint = lineItems[2];
+                int threshold = Integer.parseInt(lineItems[3]);
+
+                //Inject code for critical point
+                String target = critPoint.split("-")[1].split("#")[0];
+                int targetLine = Integer.parseInt(critPoint.split("-")[1].split("#")[1].split("\\[")[0]);;
+
+                InjectFlagInCriticalPoint.injectFlagInCritPt(slug, target, targetLine);
+
+                //Inject code for barrier point
+                String className = barrPoint.split("#")[0];
+                int lineNum = Integer.parseInt(barrPoint.split("#")[1]);
+
+                InjectYieldStatement.injectYieldStatement(slug, testName, className, lineNum);
+
+            }
+        } catch (IOException ioe) {
+            System.out.println(ioe);
+        }
 
 
 

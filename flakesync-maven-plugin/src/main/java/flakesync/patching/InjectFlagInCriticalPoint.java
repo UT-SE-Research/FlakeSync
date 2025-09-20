@@ -1,17 +1,50 @@
+/*
+The MIT License (MIT)
+Copyright (c) 2025 Nandita Jayanthi
+Copyright (c) 2025 Shanto Rahman
+Copyright (c) 2025 August Shi
+
+
+
+Permission is hereby granted, free of charge, to any person obtaining
+a copy of this software and associated documentation files (the
+"Software"), to deal in the Software without restriction, including
+without limitation the rights to use, copy, modify, merge, publish,
+distribute, sublicense, and/or sell copies of the Software, and to
+permit persons to whom the Software is furnished to do so, subject to
+the following conditions:
+
+The above copyright notice and this permission notice shall be
+included in all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
+LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
+OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
+WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+*/
+
 package flakesync.patching;
 
-import java.io.IOException;
-import java.nio.file.*;
-import java.util.*;
-import java.util.stream.Stream;
 import java.io.File;
-import com.github.javaparser.*;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.stream.Stream;
+
+/*import com.github.javaparser.*;
 import com.github.javaparser.ast.*;
 import com.github.javaparser.ast.body.*;
 import com.github.javaparser.ast.stmt.*;
 import com.github.javaparser.ast.expr.*;
 import com.github.javaparser.ast.Modifier;
-import com.github.javaparser.ast.type.*;
+import com.github.javaparser.ast.type.*;*/
 
 public class InjectFlagInCriticalPoint {
     public static Path findJavaFilePath(String slug, String className) throws IOException {
@@ -28,25 +61,8 @@ public class InjectFlagInCriticalPoint {
         }
     }
 
-    public boolean injectFlagInCritPt(String slug, String startClass, int stLine, String targetClass, int taLine,
-                                      int delay) throws IOException {
-        if (args.length != 2 || !args[0].contains("~") || !args[0].contains("#") || !args[0].contains("[")) {
-            System.err.println("Usage: java InjectFlagInCriticalPoint <StartClass#Line~TargetClass#Line[Delay]>");
-            System.err.println("Example: java InjectFlagInCriticalPoint org/java_websocket/WebSocketImpl#513~org/java_websocket/WebSocketImpl#515[100]");
-            System.exit(1);
-        }
+    public static void injectFlagInCritPt(String slug, String targetClass, int taLine) throws IOException {
 
-        // Parse input
-        //String[] rangeParts = args[0].split("~");
-        //String targetInfo = rangeParts[1];
-        //String classPart = targetInfo.split("#")[0].split("\\$")[0];
-        //classPart = classPart.replace('/', '.');  // convert slash to dot
-        //String lineAndDelay = targetInfo.split("#")[1];
-        //String slug = args[1];
-        //System.out.println("Target Class: " + classPart);
-
-        //int lineNumber = Integer.parseInt(lineAndDelay.split("\\[")[0]);
-        //int delay = Integer.parseInt(lineAndDelay.split("\\[")[1].replace("]", ""));
 
         String filePath = findJavaFilePath(slug, targetClass).toString();
         System.out.println("Critc Point FILEPATH: " + filePath);
@@ -64,25 +80,34 @@ public class InjectFlagInCriticalPoint {
             int absoluteInsertLine = -1;
             if (needsField || needsReset || needsGetStatus) {
                 int classIdx = source.indexOf("class " + targetClass);
-                if (classIdx == -1) throw new RuntimeException("Class declaration not found");
+                if (classIdx == -1) {
+                    throw new RuntimeException("Class declaration not found");
+                }
                 int braceIdx = source.indexOf('{', classIdx);
-                if (braceIdx == -1) throw new RuntimeException("Class opening brace not found");
+                if (braceIdx == -1) {
+                    throw new RuntimeException("Class opening brace not found");
+                }
                 int afterBrace = braceIdx + 1;
                 String[] before = source.substring(0, afterBrace).split("\n", -1);
                 String[] afterLines = source.substring(afterBrace).split("\n");
                 String indent = null;
                 for (int i = 0; i < afterLines.length; i++) {
-                    String l = afterLines[i];
-                    String trimmed = l.trim();
-                    if (!trimmed.isEmpty() && !trimmed.startsWith("//") && !trimmed.startsWith("/*") && !trimmed.startsWith("*") && !trimmed.equals("}")) {
+                    String lne = afterLines[i];
+                    String trimmed = lne.trim();
+                    if (!trimmed.isEmpty() && !trimmed.startsWith("//") && !trimmed.startsWith("/*")
+                            && !trimmed.startsWith("*") && !trimmed.equals("}")) {
                         int ws = 0;
-                        while (ws < l.length() && (l.charAt(ws) == ' ' || l.charAt(ws) == '\t')) ws++;
-                        indent = l.substring(0, ws);
+                        while (ws < lne.length() && (lne.charAt(ws) == ' ' || lne.charAt(ws) == '\t')) {
+                            ws++;
+                        }
+                        indent = lne.substring(0, ws);
                         insertLine = i;
                         break;
                     }
                 }
-                if (indent == null) indent = "    ";
+                if (indent == null) {
+                    indent = "    ";
+                }
                 StringBuilder inject = new StringBuilder();
                 inject.append(indent).append("private static volatile boolean hasExecuted;\n\n");
                 inject.append(indent).append("public static void reset() { hasExecuted = false; }\n");
@@ -112,7 +137,9 @@ public class InjectFlagInCriticalPoint {
                 if (targetLine > 0 && targetLine <= lines.length) {
                     String refLine = lines[targetLine - 1];
                     int ws = 0;
-                    while (ws < refLine.length() && (refLine.charAt(ws) == ' ' || refLine.charAt(ws) == '\t')) ws++;
+                    while (ws < refLine.length() && (refLine.charAt(ws) == ' ' || refLine.charAt(ws) == '\t')) {
+                        ws++;
+                    }
                     indent = refLine.substring(0, ws);
                 }
                 List<String> newLines = new ArrayList<>(Arrays.asList(lines));
@@ -122,16 +149,18 @@ public class InjectFlagInCriticalPoint {
             }
             Files.write(Paths.get(filePath), String.join("\n", lines).getBytes());
             System.out.println("hasExecuted = true; inserted at lineNumber + 5, preserving all original code.");
-        } catch (Exception e) {
-            e.printStackTrace();
+        } catch (Exception exc) {
+            exc.printStackTrace();
             System.exit(1);
         }
     }
 
-    private static int countChar(String s, char c) {
+    private static int countChar(String str, char cha) {
         int count = 0;
-        for (char ch : s.toCharArray()) {
-            if (ch == c) count++;
+        for (char ch : str.toCharArray()) {
+            if (ch == cha) {
+                count++;
+            }
         }
         return count;
     }
