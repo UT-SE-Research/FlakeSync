@@ -55,7 +55,7 @@ public class InjectYieldStatement {
                                             int threshold) throws IOException {
 
         // Convert class name to path
-        //slug+ "src/test/java/" + className.replace('.', '/') + ".java";
+        className = className.split("\\$")[0].replace("/", ".");
         String filePath = findJavaFilePath(slug, className).toString();
         System.out.println("FILEPATH: " + filePath);
         Path path = Paths.get(filePath);
@@ -81,7 +81,7 @@ public class InjectYieldStatement {
         // ===== Inject reset() at the beginning of the test method =====
         int methodLine = -1;
         for (int i = 0; i < lines.size(); i++) {
-            if (lines.get(i).contains("void " + testName + "(")) {
+            if (lines.get(i).contains("void " + testName.split("#")[1] + "(")) {
                 methodLine = i;
                 break;
             }

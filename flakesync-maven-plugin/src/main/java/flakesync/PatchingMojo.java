@@ -55,29 +55,30 @@ public class PatchingMojo extends FlakeSyncAbstractMojo {
                     String.valueOf(this.mavenProject.getBasedir()), testName)));
 
             BufferedReader br = new BufferedReader(boundaryResults);
-            String line = br.readLine();
-            br.readLine(); //Skip line with headers
+            String line = br.readLine(); //Skip line with headers
             while (line != null) {
+                if (line.charAt(0) != '#') {
+                    String slug = String.valueOf(this.mavenProject.getBasedir());
 
-                String slug = String.valueOf(this.mavenProject.getBasedir());
+                    String[] lineItems = line.split(",");
+                    String critPoint = lineItems[1];
+                    String barrPoint = lineItems[2];
+                    System.out.println("threshold " + lineItems[3]);
+                    int threshold = Integer.parseInt(lineItems[3]);
 
-                String[] lineItems = line.split(",");
-                String critPoint = lineItems[1];
-                String barrPoint = lineItems[2];
-                int threshold = Integer.parseInt(lineItems[3]);
+                    //Inject code for critical point
+                    String target = critPoint.split("-")[1].split("#")[0];
+                    int targetLine = Integer.parseInt(critPoint.split("-")[1].split("#")[1].split("\\[")[0]);;
 
-                //Inject code for critical point
-                String target = critPoint.split("-")[1].split("#")[0];
-                int targetLine = Integer.parseInt(critPoint.split("-")[1].split("#")[1].split("\\[")[0]);;
+                    InjectFlagInCriticalPoint.injectFlagInCritPt(slug, target, targetLine);
 
-                InjectFlagInCriticalPoint.injectFlagInCritPt(slug, target, targetLine);
+                    //Inject code for barrier point
+                    String className = barrPoint.split("#")[0];
+                    int lineNum = Integer.parseInt(barrPoint.split("#")[1]);
 
-                //Inject code for barrier point
-                String className = barrPoint.split("#")[0];
-                int lineNum = Integer.parseInt(barrPoint.split("#")[1]);
-
-                InjectYieldStatement.injectYieldStatement(slug, testName, className, lineNum, threshold);
-
+                    InjectYieldStatement.injectYieldStatement(slug, testName, className, lineNum, threshold);
+                }
+                line = br.readLine();
             }
         } catch (IOException ioe) {
             System.out.println(ioe);

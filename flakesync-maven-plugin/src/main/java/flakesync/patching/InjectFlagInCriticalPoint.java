@@ -63,6 +63,7 @@ public class InjectFlagInCriticalPoint {
 
     public static void injectFlagInCritPt(String slug, String targetClass, int taLine) throws IOException {
 
+        targetClass = targetClass.split("\\$")[0].replace("/", ".");
 
         String filePath = findJavaFilePath(slug, targetClass).toString();
         System.out.println("Critc Point FILEPATH: " + filePath);
@@ -72,14 +73,15 @@ public class InjectFlagInCriticalPoint {
             String source = new String(Files.readAllBytes(Paths.get(filePath)));
             boolean needsField = !source.contains("private static volatile int numExecutions");
             boolean needsReset = !source.contains("public static void reset()");
-            boolean needsGetStatus = !source.contains("public static boolean getExecutedStatus()");
+            boolean needsGetStatus = !source.contains("public static int getExecutedStatus()");
 
             // 1. Inject field and helpers FIRST (always add 5 lines for helpers)
             int linesAdded = 0;
             int insertLine = 0;
             int absoluteInsertLine = -1;
             if (needsField || needsReset || needsGetStatus) {
-                int classIdx = source.indexOf("class " + targetClass);
+                String className = targetClass.substring(targetClass.lastIndexOf('.') + 1);
+                int classIdx = source.indexOf("class " + className);
                 if (classIdx == -1) {
                     throw new RuntimeException("Class declaration not found");
                 }
@@ -111,7 +113,7 @@ public class InjectFlagInCriticalPoint {
                 StringBuilder inject = new StringBuilder();
                 inject.append(indent).append("private static volatile int numExecutions;\n\n");
                 inject.append(indent).append("public static void reset() { numExecutions = 0; }\n");
-                inject.append(indent).append("public static boolean getExecutedStatus() { return numExecutions; }\n");
+                inject.append(indent).append("public static int getExecutedStatus() { return numExecutions; }\n");
                 // Always add 5 lines for helpers (1 field + 1 blank + 2 methods + 1 blank)
                 linesAdded = 5;
                 absoluteInsertLine = before.length + insertLine;
