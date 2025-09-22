@@ -72,7 +72,7 @@ public class InjectFlagInCriticalPoint {
         try {
             String source = new String(Files.readAllBytes(Paths.get(filePath)));
             boolean needsField = !source.contains("private static volatile int numExecutions");
-            boolean needsReset = !source.contains("public static void reset()");
+            boolean needsReset = !source.contains("public static void resetFlakesync()");
             boolean needsGetStatus = !source.contains("public static int getExecutedStatus()");
 
             // 1. Inject field and helpers FIRST (always add 5 lines for helpers)
@@ -112,7 +112,7 @@ public class InjectFlagInCriticalPoint {
                 }
                 StringBuilder inject = new StringBuilder();
                 inject.append(indent).append("private static volatile int numExecutions;\n\n");
-                inject.append(indent).append("public static void reset() { numExecutions = 0; }\n");
+                inject.append(indent).append("public static void resetFlakesync() { numExecutions = 0; }\n");
                 inject.append(indent).append("public static int getExecutedStatus() { return numExecutions; }\n");
                 // Always add 5 lines for helpers (1 field + 1 blank + 2 methods + 1 blank)
                 linesAdded = 5;

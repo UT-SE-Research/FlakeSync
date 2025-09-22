@@ -51,10 +51,11 @@ public class InjectYieldStatement {
         }
     }
 
-    public static void injectYieldStatement(String slug, String testName, String className, int targetLine,
-                                            int threshold) throws IOException {
+    public static void injectYieldStatement(String slug, String critClassName, String testName, String className,
+                                            int targetLine, int threshold) throws IOException {
 
         // Convert class name to path
+        critClassName = critClassName.split("\\$")[0].replace("/", ".");
         className = className.split("\\$")[0].replace("/", ".");
         String filePath = findJavaFilePath(slug, className).toString();
         System.out.println("FILEPATH: " + filePath);
@@ -73,7 +74,7 @@ public class InjectYieldStatement {
         // Inject print statement
         //String injected = indent + "System.out.println(\"[Injected before line " + targetLine + "]\");";
         List<String> injectedLines = new ArrayList<>();
-        injectedLines.add(indent + "while (" + className + ".getExecutedStatus() < " + threshold + ") {");
+        injectedLines.add(indent + "while (" + critClassName + ".getExecutedStatus() < " + threshold + ") {");
         injectedLines.add(indent + "    Thread.yield();");
         injectedLines.add(indent + "}");
         lines.addAll(targetLine - 1, injectedLines);
@@ -105,7 +106,7 @@ public class InjectYieldStatement {
 
         // Inject reset() after the opening brace
         String methodIndent = lines.get(braceLine).replaceAll("^(\\s*).*", "$1");
-        lines.add(braceLine + 1, methodIndent + "    " + className + ".reset();");
+        lines.add(braceLine + 1, methodIndent + "    " + critClassName + ".resetFlakesync();");
 
 
         // Save file
