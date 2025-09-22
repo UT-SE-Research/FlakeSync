@@ -51,8 +51,8 @@ public class InjectYieldStatement {
         }
     }
 
-    public static void injectYieldStatement(String slug, String testName, String className, int targetLine)
-            throws IOException {
+    public static void injectYieldStatement(String slug, String testName, String className, int targetLine,
+                                            int threshold) throws IOException {
 
         // Convert class name to path
         //slug+ "src/test/java/" + className.replace('.', '/') + ".java";
@@ -73,7 +73,7 @@ public class InjectYieldStatement {
         // Inject print statement
         //String injected = indent + "System.out.println(\"[Injected before line " + targetLine + "]\");";
         List<String> injectedLines = new ArrayList<>();
-        injectedLines.add(indent + "while (!" + className + ".getExecutedStatus()) {");
+        injectedLines.add(indent + "while (" + className + ".getExecutedStatus() < " + threshold + ") {");
         injectedLines.add(indent + "    Thread.yield();");
         injectedLines.add(indent + "}");
         lines.addAll(targetLine - 1, injectedLines);

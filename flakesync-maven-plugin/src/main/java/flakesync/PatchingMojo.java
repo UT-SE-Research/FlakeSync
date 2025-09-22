@@ -76,7 +76,7 @@ public class PatchingMojo extends FlakeSyncAbstractMojo {
                 String className = barrPoint.split("#")[0];
                 int lineNum = Integer.parseInt(barrPoint.split("#")[1]);
 
-                InjectYieldStatement.injectYieldStatement(slug, testName, className, lineNum);
+                InjectYieldStatement.injectYieldStatement(slug, testName, className, lineNum, threshold);
 
             }
         } catch (IOException ioe) {

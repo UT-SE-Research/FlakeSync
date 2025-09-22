@@ -70,7 +70,7 @@ public class InjectFlagInCriticalPoint {
         // --- Text-based injection for minimal changes ---
         try {
             String source = new String(Files.readAllBytes(Paths.get(filePath)));
-            boolean needsField = !source.contains("private static volatile boolean hasExecuted");
+            boolean needsField = !source.contains("private static volatile int numExecutions");
             boolean needsReset = !source.contains("public static void reset()");
             boolean needsGetStatus = !source.contains("public static boolean getExecutedStatus()");
 
@@ -109,9 +109,9 @@ public class InjectFlagInCriticalPoint {
                     indent = "    ";
                 }
                 StringBuilder inject = new StringBuilder();
-                inject.append(indent).append("private static volatile boolean hasExecuted;\n\n");
-                inject.append(indent).append("public static void reset() { hasExecuted = false; }\n");
-                inject.append(indent).append("public static boolean getExecutedStatus() { return hasExecuted; }\n");
+                inject.append(indent).append("private static volatile int numExecutions;\n\n");
+                inject.append(indent).append("public static void reset() { numExecutions = 0; }\n");
+                inject.append(indent).append("public static boolean getExecutedStatus() { return numExecutions; }\n");
                 // Always add 5 lines for helpers (1 field + 1 blank + 2 methods + 1 blank)
                 linesAdded = 5;
                 absoluteInsertLine = before.length + insertLine;
@@ -143,12 +143,12 @@ public class InjectFlagInCriticalPoint {
                     indent = refLine.substring(0, ws);
                 }
                 List<String> newLines = new ArrayList<>(Arrays.asList(lines));
-                newLines.add(targetLine, indent + "hasExecuted = true;");
+                newLines.add(targetLine, indent + "numExecutions++;");
                 lines = newLines.toArray(new String[0]);
-                System.out.println("[DEBUG] Inserted hasExecuted = true; at line (1-based): " + (targetLine + 1));
+                System.out.println("[DEBUG] Inserted numExecutions++; at line (1-based): " + (targetLine + 1));
             }
             Files.write(Paths.get(filePath), String.join("\n", lines).getBytes());
-            System.out.println("hasExecuted = true; inserted at lineNumber + 5, preserving all original code.");
+            System.out.println("numExecutions++; inserted at lineNumber + 5, preserving all original code.");
         } catch (Exception exc) {
             exc.printStackTrace();
             System.exit(1);
