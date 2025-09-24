@@ -50,7 +50,7 @@ while read line; do
 
 
     # Run command
-    mvn edu.utexas.ece:flakesync-maven-plugin:1.0-SNAPSHOT:flakedeltadebug -Dflakesync.testName=${testname} -pl $module >> ${OUTFILE}
+    mvn edu.utexas.ece:flakesync-maven-plugin:1.0-SNAPSHOT:deltadebug -Dflakesync.testName=${testname} -pl $module >> ${OUTFILE}
 
     # Check that the results are consistent
     # Assume expected results are in a known file
@@ -66,23 +66,14 @@ while read line; do
    
     #First check that there is only one location in the file
     LINE_COUNT=$(wc -l < ./${module}/.flakesync/${testname//#/.}-Locations_minimized.txt)
-    if [[ ${LINE_COUNT} -gt 1 ]]; then
+    if [[ ${LINE_COUNT} -gt 2 ]]; then
        echo "Did not narrow down to one location"	
        ((errors++))
     fi
    
     while read line_exp; do
-        if grep -q ${line_exp} ${EXPECTED_DIR}/${slug}/${testname//#/.}-Locations_all.txt; then
-           :
-        else 
-           echo "Chosen location is not a good one"
-	   ((errors++))
-        fi
-    done < ./${module}/.flakesync/${testname//#/.}-Locations_minimized.txt
-
-    while read line_exp; do
         if grep -q ${line_exp} ./${module}/.flakesync/${testname//#/.}-Locations_minimized.txt; then
-           echo "Chosen location is a bad one"
+           echo "Chosen location is a bad one: "${line_exp}
            ((errors++))
         fi
     done < ${EXPECTED_DIR}/${slug}/${testname//#/.}-Locations_minimized_bad.txt

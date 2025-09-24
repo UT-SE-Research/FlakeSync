@@ -22,7 +22,10 @@ public class Constants {
     public static final String RMA_RESULTS_FILE = "RootMethods.csv";
     public static final String CRIT_POINTS_FILE = "CriticalPoints.csv";
 
+    public static final String LOCATIONS_MIN_FILE = "Locations_minimized.txt";
+    public static final String LOCATIONS_TEMP_FILE = "Locations_temp.txt";
 
+    public static final String WHITELIST_FILE = "whitelist.txt";
 
     public static void createExecutionDirIfNeeded(String executionId) {
         Paths.get(DEFAULT_FLAKESYNC_DIR, executionId).toFile().mkdirs();
