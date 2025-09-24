@@ -93,7 +93,7 @@ public class FunctionNameTracer extends ClassVisitor {
             public void visitCode() { // To inject delay at the beginning of a method
                 if (System.getProperty("methodNameForDelayAtBeginning") != null ) {
                     super.visitMethodInsn(Opcodes.INVOKESTATIC,
-                            "edu/utexas/ece/localization/agent/Utility", "injectDelay", "()V", false);
+                            "edu/utexas/ece/flakesync/agent/Utility", "delay", "()V", false);
                 }
                 super.visitCode();
             }
@@ -104,7 +104,7 @@ public class FunctionNameTracer extends ClassVisitor {
                     if (owner.contains("Thread") && name.equals("start")) {
                         super.visitInsn(Opcodes.DUP);
                         super.visitMethodInsn(Opcodes.INVOKESTATIC,
-                                "edu/utexas/ece/localization/agent/Utility", "stack", "(Ljava/lang/Thread;)V", false);
+                                "edu/utexas/ece/flakesync/agent/Utility", "stack", "(Ljava/lang/Thread;)V", false);
                     }
                 }
                 super.visitMethodInsn(opcode, owner, name, desc, itf);
@@ -114,7 +114,7 @@ public class FunctionNameTracer extends ClassVisitor {
             public void visitEnd() {
                 if (LocationList.contains(classLine) && (methName.equals(System.getProperty("methodNameForDelayAtEnd")))) {
                     super.visitMethodInsn(Opcodes.INVOKESTATIC,
-                            "edu/utexas/ece/localization/agent/Utility", "injectDelay", "()V", false);
+                            "edu/utexas/ece/flakesync/agent/Utility", "delay", "()V", false);
                 }
                 super.visitEnd();
             }

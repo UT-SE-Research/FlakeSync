@@ -77,7 +77,7 @@ public class RandomClassTracer extends ClassVisitor {
                     super.visitLdcInsn(testName);
                     super.visitLdcInsn(location);
                     super.visitMethodInsn(Opcodes.INVOKESTATIC,
-                            "edu/utexas/ece/localization/agent/Utility", "delay", methodSignature, false);
+                            "edu/utexas/ece/flakesync/agent/Utility", "delay", methodSignature, false);
                 }
                 super.visitMethodInsn(opcode, owner, name, desc, itf);
             }
@@ -99,12 +99,12 @@ public class RandomClassTracer extends ClassVisitor {
                             System.out.println("HI-DELAYING= " + location + ", size=" + providedLocations.size()
                                     + ",location=" + location);
                             super.visitMethodInsn(Opcodes.INVOKESTATIC,
-                                    "edu/utexas/ece/localization/agent/Utility", "delay", methodSignature, false);
+                                    "edu/utexas/ece/flakesync/agent/Utility", "delay", methodSignature, false);
                         } else {
-                            String methodSignature = "(Ljava/lang/String;)V"; // sending testName as parameter
+                            String methodSignature = "()V"; // just delay
                             super.visitLdcInsn(location);
                             super.visitMethodInsn(Opcodes.INVOKESTATIC,
-                                    "edu/utexas/ece/localization/agent/Utility", "onlyDelay", methodSignature, false);
+                                    "edu/utexas/ece/flakesync/agent/Utility", "delay", methodSignature, false);
                         }
                     }
                 }
