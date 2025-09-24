@@ -1,0 +1,5 @@
+nl.nlighten.prometheus.tomcat.TomcatJdbcPoolExports
+nl.nlighten.prometheus.tomcat.TomcatGenericExports
+nl.nlighten.prometheus.tomcat.TomcatJdbcInterceptor
+nl.nlighten.prometheus.tomcat.TomcatServletMetricsFilter
+nl.nlighten.prometheus.tomcat.TomcatDbcp2PoolExports
