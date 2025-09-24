@@ -23,43 +23,38 @@ while read line; do
     git checkout $sha
     mvn clean install -pl $module -am -U -DskipTests
 
-    #
-    start_time=$(date +%s.%N) # Capture nanoseconds for start time of plugin
-    ### Concurrent Method Find
-    mvn edu.utexas.ece:flakesync-maven-plugin:1.0-SNAPSHOT:flakefind -Dflakesync.testName=${test_name} -pl $module
+     ### Concurrent Method Find
+    start_time=$(date +%s.%N)
+    mvn edu.utexas.ece:flakesync-maven-plugin:1.0-SNAPSHOT:concurrentfind -Dflakesync.testName=${test_name} -pl $module
     end_time=$(date +%s.%N)
-    #duration_ns=$((end_time - start_time))
-    duration_ns=$(echo "scale=2; ${end_time} - ${start_time}" | bc)
-    echo "Hi=$duration_ns"
-    duration_ns_conc_meth=$(echo duration_ns | awk '{printf("%.2f\n", $1) }')
-    echo "time to get concurrent_meth=" $duration_ns_conc_meth
-    #exit
+    duration_ns_conc_meth=$(echo "scale=2; ${end_time} - ${start_time}" | bc)
+
     ### Delay All Locations
-    start_time=$(date +%s.%N) # Capture nanoseconds for start time of plugin
-    mvn edu.utexas.ece:flakesync-maven-plugin:1.0-SNAPSHOT:delayall -Dflakesync.testName=${test_name} -pl $module
+    start_time=$(date +%s.%N)
+    mvn edu.utexas.ece:flakesync-maven-plugin:1.0-SNAPSHOT:delaylocs -Dflakesync.testName=${test_name} -pl $module
     end_time=$(date +%s.%N)
     duration_ns_delay_inject=$(echo "scale=2; ${end_time} - ${start_time}" | bc)
 
-    start_time=$(date +%s.%N)
     ### Delta Debugger
+    start_time=$(date +%s.%N)
     mvn edu.utexas.ece:flakesync-maven-plugin:1.0-SNAPSHOT:deltadebug -Dflakesync.testName=${test_name} -pl $module
     end_time=$(date +%s.%N)
     duration_ns_dd=$(echo "scale=2; ${end_time} - ${start_time}" | bc)
 
+    #### Root Method and Critical Point Search
     start_time=$(date +%s.%N)
-    ### Root Method and Critical Point Search
     mvn edu.utexas.ece:flakesync-maven-plugin:1.0-SNAPSHOT:critsearch -Dflakesync.testName=${test_name} -pl $module
     end_time=$(date +%s.%N)
     duration_ns_critsearch=$(echo "scale=2; ${end_time} - ${start_time}" | bc)
 
-    start_time=$(date +%s.%N)
     ### Barrier Point Search
+    start_time=$(date +%s.%N)
     mvn edu.utexas.ece:flakesync-maven-plugin:1.0-SNAPSHOT:barrierpointsearch -Dflakesync.testName=${test_name} -pl $module
     end_time=$(date +%s.%N)
     duration_ns_barrierpointsearch=$(echo "scale=2; ${end_time} - ${start_time}" | bc)
 
+    ####Patching
     start_time=$(date +%s.%N)
-    ###Patching
     mvn edu.utexas.ece:flakesync-maven-plugin:1.0-SNAPSHOT:patch -Dflakesync.testName=${test_name} -pl $module
     end_time=$(date +%s.%N)
     duration_ns_patch=$(echo "scale=2; ${end_time} - ${start_time}" | bc)
@@ -70,7 +65,7 @@ while read line; do
     duration_ms=$((duration_ns / 1000000))
 
 
-    echo "End-to-end plugin execution duration: ${duration_ms}ms"
+    #echo "End-to-end plugin execution duration: ${duration_ms}ms"
     echo "Duration of each mojo:"
     echo "Concurrent method finder: ${TIME_CM}"
     echo "Delay at all locations: ${TIME_DA}"
