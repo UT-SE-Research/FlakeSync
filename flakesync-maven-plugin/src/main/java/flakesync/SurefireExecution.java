@@ -111,7 +111,7 @@ public class SurefireExecution {
 
     protected Xpp3Dom setReportOutputDirectory(Xpp3Dom configNode, String executionId) {
         configNode = this.addAttributeToConfig(configNode, "reportsDirectory",
-                this.configuration.getExecutionDir().toString());
+                Constants.getExecutionDir(executionId).toString());
         configNode = this.addAttributeToConfig(configNode, "disableXmlReport", "false");
         return configNode;
     }
