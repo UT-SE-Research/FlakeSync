@@ -9,6 +9,10 @@ public class Constants {
     //Agent Input Files
     public static final String CONCURRENT_METHODS_FILE = "ResultMethods.txt";
     public static final String LOCATIONS_FILE = "Locations.txt";
+
+    public static final String LOCATIONS_MIN_FILE = "Locations_minimized.txt";
+    public static final String LOCATIONS_TEMP_FILE = "Locations_temp.txt";
+
     public static final String WHITELIST_FILE = "whitelist.txt";
 
 
@@ -33,6 +37,16 @@ public class Constants {
 
     public static Path getAllLocationsFilepath(String testName) {
         String fileName = testName.replace("#", ".") + "-" + LOCATIONS_FILE;
+        return Paths.get(".", DEFAULT_FLAKESYNC_DIR, fileName);
+    }
+
+    public static Path getMinLocationsFilepath(String testName) {
+        String fileName = testName.replace("#", ".") + "-" + LOCATIONS_MIN_FILE;
+        return Paths.get(".", DEFAULT_FLAKESYNC_DIR, fileName);
+    }
+
+    public static Path getWorkingLocationsFilepath(String testName) {
+        String fileName = testName.replace("#", ".") + "-" + LOCATIONS_TEMP_FILE;
         return Paths.get(".", DEFAULT_FLAKESYNC_DIR, fileName);
     }
 }

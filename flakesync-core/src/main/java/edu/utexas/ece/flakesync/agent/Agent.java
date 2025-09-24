@@ -176,7 +176,6 @@ public class Agent {
                     } else if (System.getProperty("agentmode").equals("ALL_LOCATIONS")) {
                         Path fp = Constants.getAllLocationsFilepath(
                                 System.getProperty(".test"));
-
                         File locsFile = new File(fp.toUri());
                         FileWriter outputLocationsFile = new FileWriter(locsFile);
                         bfLocations = new BufferedWriter(outputLocationsFile);
