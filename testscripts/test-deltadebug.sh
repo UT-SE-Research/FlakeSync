@@ -50,7 +50,7 @@ while read line; do
 
 
     # Run command
-    mvn edu.utexas.ece:flakesync-maven-plugin:1.0-SNAPSHOT:flakedeltadebug -Dflakesync.testName=${testname} -pl $module >> ${OUTFILE}
+    mvn edu.utexas.ece:flakesync-maven-plugin:1.0-SNAPSHOT:deltadebug -Dflakesync.testName=${testname} -pl $module >> ${OUTFILE}
 
     # Check that the results are consistent
     # Assume expected results are in a known file
