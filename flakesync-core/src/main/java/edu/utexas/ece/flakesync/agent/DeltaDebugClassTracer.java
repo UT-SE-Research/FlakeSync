@@ -94,11 +94,8 @@ public class DeltaDebugClassTracer extends ClassVisitor {
 
                 // If locations are provided, delay only at those locations
                 if (providedLocations.contains(location)) {
-                    System.out.println("providedLocations contains this: " + location);
                     super.visitMethodInsn(Opcodes.INVOKESTATIC,
                             "edu/utexas/ece/flakesync/agent/Utility", "delay", "()V", false);
-                } else {
-                    System.out.println("not contained: " + location);
                 }
 
                 super.visitMethodInsn(opcode, owner, name, desc, itf);
