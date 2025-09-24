@@ -52,7 +52,7 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 
-@Mojo(name = "flakedeltadebug", defaultPhase = LifecyclePhase.TEST, requiresDependencyResolution = ResolutionScope.TEST)
+@Mojo(name = "deltadebug", defaultPhase = LifecyclePhase.TEST, requiresDependencyResolution = ResolutionScope.TEST)
 public class DeltaDebugMojo extends FlakeSyncAbstractMojo {
 
     protected int delay;
@@ -153,7 +153,6 @@ public class DeltaDebugMojo extends FlakeSyncAbstractMojo {
         @Override
         public boolean checkValid(List<String> elements) {
             //First we need to write the elements to a temporary file for the agent to write to
-            System.out.println(elements);
             createTempFile(elements);
 
             SurefireExecution cleanExec = SurefireExecution.SurefireFactory.createDeltaDebugExec(
