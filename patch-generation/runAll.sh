@@ -36,16 +36,26 @@ while read line
     test_name=$(echo $full_test | cut -d'#' -f2)
     echo $class_name_dotted
     javac InjectYieldStatement.java
-    echo "java InjectYieldStatement ${barrier_point} ${class_name_dotted}" ${test_name}
-    java InjectYieldStatement ${barrier_point} "${class_name_dotted}" "${test_name}" "${inputProj}/${slug}/" #"" #org.java_websocket.issues.Issue677Test#121
+    # Find barrier class name in dot notation
+    barrier_class_name=$(echo ${barrier_point} | cut -d'#' -f1 | sed 's/\//./g')
+    # Find critic class name in dot notation
+    critic_class_name=$(echo ${single_critic_point} | cut -d'~' -f2 | cut -d'#' -f1 | cut -d'$' -f1 | sed 's/\//./g')
+    # Find barrier file path
+    barrier_file_path=$(find $inputProj/$slug -type f -name "$(basename ${barrier_class_name//./\/}).java" | head -n 1)
+    cp "$barrier_file_path" "$barrier_file_path.orig"
+    echo "java InjectYieldStatement ${barrier_point} ${class_name_dotted} ${test_name} $inputProj/$slug/"
+    java InjectYieldStatement ${barrier_point} "${class_name_dotted}" "${test_name}" "$inputProj/$slug/"
     #exit
     javac  -cp .:javaparser-core-3.25.4.jar InjectFlagInCriticalPoint.java
+    # Find critic file path
+    critic_file_path=$(find $inputProj/$slug -type f -name "$(basename ${critic_class_name//./\/}).java" | head -n 1)
+    cp "$critic_file_path" "$critic_file_path.orig"
     echo "java  -cp .:javaparser-core-3.25.4.jar InjectFlagInCriticalPoint ${single_critic_point} $inputProj/$slug"
-    #exit
-    java -cp .:javaparser-core-3.25.4.jar InjectFlagInCriticalPoint ${single_critic_point} "$inputProj/$slug" #org/java_websocket/WebSocketImpl#513~org/java_websocket/WebSocketImpl#515[100]
+    java -cp .:javaparser-core-3.25.4.jar InjectFlagInCriticalPoint ${single_critic_point} "$inputProj/$slug"
     javac SavePatch.java
-    echo "java SavePatch ${barrier_point} ${single_critic_point}"
-    java SavePatch ${barrier_point} ${class_name_dotted} $inputProj/$slug
+    # Generate patch for both files in one call
+    echo "java SavePatch $barrier_class_name $barrier_class_name $critic_class_name $critic_class_name $inputProj/$slug"
+    java SavePatch "$barrier_class_name" "$barrier_class_name" "$critic_class_name" "$critic_class_name" "$inputProj/$slug"
     #exit
     
     cd "$inputProj/$slug"
