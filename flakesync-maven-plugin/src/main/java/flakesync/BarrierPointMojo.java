@@ -40,7 +40,7 @@ public class BarrierPointMojo extends FlakeSyncAbstractMojo {
             FileWriter barrierResults = new FileWriter(barrierResFile);
             BufferedWriter bw = new BufferedWriter(barrierResults);
 
-            bw.write("Test-Name,Boundary-Point,Barrier-Point,Threshold");
+            bw.write("#Test-Name,Boundary-Point,Barrier-Point,Threshold");
             bw.newLine();
 
             FileReader boundaryResults = new FileReader(String.valueOf(Constants.getCritPointsResultsFilepath(
