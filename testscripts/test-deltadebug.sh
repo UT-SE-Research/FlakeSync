@@ -72,7 +72,7 @@ while read line; do
     fi
    
     while read line_exp; do
-        if grep -q ${line_exp} ./${module}/.flakesync/${testname//#/.}-Locations_minimized.txt; then
+        if grep -q ${line_exp}$ ./${module}/.flakesync/${testname//#/.}-Locations_minimized.txt; then
            echo "Chosen location is a bad one: "${line_exp}
            ((errors++))
         fi
