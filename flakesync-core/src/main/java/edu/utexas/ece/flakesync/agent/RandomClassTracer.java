@@ -27,7 +27,6 @@ public class RandomClassTracer extends ClassVisitor {
             try {
                 BufferedReader reader = new BufferedReader(new FileReader(new File(System.getProperty("locations"))));
                 String line = reader.readLine();
-                System.out.println(line);
                 while (line != null) {
                     providedLocations.add(line);
                     line = reader.readLine();
@@ -70,9 +69,6 @@ public class RandomClassTracer extends ClassVisitor {
                 // If locations are provided, delay only at those locations
                 if (System.getProperty("locations") != null && providedLocations.contains(location)
                         && !Agent.blackListContains(className) ) {
-                    // Do not remove this line, because analyzeRootMethod will use this
-                    System.out.println("HI-DELAYING= " + location + ", size=" + providedLocations.size()
-                            + ",location=" + location);
                     String methodSignature = "(Ljava/lang/String;Ljava/lang/String;)V"; // sending testName as parameter
                     super.visitLdcInsn(testName);
                     super.visitLdcInsn(location);
@@ -85,19 +81,14 @@ public class RandomClassTracer extends ClassVisitor {
             @Override
             public void visitInsn(int opcode) {
                 String location = cn + "#" + lineNumber;
-                System.out.println("From RandomClassTraced *** location =" + location);
                 // If locations are provided, delay only at those locations
                 if (!Agent.blackListContains(className)) { // To double check if the classname is in the blacklist
                     if ((System.getProperty("locations") != null) && (providedLocations.contains(location))) {
-                        System.out.println("****Enter-DELAYING " + location + " FOR TESTNAME " + testName );
                         if (testName != "") {
                             // Sending testName as parameter
                             String methodSignature = "(Ljava/lang/String;Ljava/lang/String;)V";
                             super.visitLdcInsn(testName);
                             super.visitLdcInsn(location);
-                            // Do not remove this line, because analyzeRootMethod will use this
-                            System.out.println("HI-DELAYING= " + location + ", size=" + providedLocations.size()
-                                    + ",location=" + location);
                             super.visitMethodInsn(Opcodes.INVOKESTATIC,
                                     "edu/utexas/ece/flakesync/agent/Utility", "delay", methodSignature, false);
                         } else {
