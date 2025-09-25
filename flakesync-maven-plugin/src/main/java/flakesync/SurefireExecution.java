@@ -45,8 +45,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import static flakesync.common.ConfigurationDefaults.BARRIER_SEARCH_JAR;
-import static flakesync.common.ConfigurationDefaults.BOUNDARY_SEARCH_JAR;
-import static flakesync.common.ConfigurationDefaults.CONCURRENT_METHODS_JAR;
+import static flakesync.common.ConfigurationDefaults.CORE_JAR;
 
 public class SurefireExecution {
 
@@ -139,9 +138,9 @@ public class SurefireExecution {
         // TODO: Encode path to agent in some final static variable for ease of access and potential changes to name/version
         String argLineToSet = "-javaagent:" + pathToJar;
         if (phase == PHASE.LOCATIONS_MINIMIZER) {
-            argLineToSet += CONCURRENT_METHODS_JAR;
+            argLineToSet += CORE_JAR;
         } else if (phase == PHASE.CRITICAL_POINT_SEARCH) {
-            argLineToSet += BOUNDARY_SEARCH_JAR;
+            argLineToSet += CORE_JAR;
         } else if (phase == PHASE.BARRIER_POINT_SEARCH) {
             argLineToSet += BARRIER_SEARCH_JAR;
         }
