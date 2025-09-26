@@ -102,10 +102,6 @@ public class PatchingMojo extends FlakeSyncAbstractMojo {
                     className =  className.split("#")[0];
                     target = target.split("\\$")[0];
 
-                    System.out.println("hello");
-                    System.out.println(className);
-                    System.out.println(target);
-
                     //Save the patch file
                     String originalBarrierFilePath = getFilePath(slug, className, true);
                     String modifiedBarrierFilePath = String.valueOf(InjectYieldStatement
