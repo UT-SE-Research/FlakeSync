@@ -38,7 +38,7 @@ public class CritSearchMojo extends FlakeSyncAbstractMojo {
     @Override
     public void execute() throws MojoExecutionException, MojoFailureException {
         super.execute();
-        Logger.getGlobal().log(Level.INFO, ("Running CriticalPointMojo"));
+        Logger.getGlobal().log(Level.INFO, ("Running CritSearchMojo"));
         MojoExecutionException allExceptions = null;
 
         List<String> locations = new ArrayList<String>();
@@ -130,7 +130,7 @@ public class CritSearchMojo extends FlakeSyncAbstractMojo {
                 }
             }
 
-            // Create a results file with all identified root methods
+            // Create the file with all identified roots
             writeRootMethodsToFile();
 
             // Create the FileWriter for writing the critical points to the results file
@@ -138,51 +138,50 @@ public class CritSearchMojo extends FlakeSyncAbstractMojo {
             BufferedWriter bw;
             try {
                 resultsFile = new FileWriter(new File(String.valueOf(Constants.getCritPointsResultsFilepath(
-                        String.valueOf(this.mavenProject.getBasedir()), testName
-                ))));
+                        String.valueOf(this.mavenProject.getBasedir()), testName))));
                 bw = new BufferedWriter(resultsFile);
             } catch (IOException exception) {
+                exception.printStackTrace();
                 throw new RuntimeException(exception);
             }
 
             // Iterate over each root method to identify specific critical points
-            visited = new HashSet<String>();
+            visited = new HashSet<String>();    // Do not check duplicate methods
             for (String root : roots) {
-                String[] tmpArr = root.split("/");
-                String methodName = tmpArr[tmpArr.length - 2];
+                String[] rootNameElements = root.split("/");
+                // Method name is the part right next to ( near end of root name
+                String methodName = rootNameElements[rootNameElements.length - 2];
                 methodName = methodName.split("\\(")[0];
                 String className = root.substring(0, root.lastIndexOf("/"));
                 className = className.substring(0, className.lastIndexOf("/"));
-                if (!visited.contains(methodName)) {
-                    visited.add(methodName);
+                String fullMethodName = className + "#" + methodName;
+                int workingDelay = Integer.parseInt(root.split("\\[")[1].split("\\]")[0]);  // Delay is number in between []
+                if (!visited.contains(fullMethodName)) {
+                    visited.add(fullMethodName);
                     try {
                         FileWriter rootFile = new FileWriter(mavenProject.getBasedir()
                                 + String.valueOf(Constants.getRootMethodFilepath(testName)).substring(1));
                         BufferedWriter bw1 = new BufferedWriter(rootFile);
-                        bw1.write(className + "#" + methodName + ":" + testName);
+                        bw1.write(fullMethodName + ":" + testName);
                         bw1.newLine();
                         bw1.flush();
                     } catch (IOException ioe) {
+                        ioe.printStackTrace();
                         throw new RuntimeException(ioe);
                     }
 
+                    // Run to get the MethodStartAndEndLine file that shows the beginning and end line of the root
                     String beginningLineName;
                     SurefireExecution rootMethodAnalysisExecution =
                             SurefireExecution.SurefireFactory.getRMAExec(this.surefire, this.originalArgLine,
                                     this.mavenProject, this.mavenSession, this.pluginManager,
                                     Paths.get(this.baseDir.getAbsolutePath(),
                                             ConfigurationDefaults.DEFAULT_FLAKESYNC_DIR).toString(),
-                                    this.localRepository, this.testName, delay, methodName);
-
+                                    this.localRepository, this.testName, workingDelay, methodName);
                     executeSurefireExecution(null, rootMethodAnalysisExecution);
 
-                    beginningLineName = delayInjection();
-
-                    if (beginningLineName != null) { // Injecting the delay at this line did in fact work
-                        sequentialDebug(beginningLineName);
-                    } else {
-                        sequentialDebug(null);
-                    }
+                    // Try adding delays from beginning of method until it can fail
+                    sequentialDebug(workingDelay);
                     writeClustersToFile(bw);
                 }
             }
@@ -332,80 +331,25 @@ public class CritSearchMojo extends FlakeSyncAbstractMojo {
         return null;
     }
 
-    private String delayInjection() throws Throwable {
-        String beginningLineName = null;
-        try {
-            String pathName = String.valueOf(Constants.getMethodStartEndLineFile(
-                    String.valueOf(this.mavenProject.getBasedir()), testName));
-            File lines = new File(pathName);
-            BufferedReader reader = new BufferedReader(new FileReader(lines));
-            String line = reader.readLine();
-            while (line != null) {
-                // Parse method name from line
-                String[] tmp = line.split("#");
-                String methodName = tmp[3];
-                String className = tmp[0];
-                String lowerLineNumber = tmp[1].substring(0, tmp[1].indexOf('-'));
-
-                pathName = String.valueOf(Constants.getIndRootFilepath(String.valueOf(this.mavenProject.getBasedir()),
-                        testName, Integer.parseInt(lowerLineNumber)));
-                File rootFile = new File(pathName);
-                BufferedWriter writer = new BufferedWriter(new FileWriter(rootFile));
-                writer.write(className + "#" + lowerLineNumber);
-                writer.newLine();
-                writer.flush();
-
-                SurefireExecution execution = SurefireExecution.SurefireFactory.getDelayMethodExec(this.surefire,
-                        this.originalArgLine, this.mavenProject, this.mavenSession, this.pluginManager,
-                        Paths.get(this.baseDir.getAbsolutePath(), ConfigurationDefaults.DEFAULT_FLAKESYNC_DIR).toString(),
-                        this.localRepository, this.testName, this.delay,
-                        String.valueOf(Constants.getIndRootFilepath(".",  testName, Integer.parseInt(lowerLineNumber))),
-                        methodName);
-
-                beginningFail = executeSurefireExecution(null, execution);
-
-                if (beginningFail) {
-                    beginningLineName = "";
-                    pathName = String.valueOf(Constants.getIndRootFilepath(String.valueOf(this.mavenProject.getBasedir()),
-                            testName, Integer.parseInt(lowerLineNumber)));
-                    File result = new File(pathName);
-                    BufferedReader resultsReader = new BufferedReader(new FileReader(result));
-                    String next = resultsReader.readLine();
-                    while (next != null) {
-                        beginningLineName += (next + "\n");
-                        next = resultsReader.readLine();
-                    }
-                }
-                // Read next line
-                line = reader.readLine();
-            }
-            reader.close();
-            return beginningLineName;
-        } catch (IOException ioe) {
-            ioe.printStackTrace();
-        }
-        return beginningLineName;
-    }
-
-    private String sequentialDebug(String start) throws Throwable {
+    // Search through method one location at a time, injecting the specified delay amount
+    private void sequentialDebug(int workingDelay) throws Throwable {
         String upperBoundary = "";
         ArrayList<String> currentLines = new ArrayList<String>();
-        if (start != null) {
-            currentLines.add(start);
-        }
         try {
             String path = Constants.getMethodStartEndLineFile(String.valueOf(this.mavenProject.getBasedir()), testName);
             File lines = new File(path);
             BufferedReader reader = new BufferedReader(new FileReader(lines));
             String line = reader.readLine();
-            int cluster = 1;
+            int cluster = 1;    // Want to keep track of different "clusters" or regions of failing locations
             while (line != null) {
                 String[] tmp = line.split("#");
                 String className = tmp[0];
-                String lowerLineNumber = tmp[1].substring(0, tmp[1].indexOf('-'));
-                String upperLineNumber = tmp[2];
+                int lowerLineNumber = Integer.parseInt(tmp[1].substring(0, tmp[1].indexOf('-')));
+                int upperLineNumber = Integer.parseInt(tmp[2]);
 
-                for (int i = Integer.parseInt(lowerLineNumber); i < Integer.parseInt(upperLineNumber); i++) {
+                // Try to delay throughout the method, from first line to last line
+                for (int i = lowerLineNumber; i < upperLineNumber; i++) {
+                    // Configure where to write the delay
                     String path2 = String.valueOf(Constants.getIndRootFilepath(
                             String.valueOf(this.mavenProject.getBasedir()), testName, i));
                     File rootFile = new File(path2);
@@ -419,15 +363,15 @@ public class CritSearchMojo extends FlakeSyncAbstractMojo {
                             this.originalArgLine, this.mavenProject, this.mavenSession, this.pluginManager,
                             Paths.get(this.baseDir.getAbsolutePath(),
                                     ConfigurationDefaults.DEFAULT_FLAKESYNC_DIR).toString(),
-                            this.localRepository, this.testName, this.delay,
+                            this.localRepository, this.testName, workingDelay,
                             String.valueOf(Constants.getIndRootFilepath(".", testName, i)));
 
+                    // Check if delaying at current location makes the test fail (means it is in region)
                     boolean failed = executeSurefireExecution(null, execution);
-
                     if (failed) {
                         currentLines.add(className + "#" + i);
-                        break;
                     } else {
+                        // Delaying at this line stops the failures, we are at the end of the region
                         if (!currentLines.isEmpty()) {
                             clusters.put(cluster, currentLines);
                             cluster++;
@@ -438,14 +382,14 @@ public class CritSearchMojo extends FlakeSyncAbstractMojo {
                 line = reader.readLine();
             }
             reader.close();
+
+            // Record each region or "cluster" of failing delay locations
             if (!currentLines.isEmpty()) {
                 clusters.put(cluster, currentLines);
             }
-            return upperBoundary;
         } catch (IOException ioe) {
             ioe.printStackTrace();
         }
-        return upperBoundary;
     }
 
     // Helper method to run test with delay at specified location
