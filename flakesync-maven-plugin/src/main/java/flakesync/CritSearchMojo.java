@@ -98,8 +98,6 @@ public class CritSearchMojo extends FlakeSyncAbstractMojo {
                             int maxDelay = 25600;
                             workingDelay *= 2;
                             while (workingDelay <= maxDelay) {
-                                System.out.println("Let's try this again with a longer delay,"
-                                        + " it looks like the test passed: " + workingDelay);
                                 result = runWithDelayAtLoc(itemLocation, workingDelay, threadId, i);
 
                                 if (result < 3) { //We got a failure, we can break
@@ -169,7 +167,7 @@ public class CritSearchMojo extends FlakeSyncAbstractMojo {
                 }
             }
         } catch (Throwable exception) {
-            System.out.println(exception);
+            exception.printStackTrace();
             throw new RuntimeException();
         }
     }
@@ -210,18 +208,13 @@ public class CritSearchMojo extends FlakeSyncAbstractMojo {
     private void writeClustersToFile(BufferedWriter bw) {
         try {
             if (!clusters.keySet().isEmpty()) {
-                System.out.println("Cluster keyset " + clusters.keySet());
                 for (int i = 1; i <= clusters.size(); i++) {
-                    System.out.println("Cluster: " + clusters.get(i));
                     if (clusters.get(i).size() > 1) {
-                        System.out.println("Cluster with more than 1 element");
                         bw.write(clusters.get(i).get(0).trim() + "-"
                                 + clusters.get(i).get(clusters.get(i).size() - 1).trim() + "[" + delay + "]");
                         bw.newLine();
                     } else {
-                        System.out.println("Cluster with < 1 element");
                         if (clusters.get(i).isEmpty()) {
-                            System.out.println("Cluster without element: NO CRITICAL POINT FOUND");
                             return;
                         }
                         bw.write(clusters.get(i).get(0) + "-" + clusters.get(i).get(0)
