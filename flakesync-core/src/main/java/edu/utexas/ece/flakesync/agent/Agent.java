@@ -291,14 +291,6 @@ public class Agent {
                                 }
                             }
                         }
-                    } else if (mode.equals("DELAY_INJECTION_BY_METHOD")) {
-                        if (Utility.stackTraceList.size() > 0) {
-                            String curDir = new File("").getAbsolutePath();
-                            // TODO: Is this even used? Remove if not needed!
-                            /*for (String location: Utility.stackTraceList) {
-                                writeTo("./.flakesync/stackTraceListFromRunMethod.txt", location + "\n");
-                            }*/
-                        }
                     }
                 } catch (IOException ioe) {
                     ioe.printStackTrace();
