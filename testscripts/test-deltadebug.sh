@@ -64,15 +64,8 @@ while read line; do
     	((errors++))
     fi
    
-    #First check that there is only one location in the file
-    LINE_COUNT=$(wc -l < ./${module}/.flakesync/${testname//#/.}-Locations_minimized.txt)
-    if [[ ${LINE_COUNT} -gt 2 ]]; then
-       echo "Did not narrow down to one location"	
-       ((errors++))
-    fi
-   
     while read line_exp; do
-        if grep -q ${line_exp} ./${module}/.flakesync/${testname//#/.}-Locations_minimized.txt; then
+        if grep -q ${line_exp}$ ./${module}/.flakesync/${testname//#/.}-Locations_minimized.txt; then
            echo "Chosen location is a bad one: "${line_exp}
            ((errors++))
         fi

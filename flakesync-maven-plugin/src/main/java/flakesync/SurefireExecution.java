@@ -221,6 +221,13 @@ public class SurefireExecution {
                 Constants.getAllLocationsFilepath(testname)));
     }
 
+    private void addProvidedLocs(String testname) {
+        String properties = (!checkSysPropsDeprecated()) ? ("systemPropertyVariables") : ("systemProperties");
+        Xpp3Dom propertiesNode = addAttributeToConfig(this.domNode, properties, "").getChild(properties);
+        addAttributeToConfig(propertiesNode, "locations", String.valueOf(
+                Constants.getWorkingLocationsFilepath(testname)));
+    }
+
     private void addProcessTimeout(int delay) {
         addAttributeToConfig(this.domNode, "forkedProcessTimeoutInSeconds", String.valueOf(4 * delay));
     }
@@ -262,7 +269,7 @@ public class SurefireExecution {
             SurefireExecution execution = new SurefireExecution(surefire, mavenProject, mavenSession, pluginManager,
                     flakesyncDir, localRepository);
             execution.addTestName(testName);
-            execution.addLocs(testName);
+            execution.addProvidedLocs(testName);
             execution.addDelay(delay + "");
             execution.addWhitelist(testName);
             execution.setupArgline(PHASE.LOCATIONS_MINIMIZER, originalArgLine);
