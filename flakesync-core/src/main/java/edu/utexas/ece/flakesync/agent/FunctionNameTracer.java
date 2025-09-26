@@ -20,7 +20,7 @@ public class FunctionNameTracer extends ClassVisitor {
     public static List<String> methodRangeList = new ArrayList<String>();
 
     public static Set<String> providedLocations = new HashSet<>();
-    public static Set<String> LocationList = new HashSet<>(); // Only used from analyzeRootMethod.sh
+    public static Set<String> locationList = new HashSet<>(); // Only used from analyzeRootMethod.sh
     public static String testName;
 
     private String className;
@@ -47,7 +47,7 @@ public class FunctionNameTracer extends ClassVisitor {
                 BufferedReader reader = new BufferedReader(new FileReader(new File(System.getProperty("locations"))));
                 String line = reader.readLine();
                 while (line != null) {
-                    LocationList.add(line);
+                    locationList.add(line);
                     line = reader.readLine();
                 }
                 reader.close();
@@ -110,7 +110,7 @@ public class FunctionNameTracer extends ClassVisitor {
 
             @Override
             public void visitEnd() {
-                if (LocationList.contains(classLine) && (methName.equals(System.getProperty("methodNameForDelayAtEnd")))) {
+                if (locationList.contains(classLine) && (methName.equals(System.getProperty("methodNameForDelayAtEnd")))) {
                     super.visitMethodInsn(Opcodes.INVOKESTATIC,
                             "edu/utexas/ece/flakesync/agent/Utility", "delay", "()V", false);
                 }
