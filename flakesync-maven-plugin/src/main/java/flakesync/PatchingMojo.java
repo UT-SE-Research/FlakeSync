@@ -32,6 +32,7 @@ import flakesync.common.Level;
 import flakesync.common.Logger;
 import flakesync.patching.InjectFlagInCriticalPoint;
 import flakesync.patching.InjectYieldStatement;
+import flakesync.patching.SavePatch;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
 import org.apache.maven.plugins.annotations.LifecyclePhase;
@@ -41,6 +42,12 @@ import org.apache.maven.plugins.annotations.ResolutionScope;
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+
+import static flakesync.patching.SavePatch.getFilePath;
+import static flakesync.patching.SavePatch.makePatch;
 
 @Mojo(name = "patch", defaultPhase = LifecyclePhase.TEST, requiresDependencyResolution = ResolutionScope.TEST)
 public class PatchingMojo extends FlakeSyncAbstractMojo {
@@ -56,7 +63,7 @@ public class PatchingMojo extends FlakeSyncAbstractMojo {
 
             BufferedReader br = new BufferedReader(boundaryResults);
             String line = br.readLine(); //Skip line with headers
-            while (line != null) {
+            while (line != null && !line.isEmpty()) {
                 if (line.charAt(0) != '#') {
                     String slug = String.valueOf(this.mavenProject.getBasedir());
 
@@ -68,7 +75,14 @@ public class PatchingMojo extends FlakeSyncAbstractMojo {
 
                     //Inject code for critical point
                     String target = critPoint.split("-")[1].split("#")[0];
-                    int targetLine = Integer.parseInt(critPoint.split("-")[1].split("#")[1].split("\\[")[0]);;
+                    int targetLine = Integer.parseInt(critPoint.split("-")[1].split("#")[1].split("\\[")[0]);
+
+                    target = target.split("\\$")[0].replace("/", ".");
+
+                    Path critPath = InjectFlagInCriticalPoint.findJavaFilePath(slug, target);
+                    Path critOriginal = Paths.get(String.valueOf(
+                            InjectFlagInCriticalPoint.findJavaFilePath(slug, target)) + ".orig");
+                    Files.copy(critPath, critOriginal);
 
                     InjectFlagInCriticalPoint.injectFlagInCritPt(slug, target, targetLine);
 
@@ -76,7 +90,31 @@ public class PatchingMojo extends FlakeSyncAbstractMojo {
                     String className = barrPoint.split("#")[0];
                     int lineNum = Integer.parseInt(barrPoint.split("#")[1]);
 
+                    className = className.split("\\$")[0].replace("/", ".");
+
+                    Path barrierPath = InjectFlagInCriticalPoint.findJavaFilePath(slug, className);
+                    Path barrierOriginal = Paths.get(String.valueOf(
+                            InjectFlagInCriticalPoint.findJavaFilePath(slug, className) + ".orig"));
+                    Files.copy(barrierPath, barrierOriginal);
+
                     InjectYieldStatement.injectYieldStatement(slug, target, testName, className, lineNum, threshold);
+
+                    className =  className.split("#")[0];
+                    target = target.split("\\$")[0];
+
+                    System.out.println("hello");
+                    System.out.println(className);
+                    System.out.println(target);
+
+                    //Save the patch file
+                    String originalBarrierFilePath = getFilePath(slug, className, true);
+                    String modifiedBarrierFilePath = String.valueOf(InjectYieldStatement
+                            .findJavaFilePath(slug, className));
+                    makePatch(originalBarrierFilePath, modifiedBarrierFilePath , slug);
+                    String originalCriticFilePath = getFilePath(slug, target, true);
+                    String modifiedCriticFilePath = String.valueOf(InjectFlagInCriticalPoint
+                            .findJavaFilePath(slug, target));
+                    makePatch(originalCriticFilePath, modifiedCriticFilePath, slug);
                 }
                 line = br.readLine();
             }

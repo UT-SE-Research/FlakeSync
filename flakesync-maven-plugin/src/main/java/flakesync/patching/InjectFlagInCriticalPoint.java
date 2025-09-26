@@ -63,8 +63,6 @@ public class InjectFlagInCriticalPoint {
 
     public static void injectFlagInCritPt(String slug, String targetClass, int taLine) throws IOException {
 
-        targetClass = targetClass.split("\\$")[0].replace("/", ".");
-
         String filePath = findJavaFilePath(slug, targetClass).toString();
         System.out.println("Critc Point FILEPATH: " + filePath);
 

@@ -55,7 +55,6 @@ public class InjectYieldStatement {
                                             int targetLine, int threshold) throws IOException {
 
         // Convert class name to path
-        critClassName = critClassName.split("\\$")[0].replace("/", ".");
         className = className.split("\\$")[0].replace("/", ".");
         String filePath = findJavaFilePath(slug, className).toString();
         System.out.println("FILEPATH: " + filePath);
