@@ -22,15 +22,17 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 @Mojo(name = "critsearch", defaultPhase = LifecyclePhase.TEST, requiresDependencyResolution = ResolutionScope.TEST)
 public class CritSearchMojo extends FlakeSyncAbstractMojo {
 
-    private HashSet<String> stackTraceLines = new HashSet<String>();
-    private HashSet<String> roots = new HashSet<String>();
+    private Set<String> stackTraceLines = new HashSet<String>();
+    private Set<String> roots = new HashSet<String>();
     private int delay = 100;
     private boolean beginningFail = false;
-    private HashMap<Integer, ArrayList<String>> clusters = new HashMap<Integer, ArrayList<String>>();
+    private Map<Integer, ArrayList<String>> clusters = new HashMap<Integer, ArrayList<String>>();
 
 
     @Override
@@ -55,65 +57,83 @@ public class CritSearchMojo extends FlakeSyncAbstractMojo {
                 return;
             }
 
-            //Parse the stacktrace
+            // Parse the stacktrace file to get all the locations to iterate through
             stackTraceLines = new HashSet<String>();
             parseStackTrace();
 
-            //Iterate over stacktrace locations
-            HashSet<String> visited = new HashSet<String>();
+            // Iterate over stacktrace locations
+            Set<String> visited = new HashSet<String>();    // Keep track of whether we have seen some exact trace
             for (String line : stackTraceLines) {
-                String[] locs = line.split(",");
-                int threadId = Integer.parseInt(locs[locs.length - 1]);
+                // Check whether we have gone through this exact trace (without thread ID)
+                if (visited.contains(line.substring(0, line.lastIndexOf(",")))) {
+                    continue;
+                }
+                visited.add(line.substring(0, line.lastIndexOf(",")));
+                System.out.println("TRYING OUT TRACE: " + line);
+
+                String[] locs = line.split(",");                        // All elements are comma-delimited
+                int threadId = Integer.parseInt(locs[locs.length - 1]); // Thread ID is the last element
+                String rootLine = "";                                   // rootLine represents the final failing loc
                 for (int i = 0; i < locs.length - 1; i++) {
                     String itemLocation = locs[i];
-                    if (!visited.contains(itemLocation.split("#")[0])) {
-                        visited.add(itemLocation.split("#")[0]);
-                        int workingDelay = delay;
 
-                        String className = itemLocation.split("#")[0];
-                        if (className.contains("$")) {
-                            itemLocation = itemLocation.split("$")[0];
-                        }
+                    int workingDelay = delay;
+                    String className = itemLocation.split("#")[0];
+                    /*if (className.contains("$")) {
+                        className = className.split("\\$")[0];
+                    }*/
+                    String lineNumber = itemLocation.split("#")[1];
+                    String newLoc = className + "#" + lineNumber;
+                    System.out.println("DELAYING AT LOC: " + newLoc);
 
-                        File file = new File(String.valueOf(Constants.getIndLocFilepath(
-                                this.mavenProject.getBasedir().toString(), this.testName, threadId, i)));
-                        try {
-                            file.createNewFile();
-                            FileWriter fw = new FileWriter(file);
-                            BufferedWriter bw = new BufferedWriter(fw);
+                    File file = new File(String.valueOf(Constants.getIndLocFilepath(
+                                    this.mavenProject.getBasedir().toString(), this.testName, threadId, i)));
+                    try {
+                        file.createNewFile();
+                        FileWriter fw = new FileWriter(file);
+                        BufferedWriter bw = new BufferedWriter(fw);
 
-                            bw.write(itemLocation);
-                            bw.newLine();
-                            bw.flush();
-                        } catch (IOException ioe) {
-                            ioe.printStackTrace();
-                        }
+                        bw.write(newLoc);
+                        bw.newLine();
+                        bw.flush();
+                    } catch (IOException ioe) {
+                        ioe.printStackTrace();
+                    }
 
-                        int result = runWithDelayAtLoc(itemLocation, workingDelay, threadId, i);
+                    boolean result = runWithDelayAtLoc(newLoc, workingDelay, threadId, i);
 
-                        if (result == 0) {
-                            System.out.println("Linkage Error!");
-                            break;
-                        } else if (result == 3) { // We need to test longer delays
-                            int maxDelay = 25600;
-                            workingDelay *= 2;
-                            while (workingDelay <= maxDelay) {
-                                result = runWithDelayAtLoc(itemLocation, workingDelay, threadId, i);
+                    if (!result) { // Test passes, we need to try longer delays
+                        int maxDelay = 25600;
+                        workingDelay *= 2;
+                        while (workingDelay <= maxDelay) {
+                            result = runWithDelayAtLoc(newLoc, workingDelay, threadId, i);
 
-                                if (result < 3) { //We got a failure, we can break
-                                    break;
-                                }
-                                workingDelay *= 2;
+                            if (result) { // We got a failure, we can stop
+                                break;
                             }
+                            workingDelay *= 2;
+                        }
+                        // If tried to max delay and still does not fail, then we need to stop
+                        // The previous location is a root
+                        if (!result) {
+                            break;
                         }
                     }
+
+                    rootLine = searchStackTrace(className, ":" + lineNumber);
+                    rootLine += "[" + workingDelay + "]";
+                }
+                // If root was identified, then can add to the list of roots
+                if (!rootLine.isEmpty()) {
+                    roots.add(rootLine);
+                    System.out.println("ROOT: " + rootLine);
                 }
             }
 
-            //Create a results file with all identified root methods
+            // Create a results file with all identified root methods
             writeRootMethodsToFile();
 
-            //Create the FileWriter for writing the critical points to the results file
+            // Create the FileWriter for writing the critical points to the results file
             FileWriter resultsFile = null;
             BufferedWriter bw;
             try {
@@ -125,7 +145,7 @@ public class CritSearchMojo extends FlakeSyncAbstractMojo {
                 throw new RuntimeException(exception);
             }
 
-            //Iterate over each root method to identify specific critical points
+            // Iterate over each root method to identify specific critical points
             visited = new HashSet<String>();
             for (String root : roots) {
                 String[] tmpArr = root.split("/");
@@ -172,7 +192,7 @@ public class CritSearchMojo extends FlakeSyncAbstractMojo {
         }
     }
 
-    private int runWithDelayAtLoc(String loc, int workingDelay, int threadId, int idx) throws Throwable {
+    private boolean runWithDelayAtLoc(String loc, int workingDelay, int threadId, int idx) throws Throwable {
         SurefireExecution cleanExec = SurefireExecution.SurefireFactory.getDelayLocExec(this.surefire, this.originalArgLine,
                 this.mavenProject, this.mavenSession, this.pluginManager,
                 Paths.get(this.baseDir.getAbsolutePath(),
@@ -262,20 +282,24 @@ public class CritSearchMojo extends FlakeSyncAbstractMojo {
             File file = new File(this.mavenProject.getBasedir()
                     + String.valueOf(Constants.getStackTraceFilepath(testName)).substring(1));
             BufferedReader reader = new BufferedReader(new FileReader(file));
-            String parsedInfo = "";
+            StringBuilder parsedInfo = new StringBuilder();
             String line = reader.readLine();
             while (line != null) {
                 String[] data = line.split(",");
-                if (("END").equals(data[1])) {
-                    parsedInfo += data[0];
-                    this.stackTraceLines.add(parsedInfo);
-                    parsedInfo = "";
+                if ("END".equals(data[1])) {
+                    parsedInfo.append(data[0]); // End of the trace is the thread ID
+                    this.stackTraceLines.add(parsedInfo.toString());
+                    parsedInfo.setLength(0);
                 } else {
-                    String tmp = data[1].substring(0, data[1].indexOf('('));
-                    String className = tmp.substring(0, tmp.lastIndexOf('/'));
-                    int lineNumber = Integer.parseInt(data[1].split(":")[1]
+                    String tmp = data[1].substring(0, data[1].indexOf('('));    // Parse out the class+method part
+                    String className = tmp.substring(0, tmp.lastIndexOf('/'));  // Parse out the class name
+                    int lineNumber = Integer.parseInt(data[1].split(":")[1]     // Parse out the line number
                         .substring(0, data[1].split(":")[1].length() - 1));
-                    parsedInfo += (className + "#" + lineNumber + ",");
+                    // Format of element is className#lineNumber
+                    parsedInfo.append(className);
+                    parsedInfo.append("#");
+                    parsedInfo.append(lineNumber);
+                    parsedInfo.append(",");
                 }
                 // Read next line
                 line = reader.readLine();
@@ -424,21 +448,20 @@ public class CritSearchMojo extends FlakeSyncAbstractMojo {
         return upperBoundary;
     }
 
-    private int executeSurefireExecution(SurefireExecution execution, String itemLoc, int threadID)
+    // Helper method to run test with delay at specified location
+    // Return true if it fails, false if otherwise
+    private boolean executeSurefireExecution(SurefireExecution execution, String itemLoc, int threadID)
             throws Throwable {
         try {
             execution.run();
         } catch (MojoExecutionException ex) {
-            String className = itemLoc.split("#")[0];
-            String lineNumber = itemLoc.split("#")[1];
-            String rootLine = searchStackTrace(className, ":" + lineNumber);
-            rootLine += "[" + execution.delay + "]";
-            roots.add(rootLine);
-            return 1;
+            return true;
         }
-        return 3;
+        return false;
     }
 
+    // Helper method to run test
+    // Return true if it fails, false if otherwise
     private boolean executeSurefireExecution(MojoExecutionException allExceptions,
                                              SurefireExecution execution)
                                             throws Throwable {

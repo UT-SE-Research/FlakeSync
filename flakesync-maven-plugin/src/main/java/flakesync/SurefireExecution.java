@@ -83,7 +83,6 @@ public class SurefireExecution {
 
     public void run() throws Throwable {
         try {
-            System.out.println(domNode);
             MojoExecutor.executeMojo(this.surefire, MojoExecutor.goal("test"), domNode,
                     MojoExecutor.executionEnvironment(this.mavenProject, this.mavenSession, this.pluginManager));
         } catch (MojoExecutionException mojoException) {
@@ -175,7 +174,6 @@ public class SurefireExecution {
 
     private boolean checkSysPropsDeprecated() {
         String[] split = this.surefire.getVersion().split("\\.");
-        System.out.println(split[0]);
         float version = Float.parseFloat(split[0]) + (Float.parseFloat(split[1]) / (10 * split[1].length()));
         return version > 2.20;
     }
