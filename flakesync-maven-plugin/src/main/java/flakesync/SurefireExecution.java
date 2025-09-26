@@ -226,6 +226,13 @@ public class SurefireExecution {
         addAttributeToConfig(propertiesNode, "locations", locations);
     }
 
+    private void addProvidedLocs(String testname) {
+        String properties = (!checkSysPropsDeprecated()) ? ("systemPropertyVariables") : ("systemProperties");
+        Xpp3Dom propertiesNode = addAttributeToConfig(this.domNode, properties, "").getChild(properties);
+        addAttributeToConfig(propertiesNode, "locations", String.valueOf(
+                Constants.getWorkingLocationsFilepath(testname)));
+    }
+
     private void addRootMethod(String testname) {
         String properties = (!checkSysPropsDeprecated()) ? ("systemPropertyVariables") : ("systemProperties");
         Xpp3Dom propertiesNode = addAttributeToConfig(this.domNode, properties, "").getChild(properties);
@@ -280,7 +287,7 @@ public class SurefireExecution {
             SurefireExecution execution = new SurefireExecution(surefire, mavenProject, mavenSession, pluginManager,
                     flakesyncDir, localRepository, delay);
             execution.addTestName(testName);
-            execution.addLocs(testName);
+            execution.addProvidedLocs(testName);
             execution.addDelay(delay + "");
             execution.addWhitelist(testName);
             execution.setupArgline(PHASE.LOCATIONS_MINIMIZER, originalArgLine);
