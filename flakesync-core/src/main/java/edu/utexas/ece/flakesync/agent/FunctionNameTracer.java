@@ -47,7 +47,6 @@ public class FunctionNameTracer extends ClassVisitor {
                 BufferedReader reader = new BufferedReader(new FileReader(new File(System.getProperty("locations"))));
                 String line = reader.readLine();
                 while (line != null) {
-                    System.out.println("HMMM=line " + line);
                     LocationList.add(line);
                     line = reader.readLine();
                 }
@@ -65,7 +64,6 @@ public class FunctionNameTracer extends ClassVisitor {
     @Override
     public void visit(int version, int access, String name, String signature, String superName, String[] interfaces) {
         this.className = name;
-        //System.out.println("***CLassName ="+className);
         super.visit(version, access, name, signature, superName, interfaces);
     }
 

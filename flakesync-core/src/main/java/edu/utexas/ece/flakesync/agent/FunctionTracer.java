@@ -34,7 +34,6 @@ public class FunctionTracer extends ClassVisitor {
                     String[] arr = line.split(":", 2); // We are keeping className#lineNumber, only splitting testName
                     providedLocations.add(arr[0]);
                     testName = arr[1];
-                    System.out.println("HI Line =" + line); // Expecting ClassName#LineNumber
                     line = reader.readLine();
                 }
                 reader.close();
@@ -78,9 +77,6 @@ public class FunctionTracer extends ClassVisitor {
             @Override
             public void visitEnd() {
                 if (System.getProperty("rootMethod") != null &&  providedLocations.contains(fullMethodName)) {
-                    System.out.println("Method: " + fullMethodName);
-                    System.out.println("Start Line: " + startLineNumber);
-                    System.out.println("End Line: " + endLineNumber);
                     String startLocation = cn + "#" + startLineNumber;
                     String endLocation = cn + "#" + endLineNumber;
                     methodRangeList.add(startLocation);
