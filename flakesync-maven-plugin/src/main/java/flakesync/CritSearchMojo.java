@@ -69,7 +69,6 @@ public class CritSearchMojo extends FlakeSyncAbstractMojo {
                     continue;
                 }
                 visited.add(line.substring(0, line.lastIndexOf(",")));
-                System.out.println("TRYING OUT TRACE: " + line);
 
                 String[] locs = line.split(",");                        // All elements are comma-delimited
                 int threadId = Integer.parseInt(locs[locs.length - 1]); // Thread ID is the last element
@@ -84,7 +83,6 @@ public class CritSearchMojo extends FlakeSyncAbstractMojo {
                     }*/
                     String lineNumber = itemLocation.split("#")[1];
                     String newLoc = className + "#" + lineNumber;
-                    System.out.println("DELAYING AT LOC: " + newLoc);
 
                     File file = new File(String.valueOf(Constants.getIndLocFilepath(
                                     this.mavenProject.getBasedir().toString(), this.testName, threadId, i)));
@@ -126,7 +124,6 @@ public class CritSearchMojo extends FlakeSyncAbstractMojo {
                 // If root was identified, then can add to the list of roots
                 if (!rootLine.isEmpty()) {
                     roots.add(rootLine);
-                    System.out.println("ROOT: " + rootLine);
                 }
             }
 
