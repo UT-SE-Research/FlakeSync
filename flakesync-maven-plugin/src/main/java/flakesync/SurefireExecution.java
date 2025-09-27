@@ -115,7 +115,7 @@ public class SurefireExecution {
 
     protected Xpp3Dom setReportOutputDirectory(Xpp3Dom configNode, String executionId) {
         configNode = this.addAttributeToConfig(configNode, "reportsDirectory",
-                this.configuration.getExecutionDir().toString());
+                Constants.getExecutionDir(executionId).toString());
         configNode = this.addAttributeToConfig(configNode, "disableXmlReport", "false");
         return configNode;
     }
@@ -255,6 +255,20 @@ public class SurefireExecution {
         addAttributeToConfig(propertiesNode, "executionMonitor", "flag");
     }
 
+    private void addLocs(String testname) {
+        String properties = (!checkSysPropsDeprecated()) ? ("systemPropertyVariables") : ("systemProperties");
+        Xpp3Dom propertiesNode = addAttributeToConfig(this.domNode, properties, "").getChild(properties);
+        addAttributeToConfig(propertiesNode, "locations", String.valueOf(
+                Constants.getAllLocationsFilepath(testname)));
+    }
+
+    private void addProvidedLocs(String testname) {
+        String properties = (!checkSysPropsDeprecated()) ? ("systemPropertyVariables") : ("systemProperties");
+        Xpp3Dom propertiesNode = addAttributeToConfig(this.domNode, properties, "").getChild(properties);
+        addAttributeToConfig(propertiesNode, "locations", String.valueOf(
+                Constants.getWorkingLocationsFilepath(testname)));
+    }
+
     private void addProcessTimeout(int delay) {
         addAttributeToConfig(this.domNode, "forkedProcessTimeoutInSeconds", String.valueOf(4 * delay));
     }
@@ -289,6 +303,7 @@ public class SurefireExecution {
             return execution;
         }
 
+<<<<<<< HEAD
         public static SurefireExecution createDownwardMvnExec(Plugin surefire, String originalArgLine,
                                                               MavenProject mavenProject, MavenSession mavenSession,
                                                               BuildPluginManager pluginManager, String flakesyncDir,
@@ -367,6 +382,21 @@ public class SurefireExecution {
             execution.addMonitorFlag();
             execution.setupArgline(PHASE.BARRIER_POINT_SEARCH, originalArgLine);
             execution.addAgentMode("EXEC_MONITOR");
+=======
+        public static SurefireExecution createDeltaDebugExec(Plugin surefire, String originalArgLine,
+                                                             MavenProject mavenProject, MavenSession mavenSession,
+                                                             BuildPluginManager pluginManager, String flakesyncDir,
+                                                             String localRepository, String testName, int delay) {
+            SurefireExecution execution = new SurefireExecution(surefire, mavenProject, mavenSession, pluginManager,
+                    flakesyncDir, localRepository);
+            execution.addTestName(testName);
+            execution.addProvidedLocs(testName);
+            execution.addDelay(delay + "");
+            execution.addWhitelist(testName);
+            execution.setupArgline(PHASE.LOCATIONS_MINIMIZER, originalArgLine);
+            execution.addAgentMode("DELTA_DEBUG");
+
+>>>>>>> main
             return execution;
         }
     }
