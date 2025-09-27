@@ -38,7 +38,7 @@ public class InjectDelayWithStackTraceTracer extends ClassVisitor {
         }
     }
 
-    public RandomClassTracer(ClassVisitor cv) {
+    public InjectDelayWithStackTraceTracer(ClassVisitor cv) {
         super(Opcodes.ASM9, cv);
     }
 
