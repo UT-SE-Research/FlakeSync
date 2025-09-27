@@ -179,6 +179,7 @@ public class CritSearchMojo extends FlakeSyncAbstractMojo {
 
                     // Try adding delays from beginning of method until it can fail
                     sequentialDebug(workingDelay);
+                    this.delay = workingDelay;
                     writeClustersToFile(bw);
                 }
             }
