@@ -1,4 +1,3 @@
-100
 uk/co/flax/luwak/DocumentBatch#1
 uk/co/flax/luwak/CandidateMatcher#1
 uk/co/flax/luwak/util/ForceNoBulkScoringQuery$1#1

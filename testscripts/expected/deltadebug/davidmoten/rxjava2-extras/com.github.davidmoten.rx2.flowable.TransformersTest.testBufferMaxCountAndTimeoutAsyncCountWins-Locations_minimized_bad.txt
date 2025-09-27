@@ -1,4 +1,3 @@
-100
 com/github/davidmoten/rx2/internal/flowable/FlowableCollectWhile$CollectWhileSubscriber#32
 com/github/davidmoten/rx2/internal/flowable/FlowableInsertTimeout$InsertTimeoutSubscriber#25
 com/github/davidmoten/rx2/internal/flowable/FlowableInsertTimeout$TimeoutAction#27

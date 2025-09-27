@@ -1,3 +1,2 @@
-100
 nl/nlighten/prometheus/tomcat/TomcatJdbcInterceptor#1
 nl/nlighten/prometheus/tomcat/TomcatServletMetricsFilter#1
