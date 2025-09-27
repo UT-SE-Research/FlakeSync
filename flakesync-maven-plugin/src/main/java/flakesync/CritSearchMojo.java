@@ -204,6 +204,7 @@ public class CritSearchMojo extends FlakeSyncAbstractMojo {
             File outputRootMethodsFile = new File(
                     String.valueOf(Constants.getRootMethodResultsFilepath(String.valueOf(this.mavenProject.getBasedir()),
                             this.testName)));
+            outputRootMethodsFile.getParentFile().mkdirs();
             FileWriter outputFileWriter = new FileWriter(outputRootMethodsFile);
 
             BufferedWriter bw = new BufferedWriter(outputFileWriter);
