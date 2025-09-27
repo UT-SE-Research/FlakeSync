@@ -113,7 +113,7 @@ public class SurefireExecution {
 
     protected Xpp3Dom setReportOutputDirectory(Xpp3Dom configNode, String executionId) {
         configNode = this.addAttributeToConfig(configNode, "reportsDirectory",
-                Constants.getExecutionDir(executionId).toString());
+                Constants.getExecutionDir(this.mavenProject.getBasedir().toString(), executionId).toString());
         configNode = this.addAttributeToConfig(configNode, "disableXmlReport", "false");
         return configNode;
     }
@@ -136,7 +136,6 @@ public class SurefireExecution {
     }
 
     protected void setupArgline(PHASE phase, String originalArgLine) {
-
         String pathToJar = this.localRepository;
         // TODO: Encode path to agent in some final static variable for ease of access and potential changes to name/version
         String argLineToSet = "-javaagent:" + pathToJar;
@@ -319,14 +318,13 @@ public class SurefireExecution {
             return execution;
         }
 
-<<<<<<< HEAD
         public static SurefireExecution createDownwardMvnExec(Plugin surefire, String originalArgLine,
                                                               MavenProject mavenProject, MavenSession mavenSession,
                                                               BuildPluginManager pluginManager, String flakesyncDir,
                                                               String localRepository, String testName, int delay,
                                                               String line) {
             SurefireExecution execution = new SurefireExecution(surefire, mavenProject, mavenSession, pluginManager,
-                    flakesyncDir, localRepository);
+                    flakesyncDir, localRepository, delay);
             execution.addTestName(testName);
             execution.addDelay(delay + "");
             execution.addSearchMethodEL();
@@ -342,7 +340,7 @@ public class SurefireExecution {
                                                             String localRepository, String testName, int delay,
                                                             String line) {
             SurefireExecution execution = new SurefireExecution(surefire, mavenProject, mavenSession, pluginManager,
-                    flakesyncDir, localRepository);
+                    flakesyncDir, localRepository, delay);
             execution.addTestName(testName);
             execution.addDelay(delay + "");
             execution.addCodeToIntroVar(line);
@@ -358,7 +356,7 @@ public class SurefireExecution {
                                                         String localRepository, String testName, int delay,
                                                         String startLoc, String yieldPt, int threshold) {
             SurefireExecution execution = new SurefireExecution(surefire, mavenProject, mavenSession, pluginManager,
-                    flakesyncDir, localRepository);
+                    flakesyncDir, localRepository, delay);
             execution.addTestName(testName);
             execution.addDelay(delay + "");
             execution.addCodeToIntroVar(startLoc);
@@ -374,7 +372,7 @@ public class SurefireExecution {
                                                          String localRepository, String testName, int delay,
                                                          String startLoc, String yieldPt) {
             SurefireExecution execution = new SurefireExecution(surefire, mavenProject, mavenSession, pluginManager,
-                    flakesyncDir, localRepository);
+                    flakesyncDir, localRepository, delay);
             execution.addTestName(testName);
             execution.addDelay(delay + "");
             execution.addCodeToIntroVar(startLoc);
@@ -391,14 +389,17 @@ public class SurefireExecution {
                                                       String localRepository, String testName, int delay,
                                                       String line) {
             SurefireExecution execution = new SurefireExecution(surefire, mavenProject, mavenSession, pluginManager,
-                    flakesyncDir, localRepository);
+                    flakesyncDir, localRepository, delay);
             execution.addTestName(testName);
             execution.addDelay(delay + "");
             execution.addCodeToIntroVar(line);
             execution.addMonitorFlag();
             execution.setupArgline(PHASE.BARRIER_POINT_SEARCH, originalArgLine);
             execution.addAgentMode("EXEC_MONITOR");
-=======
+
+            return execution;
+        }
+
         public static SurefireExecution createDeltaDebugExec(Plugin surefire, String originalArgLine,
                                                              MavenProject mavenProject, MavenSession mavenSession,
                                                              BuildPluginManager pluginManager, String flakesyncDir,
@@ -412,7 +413,6 @@ public class SurefireExecution {
             execution.setupArgline(PHASE.LOCATIONS_MINIMIZER, originalArgLine);
             execution.addAgentMode("DELTA_DEBUG");
 
->>>>>>> main
             return execution;
         }
 
