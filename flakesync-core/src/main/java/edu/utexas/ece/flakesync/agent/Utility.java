@@ -133,7 +133,7 @@ public class Utility {
 
     // Helper method to collect the stack trace after a delay
     private static void collectStackTrace(String testName, String className) {
-        className = className.replaceAll("[/]",".");
+        className = className.replaceAll("[/]", ".");
         String[] classNameItems = className.split("#", 2);
         String fileName = String.valueOf(Constants.getStackTraceFilepath(testName));
         try {
