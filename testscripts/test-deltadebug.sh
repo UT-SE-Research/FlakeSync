@@ -78,6 +78,8 @@ while read line; do
        echo "${slug} ${testname} Delta Debug: Fail"
        exitcode=1
     fi
+
+    cd ${CURRENT_DIR}
 done < $1
 
 exit ${exitcode}
