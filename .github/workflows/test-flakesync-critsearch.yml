@@ -4,7 +4,7 @@ name: auto-run-test-flakesync-critsearch
 on: [push, pull_request]
 
 jobs:
-  test-deltadebug:
+  test-critsearch:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
