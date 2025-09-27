@@ -12,7 +12,7 @@ import java.io.IOException;
 import java.util.HashSet;
 import java.util.Set;
 
-public class RandomClassTracer extends ClassVisitor {
+public class InjectDelayWithStackTraceTracer extends ClassVisitor {
 
     public static Set<String> locations = new HashSet<>();
 

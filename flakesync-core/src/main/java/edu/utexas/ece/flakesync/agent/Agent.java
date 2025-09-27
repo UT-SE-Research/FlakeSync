@@ -191,7 +191,7 @@ public class Agent {
                         return writer.toByteArray();
                     } else if (mode.equals("DELAY_INJECTION_BY_LOC")) {
                         if (locationListContains(className)) {
-                            visitor = new RandomClassTracer(writer);
+                            visitor = new InjectDelayWithStackTraceTracer(writer);
                             reader.accept(visitor, 0);
                             return writer.toByteArray();
                         }
