@@ -20,12 +20,12 @@ public class Utility {
 
     public static void yield() {
         long start = System.currentTimeMillis();
-        //int timeout;
+        long end = start;
         while ((testVarCount < threshold) &&
-                (System.currentTimeMillis() < start + (delay * 2000))) {
+                ((end = System.currentTimeMillis()) < start + (delay * 2000))) {
             Thread.yield();
         }
-        if(System.currentTimeMillis() > start + (delay * 2000)){
+        if (end > start + (delay * 2000)) {
             throw new RuntimeException("Yield timed out");
         }
         testVarCount = 0;
