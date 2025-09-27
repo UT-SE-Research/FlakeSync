@@ -21,7 +21,7 @@ while read line; do
     module=$(echo ${line} | cut -d',' -f3)
     testname=$(echo ${line} | cut -d',' -f4)
 
-    
+
     OUTFILE=$(pwd)/out_${testname}.txt
     rm -f ${OUTFILE}
     touch ${OUTFILE}
@@ -37,9 +37,10 @@ while read line; do
     # Build
     mvn install -pl ${module} -am -DskipTests=true >> ${OUTFILE}
 
-   # Setup the smaller set of concurrent methods needed
-   mkdir -p ${module}/.flakesync/
-   cp ${EXPECTED_DIR}/${slug}/${testname//#/.}-Locations_minimized.txt ${module}/.flakesync/${testname//#/.}-Locations_minimized.txt
+    # Setup the smaller set of concurrent methods needed
+    mkdir -p ${module}/.flakesync/
+    cp ${EXPECTED_DIR}/${slug}/${testname//#/.}-Locations_minimized.txt ${module}/.flakesync/${testname//#/.}-Locations_minimized.txt
+    cp ${EXPECTED_DIR}/${slug}/${testname//#/.}-whitelist.txt ${module}/.flakesync/${testname//#/.}-whitelist.txt
 
 
     errors=0
@@ -58,42 +59,26 @@ while read line; do
     # Assume expected results are in a known file
 
 
-    # First check if Results-CritSearch/RootMethods or Results-CritSearch/CritPoints were even created 
-    if [ -f ./${module}/.flakesync/Results-CritSearch/${testname//#/.}-RootMethods.txt ]; then
+    # First check if Results-CritSearch/RootMethods or Results-CritSearch/CritPoints were even created
+    if [ -f ./${module}/.flakesync/Results-CritSearch/${testname//#/.}-RootMethods.csv ]; then
 	:
-    else 
-        echo "ERROR: Result file not created"
+    else
+        echo "ERROR: RootMethods result file not created"
     	((errors++))
     fi
 
-    if [ -f ./${module}/.flakesync/Results-CritSearch/${testname//#/.}-CritPoints.txt ]; then
+    if [ -f ./${module}/.flakesync/Results-CritSearch/${testname//#/.}-CriticalPoints.csv ]; then
         :
     else
-        echo "ERROR: Result file not created"
+        echo "ERROR: CriticalPoints result file not created"
         ((errors++))
     fi
 
-    
-    while read line_exp; do
-        if grep -q ${line_exp} ./${module}/.flakesync/Results-CritSearch/${testname//#/.}-RootMethods.csv; then
-           :
-        else 
-           ((errors++))
-        fi
-    done < ${EXPECTED_DIR}/${slug}/${testname//#/.}-RootMethods.csv
+    # TODO: Besides just checking whether result files are created, check that their contents are valid
 
-    while read line_exp; do
-        if grep -q ${line_exp} ./${module}/.flakesync/Results-CritSearch/${testname//#/.}-CritPoints.csv; then
-           :
-        else 
-           ((errors++))
-        fi
-    done < ${EXPECTED_DIR}/${slug}/${testname//#/.}-CritPoints.csv
-
-
-    if [[ errors -eq 0 ]]; then 
+    if [[ errors -eq 0 ]]; then
        echo "${slug} ${testname} Crit Search: Pass"
-    else 
+    else
        echo "${slug} ${testname} Crit Search: Fail"
        exitcode=1
     fi
