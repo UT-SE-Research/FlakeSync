@@ -55,6 +55,8 @@ import java.util.List;
 @Mojo(name = "deltadebug", defaultPhase = LifecyclePhase.TEST, requiresDependencyResolution = ResolutionScope.TEST)
 public class DeltaDebugMojo extends FlakeSyncAbstractMojo {
 
+    protected static final int MAX_DELAY = 25600;
+
     protected int delay;
 
     @Override
@@ -77,6 +79,7 @@ public class DeltaDebugMojo extends FlakeSyncAbstractMojo {
 
         //Run delta debugging
         locations = deltaDebug.deltaDebug(locations, 2);
+        this.delay = deltaDebug.delay;  // Get the delay after delta debugging finished
         writeLocationsToFile(locations);
     }
 
@@ -86,7 +89,7 @@ public class DeltaDebugMojo extends FlakeSyncAbstractMojo {
         try {
             FileWriter outputLocationsFile = new FileWriter(file);
             BufferedWriter bw = new BufferedWriter(outputLocationsFile);
-            bw.write(delay + "\n");
+            bw.write(this.delay + "\n");
 
             for (String location : locs) {
                 bw.write(location);
@@ -148,6 +151,55 @@ public class DeltaDebugMojo extends FlakeSyncAbstractMojo {
             this.localRepository = localRepository;
             this.testName = testName;
             this.delay = delay;
+        }
+
+        // Redo core delta debug logic since we need to rerun with higher delays in middle
+        @Override
+        public List<String> deltaDebug(final List<String> elements, int granularity) {
+            this.iterations++;
+
+            // If n granularity is greater than number of tests, then finished, simply return passed in tests
+            if (elements.size() < granularity) {
+                return elements;
+            }
+
+           // Cut the elements into n equal chunks and try each chunk
+            int chunkSize = (int)Math.round((double)(elements.size()) / granularity);
+            List<List<String>> chunks = new ArrayList<>();
+            for (int i = 0; i < elements.size(); i += chunkSize) {
+                List<String> chunk = new ArrayList<>();
+                List<String> otherChunk = new ArrayList<>();
+                // Create chunk starting at this iteration
+                int endpoint = Math.min(elements.size(), i + chunkSize);
+                chunk.addAll(elements.subList(i, endpoint));
+
+                // Complement chunk are elements before and after this current chunk
+                otherChunk.addAll(elements.subList(0, i));
+                otherChunk.addAll(elements.subList(endpoint, elements.size()));
+
+                while (this.delay <= MAX_DELAY) {
+                    // Try to other, complement chunk first, with theory that valid elements are closer to end
+                    if (checkValid(otherChunk)) {
+                        return deltaDebug(otherChunk, 2);   // If works, then delta debug some more the complement chunk
+                    }
+                    // Check if running this chunk works
+                    if (checkValid(chunk)) {
+                        return deltaDebug(chunk, 2);        // If works, then delta debug some more this chunk
+                    }
+                    this.delay *= 2;
+                    System.out.println("DELTA UPDATE DELAY: " + this.delay);
+                }
+            }
+            // If size is equal to number of chunks, we are finished, cannot go down more
+            if (elements.size() == granularity) {
+                return elements;
+            }
+            // If not chunk/complement work, increase granularity and try again
+            if (elements.size() < granularity * 2) {
+                return deltaDebug(elements, elements.size());
+            } else {
+                return deltaDebug(elements, granularity * 2);
+            }
         }
 
         @Override
