@@ -4,7 +4,7 @@ name: auto-run-test-flakesync-delayeverywhere
 on: [push, pull_request]
 
 jobs:
-  test-concurrentmethods:
+  test-delayeverywhere:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
