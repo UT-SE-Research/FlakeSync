@@ -1,10 +1,10 @@
 
-name: auto-run-test-flakesync-delayeverywhere
+name: auto-run-test-flakesync-critsearch
 
 on: [push, pull_request]
 
 jobs:
-  test-delayeverywhere:
+  test-critsearch:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
@@ -19,4 +19,4 @@ jobs:
         run: mvn install -B
 
       - name: test
-        run: cd testscripts/; bash test-delayeverywhere.sh input/inputs.csv
+        run: cd testscripts/; bash test-critsearch.sh input/inputs.csv

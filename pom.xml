@@ -15,9 +15,7 @@
     <module>flakesync-core</module>
     <module>flakesync-maven-plugin</module>
     <module>flakesync-utils</module>
-      <module>barrierSearch-core</module>
-      <!--<module>localization-core</module> -->
-    <!--<module>barrierSearch-core</module> -->
+    <module>barrierSearch-core</module>
   </modules>
 
   <dependencyManagement>
@@ -83,6 +81,11 @@
         <groupId>org.twdata.maven</groupId>
         <artifactId>mojo-executor</artifactId>
         <version>2.2.0</version>
+      </dependency>
+      <dependency>
+        <groupId>jakarta.xml.bind</groupId>
+        <artifactId>jakarta.xml.bind-api</artifactId>
+        <version>4.0.2</version>
       </dependency>
     </dependencies>
   </dependencyManagement>
