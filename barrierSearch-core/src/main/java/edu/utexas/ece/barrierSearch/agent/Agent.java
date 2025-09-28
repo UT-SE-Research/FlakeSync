@@ -5,7 +5,12 @@ import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.ClassWriter;
 
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.lang.instrument.ClassFileTransformer;
 import java.lang.instrument.IllegalClassFormatException;
 import java.lang.instrument.Instrumentation;
@@ -56,68 +61,71 @@ public class Agent {
             @Override
             public byte[] transform(ClassLoader classLoader, String s, Class<?> aClass,
                                     ProtectionDomain protectionDomain, byte[] bytes) throws IllegalClassFormatException {
-                if (s == null) return null;
+                if (s == null) {
+                    return null;
+                }
                 s = s.replaceAll("[/]",".");
 
                 String codeToIntroduceVariable = System.getProperty("CodeToIntroduceVariable");
-                String codeUnderTest=codeToIntroduceVariable.split("#")[0]; // code-under-test class
+                String codeUnderTest = codeToIntroduceVariable.split("#")[0]; // code-under-test class
                 final ClassReader reader = new ClassReader(bytes);
-                final ClassWriter writer = new ClassWriter(reader, ClassWriter.COMPUTE_FRAMES|ClassWriter.COMPUTE_MAXS );
+                final ClassWriter writer = new ClassWriter(reader, ClassWriter.COMPUTE_FRAMES |
+                        ClassWriter.COMPUTE_MAXS);
                 ClassVisitor visitor;
 
                 String mode = System.getProperty("agentmode");
                 if (mode.equals("BARRIER_ST") && !blackListContains(s)) {
-                    //System.out.println("running for stacktrace");
                     visitor = new StackTraceTracer(writer, codeToIntroduceVariable);
                     reader.accept(visitor, 0);
                     return writer.toByteArray();
                 } else if (mode.equals("EXEC_MONITOR") && !blackListContains(s)) {
-                    synchronized (edu.utexas.ece.barrierSearch.agent.Utility.class) {
+                    synchronized (Utility.class) {
                         visitor = new ExecutionMonitorTracer(writer, codeToIntroduceVariable);
                         reader.accept(visitor, 0);
                     }
                     return writer.toByteArray();
-                } else if ((mode.equals("DOWNWARD_MVN"))
-                        && !blackListContains(s)) {
-                    synchronized (edu.utexas.ece.barrierSearch.agent.Utility.class) {
-                        System.out.println("Starting search method steps");
+                } else if ((mode.equals("DOWNWARD_MVN")) && !blackListContains(s)) {
+                    synchronized (Utility.class) {
                         visitor = new MethodEndLineTracer(writer, codeToIntroduceVariable);
                         reader.accept(visitor, 0);
                     }
                     return writer.toByteArray();
                 }
-                else if(mode.equals("ADD_YIELD_PT1") || mode.equals("ADD_YIELD_PT2")){
-                    String yieldPointInfo = System.getProperty("YieldingPoint"); // YIELDING_POINT may or may not be a test_method's location
-                    String tcls=yieldPointInfo.split("#")[0]; // test-class
+                else if (mode.equals("ADD_YIELD_PT1") || mode.equals("ADD_YIELD_PT2")) {
+                    // YIELDING_POINT may or may not be a test_method's location
+                    String yieldPointInfo = System.getProperty("YieldingPoint");
+                    String tcls = yieldPointInfo.split("#")[0]; // test-class
 
-                    if ((s.equals(codeUnderTest) || s.equals(tcls)) && !blackListContains(s)) { // Need substring match, test-class name is not coming here
-                        visitor = new RandomClassTracer(writer, yieldPointInfo, codeToIntroduceVariable);
+                    // Need substring match, test-class name is not coming here
+                    if ((s.equals(codeUnderTest) || s.equals(tcls)) && !blackListContains(s)) {
+                        visitor = new DelayAndYieldInjector(writer, yieldPointInfo, codeToIntroduceVariable);
                         reader.accept(visitor, 0);
 
-                        if (RandomClassTracer.methodAndLine != null) {
-                            System.out.println("Entered block to make file");
+                        if (DelayAndYieldInjector.methodAndLine != null) {
                             try {
-                                java.io.BufferedWriter bf = new java.io.BufferedWriter(new java.io.FileWriter(
+                                BufferedWriter bf = new BufferedWriter(new FileWriter(
                                         String.valueOf(Constants.getSearchMethodANDLineFilepath(".",
                                                 System.getProperty(".test")))
                                 ));
-                                bf.write(RandomClassTracer.methodAndLine +"\n");
+                                bf.write(DelayAndYieldInjector.methodAndLine + "\n");
                                 bf.flush();
-                            } catch (Exception ex) {}
-
+                            } catch (IOException ioe) {
+                                ioe.printStackTrace();
+                            }
                         }
 
-                        try{
-                            java.io.BufferedWriter bfFlag = new java.io.BufferedWriter(new java.io.FileWriter(
+                        try {
+                            BufferedWriter bfFlag = new BufferedWriter(new FileWriter(
                                     String.valueOf(Constants.getYieldResultFilepath(".",
                                             System.getProperty(".test")))
                             ));
-                            bfFlag.write("Delay="+ RandomClassTracer.delayed +"\n");
-                            bfFlag.write("Update="+ RandomClassTracer.updateFlag +"\n");
-                            bfFlag.write("Yield="+ RandomClassTracer.yieldEntered +"\n");
+                            bfFlag.write("Delay=" + DelayAndYieldInjector.delayed + "\n");
+                            bfFlag.write("Update=" + DelayAndYieldInjector.updateFlag + "\n");
+                            bfFlag.write("Yield=" + DelayAndYieldInjector.yieldEntered + "\n");
                             bfFlag.flush();
-
-                        } catch (Exception ex) {}
+                        } catch (IOException ioe) {
+                            ioe.printStackTrace();
+                        }
                         return writer.toByteArray();
                     }
                 }
@@ -161,50 +169,4 @@ public class Agent {
 
         Runtime.getRuntime().addShutdownHook(hook);
     }
-
-   /*private static void registerShutdownHook() {
-        Runtime.getRuntime().addShutdownHook(new Thread() {
-            @Override
-            public void run() {
-                System.out.println("JVM shutting down...");
-            }
-        });
-    }
-    private static void writeTo(final String outputPath, String output) {
-        System.err.println("output from writeTo="+output);
-        if (!Files.exists(Paths.get(outputPath))) {
-            try {
-                //System.err.println("outputPath="+outputPath);
-                Files.createFile(Paths.get(outputPath));
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        }
-        try {
-            //System.err.println("outputPath="+outputPath + ",output="+output);
-            Files.write(Paths.get(outputPath), output.getBytes(StandardCharsets.UTF_8),
-                    StandardOpenOption.APPEND);
-        } catch (IOException e) {
-            e.printStackTrace(System.err);
-        }
-    }
-    private static void printStartStopTimes() {
-        final long start = System.currentTimeMillis();
-        //Thread hook = new Thread() {
-        //    @Override
-        //    public void run() {
-                //try{
-                System.err.println("1st Stop at .............................,methodAndLine = " + RandomClassTracer.methodAndLine );
-                String methAndLine=RandomClassTracer.methodAndLine;
-                System.err.println("Stop at .............................,methodAndLine = " + methAndLine );
-                String curDir = new File("").getAbsolutePath();
-                System.err.println("************"+curDir);
-                writeTo(curDir + "MethodAndLine.txt", methAndLine + "\n");
-                //} catch (Exception e) {
-               //e.printStackTrace();
-                //}
-            }
-       // };
-        //Runtime.getRuntime().addShutdownHook(hook);
-   // }*/
 }

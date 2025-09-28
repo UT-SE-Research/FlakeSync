@@ -22,8 +22,8 @@ import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
-import java.util.Set;
 import java.util.Scanner;
+import java.util.Set;
 
 @Mojo(name = "barrierpointsearch", defaultPhase = LifecyclePhase.TEST,
         requiresDependencyResolution = ResolutionScope.TEST)
@@ -55,10 +55,6 @@ public class BarrierPointMojo extends FlakeSyncAbstractMojo {
                 String endLoc = line.split("-")[1].split("\\[")[0];
                 int delay = Integer.parseInt(line.split("\\[")[1].substring(0,
                         line.split("\\[")[1].length() - 1));
-                System.out.println("READING LINE : " + line);
-                System.out.println("FIRST: " + firstLoc);
-                System.out.println("END: " + endLoc);
-                System.out.println("DELAY: " + delay);
 
                 if (firstLoc.contains("Test")) { //Boundary exists in the test code
                     SurefireExecution execution = SurefireExecution.SurefireFactory.createDownwardMvnExec(
@@ -91,7 +87,7 @@ public class BarrierPointMojo extends FlakeSyncAbstractMojo {
                             this.originalArgLine, this.mavenProject, this.mavenSession, this.pluginManager,
                             Paths.get(this.baseDir.getAbsolutePath(),
                                     ConfigurationDefaults.DEFAULT_FLAKESYNC_DIR).toString(),
-                            this.localRepository, this.testName, delay, firstLoc.replace("/", "."));
+                            this.localRepository, this.testName, delay, endLoc.replace("/", "."));
                     executeSurefireExecution(null, stackTraceExec);
 
                     // Need to programmatically parse stack trace
@@ -137,6 +133,7 @@ public class BarrierPointMojo extends FlakeSyncAbstractMojo {
                             // Iterate upwards towards the start of the method, line-by-line
                             for (int ln = Integer.parseInt(yieldPoint.split("#")[1]); ln >= beginning; ln--) {
                                 String yieldingPoint = classN + "#" + ln;
+                                System.out.println("TRYING TO YIELD AT: " + yieldingPoint);
 
                                 // Execute test with the delay and the new potential yield point
                                 // (no need to output starting line anymore)

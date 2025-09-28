@@ -22,10 +22,10 @@ public class Utility {
         long start = System.currentTimeMillis();
         long end = start;
         while ((testVarCount < threshold) &&
-                ((end = System.currentTimeMillis()) < start + (delay * 2000))) {
+                ((end = System.currentTimeMillis()) < start + (delay * 200))) {
             Thread.yield();
         }
-        if (end > start + (delay * 2000)) {
+        if (end > start + (delay * 200)) {
             throw new RuntimeException("Yield timed out");
         }
         testVarCount = 0;
