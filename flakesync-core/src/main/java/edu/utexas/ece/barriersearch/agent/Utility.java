@@ -1,4 +1,4 @@
-package edu.utexas.ece.barrierSearch.agent;
+package edu.utexas.ece.barriersearch.agent;
 
 public class Utility {
 
@@ -21,8 +21,8 @@ public class Utility {
     public static void yield() {
         long start = System.currentTimeMillis();
         long end = start;
-        while ((testVarCount < threshold) &&
-                ((end = System.currentTimeMillis()) < start + (delay * 200))) {
+        while ((testVarCount < threshold)
+                && ((end = System.currentTimeMillis()) < start + (delay * 200))) {
             Thread.yield();
         }
         if (end > start + (delay * 200)) {

@@ -1,4 +1,4 @@
-package edu.utexas.ece.barrierSearch.agent;
+package edu.utexas.ece.barriersearch.agent;
 
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.Label;
@@ -8,8 +8,11 @@ import org.objectweb.asm.Opcodes;
 import java.util.Arrays;
 
 public class DelayAndYieldInjector extends ClassVisitor {
-    private String className;
-    private boolean visitedField;
+    public static boolean updateFlag = false;
+    public static boolean visitMethodInsn = false;
+    public static boolean yieldEntered = false;
+    public static boolean delayed = false;
+    public static String methodAndLine;
 
     static String codeUnderTestClass = "";
     static String codeUnderTestClassName = "";
@@ -19,15 +22,13 @@ public class DelayAndYieldInjector extends ClassVisitor {
     static int delayCount = 0;
     static int failureReproducingPoint = 0;
 
-    public static boolean updateFlag = false;
-    public static boolean visitMethodInsn = false;
-    public static boolean yieldEntered = false;
-    public static boolean delayed = false;
+    private String className;
+    private boolean visitedField;
+
     private boolean isMatchWithSpecialTests;
-    private String[] specialTestArr = {"info.archinnov.achilles.test.integration.tests.ClusteredEntityIT#should_persist_with_ttl", "info.archinnov.achilles.test.integration.tests.ClusteredEntityIT#should_update_with_ttl"};
-    // For Achilles project only
-    boolean withinLambda = false;
-    public static String methodAndLine;
+    private String[] specialTestArr =
+        {"info.archinnov.achilles.test.integration.tests.ClusteredEntityIT#should_persist_with_ttl",
+        "info.archinnov.achilles.test.integration.tests.ClusteredEntityIT#should_update_with_ttl"};
 
     public DelayAndYieldInjector(ClassVisitor cv, String testClassInfo, String codeToIntroduceVariable) {
         super(Opcodes.ASM9, cv);
@@ -71,10 +72,10 @@ public class DelayAndYieldInjector extends ClassVisitor {
                     flag = 1;
                 }
 
-                System.out.println("visitLineNumber,methodAndLine="+methodAndLine);
+                System.out.println("visitLineNumber,methodAndLine=" + methodAndLine);
                 if (System.getProperty("searchForMethodName") != null && testClassInfo.equals(classLine)) {
                     methodAndLine = methName + "#" + methodStartLineNum;
-                    System.out.println("visitLineNumber,methodAndLine="+methodAndLine);
+                    System.out.println("visitLineNumber,methodAndLine=" + methodAndLine);
                 }
 
                 super.visitLineNumber(line, start);
@@ -84,24 +85,23 @@ public class DelayAndYieldInjector extends ClassVisitor {
             public void visitMethodInsn(int opcode, String owner, String name, String desc, boolean itf) {
                 String methodName = owner + "." + name + desc;
                 String location = cn_dot + "#" + lineNumber;
-                System.out.println("100. location="+location + " " + yieldEntered);
+                System.out.println("100. location=" + location + " " + yieldEntered);
 
                 if (System.getProperty("searchForMethodName") == null
                         || !System.getProperty("searchForMethodName").equals("search")) {
                     // These 2 branches should be mutually exclusive
-                    System.out.println("****visitMethodInsn,location="+location + "testCLassInfo=" + testClassInfo);
+                    System.out.println("****visitMethodInsn,location=" + location + "testCLassInfo=" + testClassInfo);
 
                     // For code under test, first we need to add delay
                     if (cn_dot.equals(codeUnderTestClassName) && lineNumber == failureReproducingPoint) {
-                        System.out.println("visitMethodInsn,Delaying,cn_dot="+cn_dot + ", failure_reproducing_point="+failureReproducingPoint + ",delayed="+delayed);
+                        System.out.println("visitMethodInsn,Delaying,cn_dot=" + cn_dot + ", failure_reproducing_point="
+                            + failureReproducingPoint + ",delayed=" + delayed);
                         super.visitMethodInsn(Opcodes.INVOKESTATIC, "edu/utexas/ece/barrierSearch/agent/Utility",
                             "delay", "()V", false);
                         delayed = true;
                         super.visitMethodInsn(opcode, owner, name, desc, itf);
-                        System.out.println("UPDATE FLAG?? " + updateFlag);
                     } else if (cn_dot.equals(codeUnderTestClassName) && lineNumber > failureReproducingPoint
                             && !updateFlag) {
-                        System.out.println("UPDATE FLAG AT LINE: " + cn_dot + "#" + lineNumber);
                         // Updating after the line
                         super.visitMethodInsn(Opcodes.INVOKESTATIC, "edu/utexas/ece/barrierSearch/agent/Utility",
                             "update", "()V", false);
@@ -109,7 +109,8 @@ public class DelayAndYieldInjector extends ClassVisitor {
                         super.visitMethodInsn(opcode, owner, name, desc, itf);
                     // For test code, need to insert at yield point
                     } else if (location.equals(testClassInfo) && !yieldEntered) {
-                        System.out.println("Yielding FROM RANDOMTRACER........=,location="+location +",testClassInfo="+testClassInfo);
+                        System.out.println("Yielding FROM RANDOMTRACER........=,location=" + location
+                            + ",testClassInfo=" + testClassInfo);
                         super.visitMethodInsn(Opcodes.INVOKESTATIC, "edu/utexas/ece/barrierSearch/agent/Utility",
                             "yield", "()V", false);
                         yieldEntered = true;
@@ -121,47 +122,6 @@ public class DelayAndYieldInjector extends ClassVisitor {
                     super.visitMethodInsn(opcode, owner, name, desc, itf);
                 }
             }
-
-            /*
-            @Override
-            public void visitInsn(int opcode) { // Modify lines that are not method calls?
-                String location = cn_dot + "#" + lineNumber;
-                if (System.getProperty("searchForMethodName") == null
-                        || !System.getProperty("searchForMethodName").equals("search")) {
-                    System.out.println("visitLineNumber,***," + testClassInfo + ",location="+location + ", yieldEntered="+yieldEntered);
-
-                    // For code under test, first we need to add delay
-                    if (cn_dot.equals(codeUnderTestClassName) && lineNumber == failureReproducingPoint) { // for code under test, First we need to add delay
-                        System.out.println("visitInsn,Delaying,cn_dot="+cn_dot + ", failure_reproducing_point="+failureReproducingPoint + ",delayed="+delayed);
-                        super.visitMethodInsn(Opcodes.INVOKESTATIC, "edu/utexas/ece/barrierSearch/agent/Utility",
-                            "delay", "()V", false);
-                        delayed = true;
-                        super.visitInsn(opcode);
-                    } else if (cn_dot.equals(codeUnderTestClassName) && lineNumber > failureReproducingPoint
-                            && !updateFlag) {
-                        System.out.println("UPDATE FLAG AT LINE: " + cn_dot + "#" + lineNumber);
-                        // Updating after the line
-                        super.visitMethodInsn(Opcodes.INVOKESTATIC, "edu/utexas/ece/barrierSearch/agent/Utility",
-                            "update", "()V", false);
-                        updateFlag = true;
-                        super.visitInsn(opcode);
-                    // For test code, need to insert at yield point
-                    } else if (location.equals(testClassInfo) && !yieldEntered) {
-                        System.out.println("visitInsn Yielding......., opcode="+opcode);
-                        super.visitMethodInsn(Opcodes.INVOKESTATIC, "edu/utexas/ece/barrierSearch/agent/Utility",
-                            "yield", "()V", false);
-                        yieldEntered = true;
-                        super.visitInsn(opcode);
-                        System.out.println("visitInsn, after Yielding......., lineNumber=" + lineNumber + ", testLine="+testLine);
-                    } else {
-                        System.out.println("I am else");
-                        super.visitInsn(opcode);
-                    }
-                }
-                else {
-                    super.visitInsn(opcode);
-                }
-            }*/
         };
     }
 }
