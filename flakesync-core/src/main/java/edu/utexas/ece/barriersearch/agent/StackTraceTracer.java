@@ -51,7 +51,7 @@ public class StackTraceTracer extends ClassVisitor {
                 if ((System.getProperty("stackTraceCollect") != null) && cn_dot.equals(codeUnderTestClassName)
                         &&  (lineNumber == codeUnderTestLineNumber)) {
                     delayed = true;
-                    super.visitMethodInsn(Opcodes.INVOKESTATIC, "edu/utexas/ece/barrierSearch/agent/Utility",
+                    super.visitMethodInsn(Opcodes.INVOKESTATIC, "edu/utexas/ece/flakesync/agent/Utility",
                         "delay", "()V", false);
                 }
                 super.visitMethodInsn(opcode, owner, name, desc, itf);
@@ -63,7 +63,7 @@ public class StackTraceTracer extends ClassVisitor {
                 if ((System.getProperty("stackTraceCollect") != null) && cn_dot.equals(codeUnderTestClassName)
                         && (lineNumber == codeUnderTestLineNumber)) {
                     delayed = true;
-                    super.visitMethodInsn(Opcodes.INVOKESTATIC, "edu/utexas/ece/barrierSearch/agent/Utility",
+                    super.visitMethodInsn(Opcodes.INVOKESTATIC, "edu/utexas/ece/flakesync/agent/Utility",
                         "delay", "()V", false);
                 }
                 super.visitInsn(opcode);

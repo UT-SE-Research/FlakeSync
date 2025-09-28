@@ -58,7 +58,7 @@ public class ExecutionMonitorTracer extends ClassVisitor {
                     + failureReproducingPoint + !lineCounted);
                 if (cn_dot.equals(codeUnderTestClassName) && lineNumber == failureReproducingPoint && !lineCounted ) {
                     System.out.println("visitMethodInsn, counter");
-                    super.visitMethodInsn(Opcodes.INVOKESTATIC, "edu/utexas/ece/barrierSearch/agent/Utility",
+                    super.visitMethodInsn(Opcodes.INVOKESTATIC, "edu/utexas/ece/flakesync/agent/Utility",
                         "counter", "()V", false);
                     lineCounted = true;
                 }
@@ -70,7 +70,7 @@ public class ExecutionMonitorTracer extends ClassVisitor {
                 String location = cn_dot + "#" + lineNumber;
                 if (cn_dot.equals(codeUnderTestClassName) && lineNumber == failureReproducingPoint && !lineCounted) {
                     System.out.println("visitInsn, counter");
-                    super.visitMethodInsn(Opcodes.INVOKESTATIC, "edu/utexas/ece/barrierSearch/agent/Utility",
+                    super.visitMethodInsn(Opcodes.INVOKESTATIC, "edu/utexas/ece/flakesync/agent/Utility",
                         "counter", "()V", false);
                     lineCounted = true;
                 }

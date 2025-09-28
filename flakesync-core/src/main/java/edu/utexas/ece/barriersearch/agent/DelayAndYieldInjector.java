@@ -96,14 +96,14 @@ public class DelayAndYieldInjector extends ClassVisitor {
                     if (cn_dot.equals(codeUnderTestClassName) && lineNumber == failureReproducingPoint) {
                         System.out.println("visitMethodInsn,Delaying,cn_dot=" + cn_dot + ", failure_reproducing_point="
                             + failureReproducingPoint + ",delayed=" + delayed);
-                        super.visitMethodInsn(Opcodes.INVOKESTATIC, "edu/utexas/ece/barrierSearch/agent/Utility",
+                        super.visitMethodInsn(Opcodes.INVOKESTATIC, "edu/utexas/ece/flakesync/agent/Utility",
                             "delay", "()V", false);
                         delayed = true;
                         super.visitMethodInsn(opcode, owner, name, desc, itf);
                     } else if (cn_dot.equals(codeUnderTestClassName) && lineNumber > failureReproducingPoint
                             && !updateFlag) {
                         // Updating after the line
-                        super.visitMethodInsn(Opcodes.INVOKESTATIC, "edu/utexas/ece/barrierSearch/agent/Utility",
+                        super.visitMethodInsn(Opcodes.INVOKESTATIC, "edu/utexas/ece/flakesync/agent/Utility",
                             "update", "()V", false);
                         updateFlag = true;
                         super.visitMethodInsn(opcode, owner, name, desc, itf);
@@ -111,7 +111,7 @@ public class DelayAndYieldInjector extends ClassVisitor {
                     } else if (location.equals(testClassInfo) && !yieldEntered) {
                         System.out.println("Yielding FROM RANDOMTRACER........=,location=" + location
                             + ",testClassInfo=" + testClassInfo);
-                        super.visitMethodInsn(Opcodes.INVOKESTATIC, "edu/utexas/ece/barrierSearch/agent/Utility",
+                        super.visitMethodInsn(Opcodes.INVOKESTATIC, "edu/utexas/ece/flakesync/agent/Utility",
                             "yield", "()V", false);
                         yieldEntered = true;
                         super.visitMethodInsn(opcode, owner, name, desc, itf);

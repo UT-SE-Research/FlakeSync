@@ -1,5 +1,6 @@
 package edu.utexas.ece.barriersearch.agent;
 
+import edu.utexas.ece.flakesync.agent.Utility;
 import flakesync.Constants;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;

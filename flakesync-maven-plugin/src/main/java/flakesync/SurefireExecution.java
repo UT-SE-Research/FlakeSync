@@ -44,7 +44,6 @@ import org.twdata.maven.mojoexecutor.MojoExecutor;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import static flakesync.common.ConfigurationDefaults.BARRIER_SEARCH_JAR;
 import static flakesync.common.ConfigurationDefaults.CORE_JAR;
 
 public class SurefireExecution {
@@ -138,14 +137,7 @@ public class SurefireExecution {
     protected void setupArgline(PHASE phase, String originalArgLine) {
         String pathToJar = this.localRepository;
         // TODO: Encode path to agent in some final static variable for ease of access and potential changes to name/version
-        String argLineToSet = "-javaagent:" + pathToJar;
-        if (phase == PHASE.LOCATIONS_MINIMIZER) {
-            argLineToSet += CORE_JAR;
-        } else if (phase == PHASE.CRITICAL_POINT_SEARCH) {
-            argLineToSet += CORE_JAR;
-        } else if (phase == PHASE.BARRIER_POINT_SEARCH) {
-            argLineToSet += BARRIER_SEARCH_JAR;
-        }
+        String argLineToSet = "-javaagent:" + pathToJar + CORE_JAR;
 
         for (Xpp3Dom node : this.domNode.getChildren()) {
             if ("argLine".equals(node.getName()) && !node.getValue().contains(argLineToSet)) {
