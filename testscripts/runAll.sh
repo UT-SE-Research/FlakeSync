@@ -55,24 +55,24 @@ while read line; do
 
     ####Patching
     start_time=$(date +%s.%N)
-    mvn edu.utexas.ece:flakesync-maven-plugin:1.0-SNAPSHOT:patch -Dflakesync.testName=${test_name} -pl $module
+    #mvn edu.utexas.ece:flakesync-maven-plugin:1.0-SNAPSHOT:patch -Dflakesync.testName=${test_name} -pl $module
     end_time=$(date +%s.%N)
     duration_ns_patch=$(echo "scale=2; ${end_time} - ${start_time}" | bc)
 
     end_time=$(date +%s%N) # Capture nanoseconds for end time of plugin
 
-    duration_ns=$((end_time - start_time))
-    duration_ms=$((duration_ns / 1000000))
+    duration_ns=$(echo "scale=2; ${end_time} - ${start_time}" | bc)
 
 
     #echo "End-to-end plugin execution duration: ${duration_ms}ms"
+    echo "End-to-end duration:  ${duration_ns}"
     echo "Duration of each mojo:"
-    echo "Concurrent method finder: ${TIME_CM}"
-    echo "Delay at all locations: ${TIME_DA}"
-    echo "Delta Debugger: ${TIME_DD}"
-    echo "Critical Point Search: ${TIME_CS}"
-    echo "Barrier Point Search: ${TIME_BS}"
-    echo "Patching: ${TIME_P}"
+    echo "Concurrent method finder: $duration_ns_conc_meth"
+    echo "Delay at all locations: $duration_ns_delay_inject"
+    echo "Delta Debugger: $duration_ns_dd"
+    echo "Critical Point Search: $duration_ns_critsearch"
+    echo "Barrier Point Search: $duration_ns_barrierpointsearch"
+    echo "Patching: $duration_ns_patch"
 
     echo "$slug,$sha,$test_name,$duration_ns_conc_meth,$duration_ns_delay_inject,$duration_ns_dd,$duration_ns_critsearch,$duration_ns_barrierpointsearch,$duration_ns_patch" >> "$currentDir/$results/Time_Result.csv"
 done < $1
