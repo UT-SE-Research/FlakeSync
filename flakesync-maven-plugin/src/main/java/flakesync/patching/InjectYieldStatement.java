@@ -1,10 +1,16 @@
-import java.io.IOException;
-import java.nio.file.*;
-import java.util.*;
-import java.util.stream.Stream;
+package flakesync.patching;
+
 import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Stream;
 
 public class InjectYieldStatement {
+
     public static Path findJavaFilePath(String slug, String className) throws IOException {
         String classFileName = className.substring(className.lastIndexOf('.') + 1) + ".java";
 
@@ -16,6 +22,7 @@ public class InjectYieldStatement {
                 .orElseThrow(() -> new IOException("Could not find Java file for class: " + className));
         }
     }
+
     public static void main(String[] args) throws IOException {
         if (args.length != 4 || !args[0].contains("#")) {
             System.err.println("Usage: java InjectPrintStatement <ClassName#LineNumber>");
@@ -38,7 +45,7 @@ public class InjectYieldStatement {
         System.out.println("TESTNAME: " + testName);
 
         // Convert class name to path
-        String filePath = findJavaFilePath(slug, className).toString(); //slug+ "src/test/java/" + className.replace('.', '/') + ".java";
+        String filePath = findJavaFilePath(slug, className).toString();
         System.out.println("FILEPATH: " + filePath);
         Path path = Paths.get(filePath);
         List<String> lines = Files.readAllLines(path);
@@ -47,7 +54,7 @@ public class InjectYieldStatement {
             System.err.println("Invalid target line number. File has " + lines.size() + " lines.");
             System.exit(1);
         }
-        
+
         // Preserve indentation of the original line
         String target = lines.get(targetLine - 1);
         String indent = target.replaceAll("^(\\s*).*", "$1");
@@ -55,17 +62,17 @@ public class InjectYieldStatement {
         // Inject print statement
         //String injected = indent + "System.out.println(\"[Injected before line " + targetLine + "]\");";
         List<String> injectedLines = new ArrayList<>();
-        injectedLines.add(indent + "while (!"+targetClass+".getExecutedStatus()) {");
+        injectedLines.add(indent + "while (!" + targetClass + ".getExecutedStatus()) {");
         injectedLines.add(indent + "    Thread.yield();");
         injectedLines.add(indent + "}");
 
         // Find a safe insertion point for yield block
         int insertLine = targetLine - 1;
         // If the target line is in the middle of a statement, move up to the start of the statement
-        while (insertLine > 0 && !lines.get(insertLine).trim().isEmpty() &&
-               !lines.get(insertLine).trim().endsWith(";") &&
-               !lines.get(insertLine).trim().endsWith("{") &&
-               !lines.get(insertLine).trim().endsWith("}")) {
+        while (insertLine > 0 && !lines.get(insertLine).trim().isEmpty()
+                && !lines.get(insertLine).trim().endsWith(";")
+                && !lines.get(insertLine).trim().endsWith("{")
+                && !lines.get(insertLine).trim().endsWith("}")) {
             insertLine--;
         }
         // Insert yield block before the statement
@@ -99,9 +106,9 @@ public class InjectYieldStatement {
         // Find indentation of the first code line after the opening brace
         String nextLineIndent = "";
         for (int i = braceLine + 1; i < lines.size(); i++) {
-            String l = lines.get(i);
-            if (!l.trim().isEmpty()) {
-                nextLineIndent = l.replaceAll("^(\\s*).*", "$1");
+            String line = lines.get(i);
+            if (!line.trim().isEmpty()) {
+                nextLineIndent = line.replaceAll("^(\\s*).*", "$1");
                 break;
             }
         }
