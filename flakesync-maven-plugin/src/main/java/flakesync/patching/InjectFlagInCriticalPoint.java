@@ -38,15 +38,12 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Stream;
 
-/*import com.github.javaparser.*;
-import com.github.javaparser.ast.*;
-import com.github.javaparser.ast.body.*;
-import com.github.javaparser.ast.stmt.*;
-import com.github.javaparser.ast.expr.*;
-import com.github.javaparser.ast.Modifier;
-import com.github.javaparser.ast.type.*;*/
-
 public class InjectFlagInCriticalPoint {
+
+    public static final String NUM_EXECUTIONS_FIELD_NAME = "numExecutionsFlakeSync";
+    public static final String RESET_METHOD_NAME = "resetFlakeSync()";
+    public static final String GET_EXECUTION_STATUS_METHOD_NAME = "getExecutedStatusFlakeSync()";
+
     public static Path findJavaFilePath(String slug, String className) throws IOException {
         // Use only the outer class name for the filename
         String outerClassName = className.substring(className.lastIndexOf('.') + 1).split("\\$")[0];
@@ -62,22 +59,19 @@ public class InjectFlagInCriticalPoint {
     }
 
     public static void injectFlagInCritPt(String slug, String targetClass, int taLine) throws IOException {
-
         String filePath = findJavaFilePath(slug, targetClass).toString();
-        System.out.println("Critc Point FILEPATH: " + filePath);
 
         // --- Text-based injection for minimal changes ---
         try {
             String source = new String(Files.readAllBytes(Paths.get(filePath)));
-            boolean needsField = !source.contains("private static volatile int numExecutions");
-            boolean needsReset = !source.contains("public static void resetFlakesync()");
-            boolean needsGetStatus = !source.contains("public static int getExecutedStatus()");
+            boolean needsField = !source.contains("private static volatile int " + NUM_EXECUTIONS_FIELD_NAME);
+            boolean needsReset = !source.contains("public static void " + RESET_METHOD_NAME);
+            boolean needsGetStatus = !source.contains("public static int " + GET_EXECUTION_STATUS_METHOD_NAME);
 
             // 1. Inject field and helpers FIRST (always add 5 lines for helpers)
-            int linesAdded = 0;
-            int insertLine = 0;
-            int absoluteInsertLine = -1;
+            int insertLine = 0; // Line where the additional lines need to be inserted
             if (needsField || needsReset || needsGetStatus) {
+                // TODO: Currently assume standard case of one class in the Java file
                 String className = targetClass.substring(targetClass.lastIndexOf('.') + 1);
                 int classIdx = source.indexOf("class " + className);
                 if (classIdx == -1) {
@@ -87,81 +81,92 @@ public class InjectFlagInCriticalPoint {
                 if (braceIdx == -1) {
                     throw new RuntimeException("Class opening brace not found");
                 }
+
                 int afterBrace = braceIdx + 1;
-                String[] before = source.substring(0, afterBrace).split("\n", -1);
+                // Lines up to the first opening brace, e.g., imports, class definition
+                String[] beforeLines = source.substring(0, afterBrace).split("\n", -1);
+                // Lines after the first opening brace, e.g., all the definitions, including final closing brace
                 String[] afterLines = source.substring(afterBrace).split("\n");
-                String indent = null;
+
+                List<String> newLines = new ArrayList<>(Arrays.asList(beforeLines));
+                String indent = "    ";
+                boolean injected = false;
                 for (int i = 0; i < afterLines.length; i++) {
-                    String lne = afterLines[i];
-                    String trimmed = lne.trim();
+                    String line = afterLines[i];
+                    String trimmed = line.trim();
+                    // Found place to insert new definitions, as early as possible
                     if (!trimmed.isEmpty() && !trimmed.startsWith("//") && !trimmed.startsWith("/*")
-                            && !trimmed.startsWith("*") && !trimmed.equals("}")) {
-                        int ws = 0;
-                        while (ws < lne.length() && (lne.charAt(ws) == ' ' || lne.charAt(ws) == '\t')) {
-                            ws++;
+                            && !trimmed.startsWith("*") && !trimmed.equals("}") && !injected) {
+                        // First determine how much indentation to add, by grabbing up to index of first non-whitespace
+                        int whitespace = 0;
+                        while (whitespace < line.length() && (line.charAt(whitespace) == ' '
+                                || line.charAt(whitespace) == '\t')) {
+                            whitespace++;
                         }
-                        indent = lne.substring(0, ws);
-                        insertLine = i;
-                        break;
-                    }
-                }
-                if (indent == null) {
-                    indent = "    ";
-                }
-                StringBuilder inject = new StringBuilder();
-                inject.append(indent).append("private static volatile int numExecutions;\n\n");
-                inject.append(indent).append("public static void resetFlakesync() { numExecutions = 0; }\n");
-                inject.append(indent).append("public static int getExecutedStatus() { return numExecutions; }\n");
-                // Always add 5 lines for helpers (1 field + 1 blank + 2 methods + 1 blank)
-                linesAdded = 5;
-                absoluteInsertLine = before.length + insertLine;
-                List<String> newLines = new ArrayList<>(Arrays.asList(before));
-                for (int i = 0; i < afterLines.length; i++) {
-                    if (i == insertLine) {
-                        String injectStr = inject.toString().replaceAll("\\n$", "");
-                        newLines.add(injectStr);
+                        indent = line.substring(0, whitespace);
+
+                        // Always add 5 lines for helpers (1 field + 1 blank + 2 methods + 1 blank)
+                        StringBuilder inject = new StringBuilder();
+
+                        // Append new field definition to measure number of times executed
+                        inject.append(indent).append("private static volatile int ");
+                        inject.append(NUM_EXECUTIONS_FIELD_NAME);
+                        inject.append(";");
+                        newLines.add(inject.toString());
+                        newLines.add("");
+
+                        // Append new method definition to reset the field
+                        inject.setLength(0);
+                        inject.append(indent).append("public static void ");
+                        inject.append(RESET_METHOD_NAME);
+                        inject.append(" { ");
+                        inject.append(NUM_EXECUTIONS_FIELD_NAME);
+                        inject.append(" = 0; }");
+                        newLines.add(inject.toString());
+
+                        // Append new method definition to get the field value
+                        inject.setLength(0);
+                        inject.append(indent).append("public static int ");
+                        inject.append(GET_EXECUTION_STATUS_METHOD_NAME);
+                        inject.append(" { return ");
+                        inject.append(NUM_EXECUTIONS_FIELD_NAME);
+                        inject.append("; }");
+                        newLines.add(inject.toString());
+
+                        injected = true;
                     }
                     newLines.add(afterLines[i]);
                 }
                 source = String.join("\n", newLines);
             }
 
-            // 2. Insert hasExecuted = true; at the user-specified lineNumber + 5 (do not remove any line)
+            // 2. Insert hasExecuted = true; at the user-specified lineNumber + 5 (since we added 5 new lines)
             String[] lines = source.split("\n", -1);
-            int targetLine = taLine - 1 + 5;
+            int targetLine = taLine - 1 + 5;    // Subtract 1 for 0-index; 5 is hard-coded number of new lines added
             System.out.println("[DEBUG] User requested lineNumber (1-based): " + taLine);
             System.out.println("[DEBUG] Inserting at shifted line (1-based): " + (targetLine + 1));
             if (targetLine >= 0 && targetLine <= lines.length) {
                 // Insert (not replace) at the correct line
                 String indent = "";
-                if (targetLine > 0 && targetLine <= lines.length) {
-                    String refLine = lines[targetLine - 1];
-                    int ws = 0;
-                    while (ws < refLine.length() && (refLine.charAt(ws) == ' ' || refLine.charAt(ws) == '\t')) {
-                        ws++;
-                    }
-                    indent = refLine.substring(0, ws);
+                String refLine = lines[targetLine];
+
+                // First determine how much indentation to add, by grabbing up to index of first non-whitespace
+                int whitespace = 0;
+                while (whitespace < refLine.length() && (refLine.charAt(whitespace) == ' '
+                        || refLine.charAt(whitespace) == '\t')) {
+                    whitespace++;
                 }
+                indent = refLine.substring(0, whitespace);
+
                 List<String> newLines = new ArrayList<>(Arrays.asList(lines));
-                newLines.add(targetLine, indent + "numExecutions++;");
+                newLines.add(targetLine, indent + NUM_EXECUTIONS_FIELD_NAME + "++;");
                 lines = newLines.toArray(new String[0]);
                 System.out.println("[DEBUG] Inserted numExecutions++; at line (1-based): " + (targetLine + 1));
             }
             Files.write(Paths.get(filePath), String.join("\n", lines).getBytes());
             System.out.println("numExecutions++; inserted at lineNumber + 5, preserving all original code.");
-        } catch (Exception exc) {
-            exc.printStackTrace();
-            System.exit(1);
+        } catch (Exception ex) {
+            ex.printStackTrace();
         }
-    }
-
-    private static int countChar(String str, char cha) {
-        int count = 0;
-        for (char ch : str.toCharArray()) {
-            if (ch == cha) {
-                count++;
-            }
-        }
-        return count;
     }
 }

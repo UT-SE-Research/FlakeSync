@@ -39,6 +39,10 @@ public class Constants {
         return Paths.get(baseDir, DEFAULT_FLAKESYNC_DIR, executionId);
     }
 
+    public static Path getFlakeSyncDir(String baseDir) {
+        return Paths.get(baseDir, DEFAULT_FLAKESYNC_DIR);
+    }
+
     public static Path getConcurrentMethodsFilepath(String testName) {
         String fileName = testName.replace("#", ".") + "-" + CONCURRENT_METHODS_FILE;
         return Paths.get(".", DEFAULT_FLAKESYNC_DIR, fileName);

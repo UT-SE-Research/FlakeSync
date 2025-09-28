@@ -1,6 +1,5 @@
 package flakesync.patching;
 
-
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -20,7 +19,7 @@ public class SavePatch {
 
     public static void makePatch(String originalFilePath, String modifiedFilePath, String patchDir) {
         System.out.println("Generating patch for: " + originalFilePath + " and " + modifiedFilePath);
-        Path patchDirectory = Paths.get(patchDir, ".patch");
+        Path patchDirectory = Paths.get(patchDir, "patch");
         try {
             if (!Files.exists(patchDirectory)) {
                 Files.createDirectory(patchDirectory);

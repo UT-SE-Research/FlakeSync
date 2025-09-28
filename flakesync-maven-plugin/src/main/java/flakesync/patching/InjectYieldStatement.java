@@ -10,40 +10,29 @@ import java.util.List;
 import java.util.stream.Stream;
 
 public class InjectYieldStatement {
-    public static Path findJavaFilePath(String slug, String className) throws IOException {
-        String classFileName = className.substring(className.lastIndexOf('.') + 1) + ".java";
-
-        try (Stream<Path> stream = Files.walk(Paths.get(slug))) {
-            return stream
-                .filter(path -> path.getFileName().toString().equals(classFileName))
-                .filter(path -> path.toString().replace(File.separatorChar, '.').contains(className))
-                .findFirst()
-                .orElseThrow(() -> new IOException("Could not find Java file for class: " + className));
-        }
-    }
 
     public static void injectYieldStatement(String slug, String targetClass, String testName, String className,
                                             int targetLine, int threshold) throws IOException {
         System.out.println("TESTNAME: " + testName);
 
         // Convert class name to path
-        String filePath = findJavaFilePath(slug, className).toString();
+        String filePath = InjectFlagInCriticalPoint.findJavaFilePath(slug, className).toString();
         System.out.println("FILEPATH: " + filePath);
         Path path = Paths.get(filePath);
         List<String> lines = Files.readAllLines(path);
 
         if (targetLine < 1 || targetLine > lines.size()) {
-            System.err.println("Invalid target line number. File has " + lines.size() + " lines.");
-            System.exit(1);
+            throw new RuntimeException("Invalid target line number. File has " + lines.size() + " lines.");
         }
 
         // Preserve indentation of the original line
         String target = lines.get(targetLine - 1);
-        String indent = target.replaceAll("^(\\s*).*", targetClass);
+        String indent = target.replaceAll("^(\\s*).*", "$1");
 
-        // Inject print statement
+        // Inject yield statement
         List<String> injectedLines = new ArrayList<>();
-        injectedLines.add(indent + "while (" + targetClass + ".getExecutedStatus() < " + threshold + ") {");
+        injectedLines.add(indent + "while (" + targetClass + "."
+            + InjectFlagInCriticalPoint.GET_EXECUTION_STATUS_METHOD_NAME + " < " + threshold + ") {");
         injectedLines.add(indent + "    Thread.yield();");
         injectedLines.add(indent + "}");
 
@@ -51,55 +40,55 @@ public class InjectYieldStatement {
         int insertLine = targetLine - 1;
         // If the target line is in the middle of a statement, move up to the start of the statement
         while (insertLine > 0 && !lines.get(insertLine).trim().isEmpty()
-               && !lines.get(insertLine).trim().endsWith(";")
-               && !lines.get(insertLine).trim().endsWith("{")
-               && !lines.get(insertLine).trim().endsWith("}")) {
+               && !lines.get(insertLine - 1).trim().endsWith(";")
+               && !lines.get(insertLine - 1).trim().endsWith("{")
+               && !lines.get(insertLine - 1).trim().endsWith("}")) {
             insertLine--;
         }
-        // Insert yield block before the statement
-        lines.addAll(insertLine + 1, injectedLines);
+        // Insert yield block after the insert point (some line before the target line)
+        // The insertLine is a line number (1-index), so we insert one line after it index-wise
+        lines.addAll(insertLine, injectedLines);
 
         System.out.println(lines);
 
-        // ===== Inject reset() at the beginning of the test method =====
-        int methodLine = -1;
+        // Inject reset() at the beginning of the test method
+        int methodLineIndex = -1;
         for (int i = 0; i < lines.size(); i++) {
             if (lines.get(i).contains("void " + testName.split("#")[1] + "(")) {
-                methodLine = i;
+                methodLineIndex = i;
                 break;
             }
         }
 
-        if (methodLine == -1) {
-            System.err.println("Could not find method: " + testName);
-            System.exit(1);
+        if (methodLineIndex == -1) {
+            throw new RuntimeException("Could not find test method: " + testName);
         }
 
         // Find the line with the opening brace of the method
-        int braceLine = methodLine;
-        while (braceLine < lines.size() && !lines.get(braceLine).contains("{")) {
-            braceLine++;
+        int braceLineIndex = methodLineIndex;
+        while (braceLineIndex < lines.size() && !lines.get(braceLineIndex).contains("{")) {
+            braceLineIndex++;
         }
 
-        if (braceLine >= lines.size()) {
-            System.err.println("Opening brace not found for method: " + testName);
-            System.exit(1);
+        if (braceLineIndex >= lines.size()) {
+            throw new RuntimeException("Opening brace not found");
         }
 
         // Find indentation of the first code line after the opening brace
         String nextLineIndent = "";
-        for (int i = braceLine + 1; i < lines.size(); i++) {
+        for (int i = braceLineIndex + 1; i < lines.size(); i++) {
             String line = lines.get(i);
             if (!line.trim().isEmpty()) {
-                nextLineIndent = line.replaceAll("^(\\s*).*", targetClass);
+                nextLineIndent = line.replaceAll("^(\\s*).*", "$1");
                 break;
             }
         }
-        // If no code line found, fallback to indentation after brace
+        // If no code line found, fallback to indentation after brace, with four spaces
         if (nextLineIndent.isEmpty()) {
-            nextLineIndent = lines.get(braceLine).replaceAll("^(\\s*).*", targetClass) + "    ";
+            nextLineIndent = lines.get(braceLineIndex).replaceAll("^(\\s*).*", "$1") + "    ";
         }
-        lines.add(braceLine + 1, nextLineIndent + targetClass + ".reset();");
+        lines.add(braceLineIndex + 1, nextLineIndent + targetClass + "."
+            + InjectFlagInCriticalPoint.RESET_METHOD_NAME + ";");
 
         // Save file
         Files.write(path, lines);

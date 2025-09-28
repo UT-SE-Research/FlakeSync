@@ -62,7 +62,7 @@ public class PatchingMojo extends FlakeSyncAbstractMojo {
                     String.valueOf(this.mavenProject.getBasedir()), testName)));
 
             BufferedReader br = new BufferedReader(boundaryResults);
-            String line = br.readLine(); //Skip line with headers
+            String line = br.readLine(); // Skip line with headers
             while (line != null && !line.isEmpty()) {
                 if (line.charAt(0) != '#') {
                     String slug = String.valueOf(this.mavenProject.getBasedir());
@@ -70,47 +70,60 @@ public class PatchingMojo extends FlakeSyncAbstractMojo {
                     String[] lineItems = line.split(",");
                     String critPoint = lineItems[1];
                     String barrPoint = lineItems[2];
-                    System.out.println("threshold " + lineItems[3]);
                     int threshold = Integer.parseInt(lineItems[3]);
 
-                    //Inject code for critical point
+                    // Inject code for critical point
+
+                    // Find the right class to modify
                     String target = critPoint.split("-")[1].split("#")[0];
                     int targetLine = Integer.parseInt(critPoint.split("-")[1].split("#")[1].split("\\[")[0]);
-
                     target = target.split("\\$")[0].replace("/", ".");
 
+                    // Find the corresponding Java file, saving the original file to revert later
                     Path critPath = InjectFlagInCriticalPoint.findJavaFilePath(slug, target);
                     Path critOriginal = Paths.get(String.valueOf(
                             InjectFlagInCriticalPoint.findJavaFilePath(slug, target)) + ".orig");
                     Files.copy(critPath, critOriginal);
 
+                    // Inject the code into the Java file
                     InjectFlagInCriticalPoint.injectFlagInCritPt(slug, target, targetLine);
 
-                    //Inject code for barrier point
+                    // Inject code for barrier point
+
+                    // Find the right class to modify
                     String className = barrPoint.split("#")[0];
                     int lineNum = Integer.parseInt(barrPoint.split("#")[1]);
-
                     className = className.split("\\$")[0].replace("/", ".");
 
+                    // Find the corresponding Java file, saving the original file to revert later
                     Path barrierPath = InjectFlagInCriticalPoint.findJavaFilePath(slug, className);
                     Path barrierOriginal = Paths.get(String.valueOf(
                             InjectFlagInCriticalPoint.findJavaFilePath(slug, className) + ".orig"));
                     Files.copy(barrierPath, barrierOriginal);
 
+                    // Inject the code into the Java file
                     InjectYieldStatement.injectYieldStatement(slug, target, testName, className, lineNum, threshold);
 
                     className =  className.split("#")[0];
                     target = target.split("\\$")[0];
 
-                    //Save the patch file
+                    // Save the patch file
                     String originalBarrierFilePath = getFilePath(slug, className, true);
-                    String modifiedBarrierFilePath = String.valueOf(InjectYieldStatement
+                    String modifiedBarrierFilePath = String.valueOf(InjectFlagInCriticalPoint
                             .findJavaFilePath(slug, className));
-                    makePatch(originalBarrierFilePath, modifiedBarrierFilePath , slug);
+                    makePatch(originalBarrierFilePath, modifiedBarrierFilePath,
+                        Constants.getFlakeSyncDir(slug.toString()).toString());
                     String originalCriticFilePath = getFilePath(slug, target, true);
                     String modifiedCriticFilePath = String.valueOf(InjectFlagInCriticalPoint
                             .findJavaFilePath(slug, target));
-                    makePatch(originalCriticFilePath, modifiedCriticFilePath, slug);
+                    makePatch(originalCriticFilePath, modifiedCriticFilePath,
+                        Constants.getFlakeSyncDir(slug.toString()).toString());
+
+                    // Reset all the files
+                    Files.copy(critOriginal, critPath);
+                    Files.delete(critOriginal);
+                    Files.copy(barrierOriginal, barrierPath);
+                    Files.delete(barrierOriginal);
                 }
                 line = br.readLine();
             }
