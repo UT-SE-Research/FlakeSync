@@ -80,10 +80,6 @@ public class FunctionNameTracer extends ClassVisitor {
             public void visitLineNumber(int line, Label start) {
                 lineNumber = line;
                 classLine = cn + "#" + line;
-
-                if (System.getProperty("searchForMethodName") != null &&  providedLocations.contains(classLine)) {
-                    System.out.println("CONTAINING-METHOD-NAME =" + methName); // DO NOT REMOVE THIS LINE, NEEDED FOR SCRIPT
-                }
                 super.visitLineNumber(line, start);
             }
 

@@ -72,10 +72,8 @@ public class DelayAndYieldInjector extends ClassVisitor {
                     flag = 1;
                 }
 
-                System.out.println("visitLineNumber,methodAndLine=" + methodAndLine);
                 if (System.getProperty("searchForMethodName") != null && testClassInfo.equals(classLine)) {
                     methodAndLine = methName + "#" + methodStartLineNum;
-                    System.out.println("visitLineNumber,methodAndLine=" + methodAndLine);
                 }
 
                 super.visitLineNumber(line, start);
@@ -85,17 +83,11 @@ public class DelayAndYieldInjector extends ClassVisitor {
             public void visitMethodInsn(int opcode, String owner, String name, String desc, boolean itf) {
                 String methodName = owner + "." + name + desc;
                 String location = cn_dot + "#" + lineNumber;
-                System.out.println("100. location=" + location + " " + yieldEntered);
 
                 if (System.getProperty("searchForMethodName") == null
                         || !System.getProperty("searchForMethodName").equals("search")) {
-                    // These 2 branches should be mutually exclusive
-                    System.out.println("****visitMethodInsn,location=" + location + "testCLassInfo=" + testClassInfo);
-
                     // For code under test, first we need to add delay
                     if (cn_dot.equals(codeUnderTestClassName) && lineNumber == failureReproducingPoint) {
-                        System.out.println("visitMethodInsn,Delaying,cn_dot=" + cn_dot + ", failure_reproducing_point="
-                            + failureReproducingPoint + ",delayed=" + delayed);
                         super.visitMethodInsn(Opcodes.INVOKESTATIC, "edu/utexas/ece/flakesync/agent/Utility",
                             "delay", "()V", false);
                         delayed = true;
@@ -109,8 +101,6 @@ public class DelayAndYieldInjector extends ClassVisitor {
                         super.visitMethodInsn(opcode, owner, name, desc, itf);
                     // For test code, need to insert at yield point
                     } else if (location.equals(testClassInfo) && !yieldEntered) {
-                        System.out.println("Yielding FROM RANDOMTRACER........=,location=" + location
-                            + ",testClassInfo=" + testClassInfo);
                         super.visitMethodInsn(Opcodes.INVOKESTATIC, "edu/utexas/ece/flakesync/agent/Utility",
                             "yield", "()V", false);
                         yieldEntered = true;

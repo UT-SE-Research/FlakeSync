@@ -54,10 +54,7 @@ public class ExecutionMonitorTracer extends ClassVisitor {
             public void visitMethodInsn(int opcode, String owner, String name, String desc, boolean itf) {
                 String methodName = owner + "." + name + desc;
                 String location = cn_dot + "#" + lineNumber;
-                System.out.println("OUTSIDE: " + cn_dot + codeUnderTestClassName + " " + lineNumber + " "
-                    + failureReproducingPoint + !lineCounted);
                 if (cn_dot.equals(codeUnderTestClassName) && lineNumber == failureReproducingPoint && !lineCounted ) {
-                    System.out.println("visitMethodInsn, counter");
                     super.visitMethodInsn(Opcodes.INVOKESTATIC, "edu/utexas/ece/flakesync/agent/Utility",
                         "counter", "()V", false);
                     lineCounted = true;
@@ -69,7 +66,6 @@ public class ExecutionMonitorTracer extends ClassVisitor {
             public void visitInsn(int opcode) {
                 String location = cn_dot + "#" + lineNumber;
                 if (cn_dot.equals(codeUnderTestClassName) && lineNumber == failureReproducingPoint && !lineCounted) {
-                    System.out.println("visitInsn, counter");
                     super.visitMethodInsn(Opcodes.INVOKESTATIC, "edu/utexas/ece/flakesync/agent/Utility",
                         "counter", "()V", false);
                     lineCounted = true;
