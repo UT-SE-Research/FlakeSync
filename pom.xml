@@ -15,7 +15,6 @@
     <module>flakesync-core</module>
     <module>flakesync-maven-plugin</module>
     <module>flakesync-utils</module>
-    <module>barrierSearch-core</module>
   </modules>
 
   <dependencyManagement>
