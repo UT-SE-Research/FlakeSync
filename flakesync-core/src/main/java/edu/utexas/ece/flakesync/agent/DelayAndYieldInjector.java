@@ -1,4 +1,4 @@
-package edu.utexas.ece.barriersearch.agent;
+package edu.utexas.ece.flakesync.agent;
 
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.Label;

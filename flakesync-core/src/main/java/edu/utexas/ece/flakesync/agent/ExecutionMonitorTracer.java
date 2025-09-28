@@ -1,24 +1,25 @@
-package edu.utexas.ece.barriersearch.agent;
+package edu.utexas.ece.flakesync.agent;
 
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.Label;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
 
-public class StackTraceTracer extends ClassVisitor {
+
+public class ExecutionMonitorTracer extends ClassVisitor {
     static String codeUnderTestClass = "";
     static String codeUnderTestClassName = "";
     static String codeToIntroduceVariable = "";
+    static int failureReproducingPoint = 0;
     static int codeUnderTestLineNumber = 0;
 
     private String className;
-    private boolean visitedField;
-    private boolean delayed = false;
 
-    public StackTraceTracer(ClassVisitor cv, String codeToIntroduceVariable) {
+    public ExecutionMonitorTracer(ClassVisitor cv, String codeToIntroduceVariable) {
         super(Opcodes.ASM9, cv);
         this.codeToIntroduceVariable = codeToIntroduceVariable;
         codeUnderTestClassName = codeToIntroduceVariable.split("#")[0];
+        failureReproducingPoint = Integer.parseInt(codeToIntroduceVariable.split("#")[1]);
         codeUnderTestLineNumber = Integer.parseInt(codeToIntroduceVariable.split("#")[1]);
     }
 
@@ -33,14 +34,19 @@ public class StackTraceTracer extends ClassVisitor {
         final String cn = this.className;
         final String cn_dot = cn.replace("/",".");
         final String containingMethod = cn + "." + name + desc;
+        final String methName = name;
         MethodVisitor methodVisitor = super.visitMethod(access, name, desc, signature, exceptions);
-
         return new MethodVisitor(Opcodes.ASM9, methodVisitor) {
             int lineNumber;
+            String  classLine;
+            int methodStartLineNum;
+            boolean lineCounted = false;
 
             @Override
             public void visitLineNumber(int line, Label start) {
                 lineNumber = line;
+                classLine = cn_dot + "#" + line;
+                lineCounted = false;
                 super.visitLineNumber(line, start);
             }
 
@@ -48,11 +54,13 @@ public class StackTraceTracer extends ClassVisitor {
             public void visitMethodInsn(int opcode, String owner, String name, String desc, boolean itf) {
                 String methodName = owner + "." + name + desc;
                 String location = cn_dot + "#" + lineNumber;
-                if ((System.getProperty("stackTraceCollect") != null) && cn_dot.equals(codeUnderTestClassName)
-                        &&  (lineNumber == codeUnderTestLineNumber)) {
-                    delayed = true;
+                System.out.println("OUTSIDE: " + cn_dot + codeUnderTestClassName + " " + lineNumber + " "
+                    + failureReproducingPoint + !lineCounted);
+                if (cn_dot.equals(codeUnderTestClassName) && lineNumber == failureReproducingPoint && !lineCounted ) {
+                    System.out.println("visitMethodInsn, counter");
                     super.visitMethodInsn(Opcodes.INVOKESTATIC, "edu/utexas/ece/flakesync/agent/Utility",
-                        "delay", "()V", false);
+                        "counter", "()V", false);
+                    lineCounted = true;
                 }
                 super.visitMethodInsn(opcode, owner, name, desc, itf);
             }
@@ -60,11 +68,11 @@ public class StackTraceTracer extends ClassVisitor {
             @Override
             public void visitInsn(int opcode) {
                 String location = cn_dot + "#" + lineNumber;
-                if ((System.getProperty("stackTraceCollect") != null) && cn_dot.equals(codeUnderTestClassName)
-                        && (lineNumber == codeUnderTestLineNumber)) {
-                    delayed = true;
+                if (cn_dot.equals(codeUnderTestClassName) && lineNumber == failureReproducingPoint && !lineCounted) {
+                    System.out.println("visitInsn, counter");
                     super.visitMethodInsn(Opcodes.INVOKESTATIC, "edu/utexas/ece/flakesync/agent/Utility",
-                        "delay", "()V", false);
+                        "counter", "()V", false);
+                    lineCounted = true;
                 }
                 super.visitInsn(opcode);
             }
