@@ -58,7 +58,18 @@ public class InjectYieldStatement {
         injectedLines.add(indent + "while (!"+targetClass+".getExecutedStatus()) {");
         injectedLines.add(indent + "    Thread.yield();");
         injectedLines.add(indent + "}");
-        lines.addAll(targetLine - 1, injectedLines);
+
+        // Find a safe insertion point for yield block
+        int insertLine = targetLine - 1;
+        // If the target line is in the middle of a statement, move up to the start of the statement
+        while (insertLine > 0 && !lines.get(insertLine).trim().isEmpty() &&
+               !lines.get(insertLine).trim().endsWith(";") &&
+               !lines.get(insertLine).trim().endsWith("{") &&
+               !lines.get(insertLine).trim().endsWith("}")) {
+            insertLine--;
+        }
+        // Insert yield block before the statement
+        lines.addAll(insertLine + 1, injectedLines);
 
         // ===== Inject reset() at the beginning of the test method =====
         int methodLine = -1;
@@ -85,10 +96,20 @@ public class InjectYieldStatement {
             System.exit(1);
         }
 
-        // Inject reset() after the opening brace
-        String methodIndent = lines.get(braceLine).replaceAll("^(\\s*).*", "$1");
-        lines.add(braceLine + 1, methodIndent + "    " + targetClass + ".reset();");
-
+        // Find indentation of the first code line after the opening brace
+        String nextLineIndent = "";
+        for (int i = braceLine + 1; i < lines.size(); i++) {
+            String l = lines.get(i);
+            if (!l.trim().isEmpty()) {
+                nextLineIndent = l.replaceAll("^(\\s*).*", "$1");
+                break;
+            }
+        }
+        // If no code line found, fallback to indentation after brace
+        if (nextLineIndent.isEmpty()) {
+            nextLineIndent = lines.get(braceLine).replaceAll("^(\\s*).*", "$1") + "    ";
+        }
+        lines.add(braceLine + 1, nextLineIndent + targetClass + ".reset();");
 
         // Save file
         Files.write(path, lines);
