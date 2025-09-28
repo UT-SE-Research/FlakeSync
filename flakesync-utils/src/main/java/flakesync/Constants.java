@@ -25,7 +25,7 @@ public class Constants {
     public static final String CRIT_POINTS_FILE = "CriticalPoints.csv";
 
     public static final String SEARCH_METHOD_END_FILE = "SearchedMethodEndLine.txt";
-    public static final String SEARCH_METHOD_AND_FILE = "SearchedMethodANDLine.txt";
+    public static final String SEARCH_METHOD_AND_FILE = "SearchedMethodAndLine.txt";
     public static final String THRESHOLD_FILE = "ExecutionMonitor.txt";
     public static final String YIELD_RESULT_FILE = "FlagDelayANDUpdateANDYielding.txt";
     public static final String BARRIER_SEARCH_RESULTS_DIR = "Results-BarrierSearch";
@@ -68,7 +68,7 @@ public class Constants {
         return Paths.get(baseDir, DEFAULT_FLAKESYNC_DIR, fileName);
     }
 
-    public static Path getSearchMethodANDLineFilepath(String baseDir, String testName) {
+    public static Path getSearchMethodAndLineFilepath(String baseDir, String testName) {
         String fileName = testName.replace("#", ".") + "-" + SEARCH_METHOD_AND_FILE;
         return Paths.get(baseDir, DEFAULT_FLAKESYNC_DIR, fileName);
     }

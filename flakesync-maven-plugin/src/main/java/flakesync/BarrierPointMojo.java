@@ -124,7 +124,7 @@ public class BarrierPointMojo extends FlakeSyncAbstractMojo {
 
                             // Get the line number representing start of the method
                             BufferedReader reader;
-                            File startLineFile = new File(String.valueOf(Constants.getSearchMethodANDLineFilepath(
+                            File startLineFile = new File(String.valueOf(Constants.getSearchMethodAndLineFilepath(
                                     String.valueOf(this.mavenProject.getBasedir()), testName)));
                             reader = new BufferedReader(new FileReader(startLineFile));
                             String beginLine = reader.readLine();
