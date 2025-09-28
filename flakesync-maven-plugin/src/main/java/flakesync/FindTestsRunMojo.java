@@ -65,7 +65,7 @@ public class FindTestsRunMojo extends FlakeSyncAbstractMojo {
 
     private MojoExecutionException executeSurefireExecution(MojoExecutionException allExceptions,
                                                             SurefireExecution execution)
-                                                            throws Throwable {
+            throws Throwable {
         try {
             execution.run();
         } catch (MojoExecutionException ex) {

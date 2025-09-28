@@ -53,10 +53,8 @@ public class ConfigurationDefaults {
     public static final String PROPERTY_LOGGING_LEVEL = "flakesyncLogging";
     public static final String DEFAULT_LOGGING_LEVEL = "CONFIG";
 
-    public static final String CONCURRENT_METHODS_JAR =
+    public static final String CORE_JAR =
         "/edu/utexas/ece/flakesync-core/1.0-SNAPSHOT/flakesync-core-1.0-SNAPSHOT.jar";
-    public static final String BOUNDARY_SEARCH_JAR =
-        "/edu/utexas/ece/localization-core/0.1-SNAPSHOT/localization-core-0.1-SNAPSHOT.jar";
     public static final String BARRIER_SEARCH_JAR =
         "/edu/utexas/ece/barrierSearch-core/1.0-SNAPSHOT/barrierSearch-core-1.0-SNAPSHOT.jar";
 }

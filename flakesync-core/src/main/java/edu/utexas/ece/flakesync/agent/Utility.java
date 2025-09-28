@@ -28,6 +28,15 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 package edu.utexas.ece.flakesync.agent;
 
+import flakesync.Constants;
+
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -47,6 +56,8 @@ public class Utility {
     public static Set<String> methodsRunConcurrently = new HashSet<>();
     public static HashMap<String, Stack<String>> concurrentMethodPairs = new HashMap<>();
 
+    // List of stack trace elements
+    public static List<String> stackTraceList = new ArrayList<String>();
 
     private static int delay;
 
@@ -58,12 +69,21 @@ public class Utility {
         }
     }
 
+    // Delay a specified amount of time
     public static void delay() {
         try {
-            System.out.println("delaying: " + delay);
             Thread.sleep(delay);
         } catch (InterruptedException ie) {
-            System.out.println("Exception");
+            ie.printStackTrace();
+        }
+    }
+
+    // Delay a specified amount of time, but also log stack trace
+    public static void delay(String testName, String className) {
+        try {
+            Thread.sleep(delay);
+            collectStackTrace(testName, className);
+        } catch (InterruptedException ie) {
             ie.printStackTrace();
         }
     }
@@ -111,4 +131,53 @@ public class Utility {
         }
     }
 
+    // Helper method to collect the stack trace after a delay
+    private static void collectStackTrace(String testName, String className) {
+        className = className.replaceAll("[/]",".");
+        String[] classNameItems = className.split("#", 2);
+        String fileName = String.valueOf(Constants.getStackTraceFilepath(testName));
+        try {
+            FileWriter outputFile = new FileWriter(fileName, true);
+            BufferedWriter bf = new BufferedWriter(outputFile);
+            // Collect the thread id ***
+            long threadId = Thread.currentThread().getId();
+            for (StackTraceElement ste: Thread.currentThread().getStackTrace()) {
+                String ste2String = ste.toString();
+                boolean foundInBlackList = false;
+
+                String elem = threadId + "," + ste2String;
+                String[] blackListedElement = {"edu.utexas.ece.flakesync.agent.Utility", "java.", "org.apache.lucene",
+                    "org.junit", "org.apache.maven.surefire"};
+                for (int i = 0; i < blackListedElement.length; i++) {
+                    if (elem.contains(blackListedElement[i])) {
+                        foundInBlackList = true;
+                        break;
+                    }
+                }
+                if (!(foundInBlackList)) {
+                    String elemWithSlash =  elem.replace(".", "/");
+                    bf.write(elemWithSlash);
+                    bf.newLine();
+                }
+            }
+            bf.write(threadId + ",END");
+            bf.newLine();
+            bf.flush();
+            bf.close();
+        } catch (IOException ioe) {
+            ioe.printStackTrace();
+        }
+    }
+
+    public static void stack(Thread th) {
+        try {
+            java.lang.reflect.Field targetField = Thread.class.getDeclaredField("target");
+            targetField.setAccessible(true);
+            for (StackTraceElement ste : Thread.currentThread().getStackTrace()) {
+                stackTraceList.add(ste.toString());
+            }
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
+    }
 }
