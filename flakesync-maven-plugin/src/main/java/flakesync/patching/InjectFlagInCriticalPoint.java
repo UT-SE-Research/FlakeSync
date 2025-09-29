@@ -147,18 +147,19 @@ public class InjectFlagInCriticalPoint {
             System.out.println("[DEBUG] Inserting at shifted line (1-based): " + (targetLineIndex + 1));
             if (targetLineIndex >= 0 && targetLineIndex <= lines.length) {
                 // Find a safe insertion point for increment (not in the middle of a multi-line statement)
-                int insertLine = targetLineIndex;
-                System.out.println("SCANNING ABOVE LINE: " + (insertLine - 1) + " " + lines[insertLine - 1].trim());
-                while (insertLine > 0
-                        && !lines[insertLine - 1].trim().endsWith(";")
-                        && !lines[insertLine - 1].trim().endsWith("{")
-                        && !lines[insertLine - 1].trim().endsWith("}")
-                        && !lines[insertLine - 1].trim().endsWith(")")
-                        && !lines[insertLine - 1].trim().endsWith("(")) {
-                    insertLine++;
+                int insertLineIndex = targetLineIndex;
+                //System.out.println("SCANNING ABOVE LINE: " + (insertLine - 1) + " " + lines[insertLine - 1].trim());
+                while (insertLineIndex > 0
+                         && !lines[insertLineIndex].trim().isEmpty()
+                        && !lines[insertLineIndex].trim().endsWith(";")
+                        && !lines[insertLineIndex].trim().endsWith("{")
+                        && !lines[insertLineIndex].trim().endsWith("}")
+                        && !lines[insertLineIndex].trim().endsWith(")")
+                        && !lines[insertLineIndex].trim().endsWith("(")) {
+                    insertLineIndex++;
                 }
                 // Determine indentation
-                String refLine = lines[insertLine];
+                String refLine = lines[insertLineIndex + 1];
                 int whitespace = 0;
                 while (whitespace < refLine.length()
                         && (refLine.charAt(whitespace) == ' '
@@ -170,9 +171,9 @@ public class InjectFlagInCriticalPoint {
                 List<String> newLines = new ArrayList<>(Arrays.asList(lines));
                 // Compose increment line in parts to avoid line length issues
                 String incrementLine = indent + NUM_EXECUTIONS_FIELD_NAME + "++;";
-                newLines.add(insertLine, incrementLine);
+                newLines.add(insertLineIndex + 1, incrementLine);
                 lines = newLines.toArray(new String[0]);
-                System.out.println("[DEBUG] Inserted numExecutions++; at safe line (1-based): " + (insertLine + 1));
+                System.out.println("[DEBUG] Inserted numExecutions++; at safe line (1-based): " + (insertLineIndex + 1));
             }
             Files.write(Paths.get(filePath), String.join("\n", lines).getBytes());
             System.out.println("numExecutions++; inserted at safe line, preserving all original code.");
