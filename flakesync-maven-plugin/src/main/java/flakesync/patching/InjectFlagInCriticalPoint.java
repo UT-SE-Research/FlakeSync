@@ -143,7 +143,7 @@ public class InjectFlagInCriticalPoint {
 
             // 2. Insert numExecutionsFlakeSync++; at the user-specified lineNumber + 5 (since we added 5 new lines)
             String[] lines = source.split("\n", -1);
-            int targetLine = taLine - 1 + 5;    // Subtract 1 for 0-index; 5 is hard-coded number of new lines added
+            int targetLineIndex = taLine - 1 + 5;   // Subtract 1 for 0-index; 5 is hard-coded number of new lines added
             System.out.println("[DEBUG] User requested lineNumber (1-based): " + taLine);
             System.out.println("[DEBUG] Inserting at shifted line (1-based): " + (targetLine + 1));
             if (targetLine >= 0 && targetLine <= lines.length) {
@@ -159,6 +159,11 @@ public class InjectFlagInCriticalPoint {
                 }
                 String indent = "";
                 String refLine = lines[insertLine];
+            System.out.println("[DEBUG] Inserting at shifted line (1-based): " + (targetLineIndex + 2));
+            if (targetLineIndex >= 0 && targetLineIndex <= lines.length) {
+                // Insert (not replace) at the correct line
+                String indent = "";
+                String refLine = lines[targetLineIndex];
 
                 // First determine how much indentation to add, by grabbing up to index of first non-whitespace
                 int whitespace = 0;
@@ -172,6 +177,10 @@ public class InjectFlagInCriticalPoint {
                 newLines.add(insertLine, indent + NUM_EXECUTIONS_FIELD_NAME + "+= 1;");
                 lines = newLines.toArray(new String[0]);
                 System.out.println("[DEBUG] Inserted numExecutions++; at safe line (1-based): " + (insertLine + 1));
+                // Increment counter only after target line has been executed, so one line after it
+                newLines.add(targetLineIndex + 1, indent + NUM_EXECUTIONS_FIELD_NAME + "++;");
+                lines = newLines.toArray(new String[0]);
+                System.out.println("[DEBUG] Inserted numExecutions++; at line (1-based): " + (targetLineIndex + 2));
             }
             Files.write(Paths.get(filePath), String.join("\n", lines).getBytes());
             System.out.println("numExecutions++; inserted at safe line, preserving all original code.");
