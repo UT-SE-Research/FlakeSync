@@ -21,6 +21,7 @@ public class SavePatch {
 
     public static void makePatch(String originalFilePath, String modifiedFilePath, String patchDir) {
         System.out.println("Generating patch for: " + originalFilePath + " and " + modifiedFilePath);
+        System.out.println("Original path: " + patchDir);
         Path patchDirectory = Paths.get(patchDir);
         try {
             if (!Files.exists(patchDirectory)) {

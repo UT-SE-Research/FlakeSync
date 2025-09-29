@@ -148,13 +148,14 @@ public class InjectFlagInCriticalPoint {
             if (targetLineIndex >= 0 && targetLineIndex <= lines.length) {
                 // Find a safe insertion point for increment (not in the middle of a multi-line statement)
                 int insertLine = targetLineIndex;
+                System.out.println("SCANNING ABOVE LINE: " + (insertLine - 1) + " " + lines[insertLine - 1].trim());
                 while (insertLine > 0
-                        && !lines[insertLine].trim().isEmpty()
+                        //&& lines[insertLine].trim().isEmpty()
                         && !lines[insertLine - 1].trim().endsWith(";")
-                        && !lines[insertLine - 1].trim().endsWith("{")
-                        && !lines[insertLine - 1].trim().endsWith("}")
-                        && !lines[insertLine - 1].trim().endsWith(")")
-                        && !lines[insertLine - 1].trim().endsWith("(")) {
+                        && (lines[insertLine - 1].trim().endsWith("{")
+                        || lines[insertLine - 1].trim().endsWith("}")
+                        || lines[insertLine - 1].trim().endsWith(")")
+                        || lines[insertLine - 1].trim().endsWith("("))) {
                     insertLine--;
                 }
                 // Determine indentation
