@@ -42,14 +42,14 @@ public class InjectYieldStatement {
         while (insertLine > 0 && !lines.get(insertLine).trim().isEmpty()
                && !lines.get(insertLine - 1).trim().endsWith(";")
                && !lines.get(insertLine - 1).trim().endsWith("{")
-               && !lines.get(insertLine - 1).trim().endsWith("}")) {
+               && !lines.get(insertLine - 1).trim().endsWith("}")
+               && !lines.get(insertLine - 1).trim().endsWith(")")
+               && !lines.get(insertLine - 1).trim().endsWith("(")) {
             insertLine--;
         }
         // Insert yield block after the insert point (some line before the target line)
         // The insertLine is a line number (1-index), so we insert one line after it index-wise
         lines.addAll(insertLine, injectedLines);
-
-        System.out.println(lines);
 
         // Inject reset() at the beginning of the test method
         int methodLineIndex = -1;
@@ -94,5 +94,6 @@ public class InjectYieldStatement {
         Files.write(path, lines);
         System.out.println("Injected print statement before line " + targetLine);
         System.out.println("Modified file written to: " + filePath);
+
     }
 }

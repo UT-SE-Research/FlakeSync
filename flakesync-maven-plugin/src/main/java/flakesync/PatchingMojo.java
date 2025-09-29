@@ -120,8 +120,10 @@ public class PatchingMojo extends FlakeSyncAbstractMojo {
                         Constants.getFlakeSyncDir(slug.toString()).toString());
 
                     // Reset all the files
+                    Files.delete(critPath);
                     Files.copy(critOriginal, critPath);
                     Files.delete(critOriginal);
+                    Files.delete(barrierPath);
                     Files.copy(barrierOriginal, barrierPath);
                     Files.delete(barrierOriginal);
                 }

@@ -96,7 +96,8 @@ public class InjectFlagInCriticalPoint {
                     String trimmed = line.trim();
                     // Found place to insert new definitions, as early as possible
                     if (!trimmed.isEmpty() && !trimmed.startsWith("//") && !trimmed.startsWith("/*")
-                            && !trimmed.startsWith("*") && !trimmed.equals("}") && !injected) {
+                            && !trimmed.startsWith("*") && !trimmed.equals("}")
+                            && !injected) {
                         // First determine how much indentation to add, by grabbing up to index of first non-whitespace
                         int whitespace = 0;
                         while (whitespace < line.length() && (line.charAt(whitespace) == ' '
