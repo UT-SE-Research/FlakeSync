@@ -7,6 +7,8 @@ import java.nio.file.Paths;
 public class Constants {
     public static final String DEFAULT_FLAKESYNC_DIR = ".flakesync";
 
+    public static final String PATCH_DIR = "patch";
+
     // Agent Input Files
     public static final String CONCURRENT_METHODS_FILE = "ResultMethods.txt";
 
@@ -41,6 +43,10 @@ public class Constants {
 
     public static Path getFlakeSyncDir(String baseDir) {
         return Paths.get(baseDir, DEFAULT_FLAKESYNC_DIR);
+    }
+
+    public static Path getPatchDir(String baseDir) {
+        return Paths.get(baseDir, DEFAULT_FLAKESYNC_DIR, PATCH_DIR);
     }
 
     public static Path getConcurrentMethodsFilepath(String testName) {

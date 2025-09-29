@@ -21,7 +21,7 @@ public class SavePatch {
 
     public static void makePatch(String originalFilePath, String modifiedFilePath, String patchDir) {
         System.out.println("Generating patch for: " + originalFilePath + " and " + modifiedFilePath);
-        Path patchDirectory = Constants.getFlakeSyncDir(patchDir);
+        Path patchDirectory = Paths.get(patchDir);
         try {
             if (!Files.exists(patchDirectory)) {
                 Files.createDirectory(patchDirectory);
