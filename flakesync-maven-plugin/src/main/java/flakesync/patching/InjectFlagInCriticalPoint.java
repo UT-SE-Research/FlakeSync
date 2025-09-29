@@ -141,15 +141,24 @@ public class InjectFlagInCriticalPoint {
                 source = String.join("\n", newLines);
             }
 
-            // 2. Insert hasExecuted = true; at the user-specified lineNumber + 5 (since we added 5 new lines)
+            // 2. Insert numExecutionsFlakeSync++; at the user-specified lineNumber + 5 (since we added 5 new lines)
             String[] lines = source.split("\n", -1);
             int targetLine = taLine - 1 + 5;    // Subtract 1 for 0-index; 5 is hard-coded number of new lines added
             System.out.println("[DEBUG] User requested lineNumber (1-based): " + taLine);
             System.out.println("[DEBUG] Inserting at shifted line (1-based): " + (targetLine + 1));
             if (targetLine >= 0 && targetLine <= lines.length) {
-                // Insert (not replace) at the correct line
+                // Find a safe insertion point for increment (not in the middle of a multi-line statement)
+                int insertLine = targetLine;
+                while (insertLine > 0 && !lines[insertLine].trim().isEmpty()
+                        && !lines[insertLine - 1].trim().endsWith(";")
+                        && !lines[insertLine - 1].trim().endsWith("{")
+                        && !lines[insertLine - 1].trim().endsWith("}")
+                        && !lines[insertLine - 1].trim().endsWith(")")
+                        && !lines[insertLine - 1].trim().endsWith("(")) {
+                    insertLine--;
+                }
                 String indent = "";
-                String refLine = lines[targetLine];
+                String refLine = lines[insertLine];
 
                 // First determine how much indentation to add, by grabbing up to index of first non-whitespace
                 int whitespace = 0;
@@ -160,12 +169,12 @@ public class InjectFlagInCriticalPoint {
                 indent = refLine.substring(0, whitespace);
 
                 List<String> newLines = new ArrayList<>(Arrays.asList(lines));
-                newLines.add(targetLine, indent + NUM_EXECUTIONS_FIELD_NAME + "++;");
+                newLines.add(insertLine, indent + NUM_EXECUTIONS_FIELD_NAME + "+= 1;");
                 lines = newLines.toArray(new String[0]);
-                System.out.println("[DEBUG] Inserted numExecutions++; at line (1-based): " + (targetLine + 1));
+                System.out.println("[DEBUG] Inserted numExecutions++; at safe line (1-based): " + (insertLine + 1));
             }
             Files.write(Paths.get(filePath), String.join("\n", lines).getBytes());
-            System.out.println("numExecutions++; inserted at lineNumber + 5, preserving all original code.");
+            System.out.println("numExecutions++; inserted at safe line, preserving all original code.");
         } catch (Exception ex) {
             ex.printStackTrace();
         }
