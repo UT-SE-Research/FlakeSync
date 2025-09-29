@@ -145,11 +145,12 @@ public class InjectFlagInCriticalPoint {
             String[] lines = source.split("\n", -1);
             int targetLineIndex = taLine - 1 + 5;   // Subtract 1 for 0-index; 5 is hard-coded number of new lines added
             System.out.println("[DEBUG] User requested lineNumber (1-based): " + taLine);
-            System.out.println("[DEBUG] Inserting at shifted line (1-based): " + (targetLine + 1));
-            if (targetLine >= 0 && targetLine <= lines.length) {
+            System.out.println("[DEBUG] Inserting at shifted line (1-based): " + (targetLineIndex + 1));
+            if (targetLineIndex >= 0 && targetLineIndex <= lines.length) {
                 // Find a safe insertion point for increment (not in the middle of a multi-line statement)
-                int insertLine = targetLine;
-                while (insertLine > 0 && !lines[insertLine].trim().isEmpty()
+                int insertLine = targetLineIndex;
+                while (insertLine > 0
+                        && !lines[insertLine].trim().isEmpty()
                         && !lines[insertLine - 1].trim().endsWith(";")
                         && !lines[insertLine - 1].trim().endsWith("{")
                         && !lines[insertLine - 1].trim().endsWith("}")
@@ -157,30 +158,22 @@ public class InjectFlagInCriticalPoint {
                         && !lines[insertLine - 1].trim().endsWith("(")) {
                     insertLine--;
                 }
-                String indent = "";
+                // Determine indentation
                 String refLine = lines[insertLine];
-            System.out.println("[DEBUG] Inserting at shifted line (1-based): " + (targetLineIndex + 2));
-            if (targetLineIndex >= 0 && targetLineIndex <= lines.length) {
-                // Insert (not replace) at the correct line
-                String indent = "";
-                String refLine = lines[targetLineIndex];
-
-                // First determine how much indentation to add, by grabbing up to index of first non-whitespace
                 int whitespace = 0;
-                while (whitespace < refLine.length() && (refLine.charAt(whitespace) == ' '
+                while (whitespace < refLine.length()
+                        && (refLine.charAt(whitespace) == ' '
                         || refLine.charAt(whitespace) == '\t')) {
                     whitespace++;
                 }
-                indent = refLine.substring(0, whitespace);
+                String indent = refLine.substring(0, whitespace);
 
                 List<String> newLines = new ArrayList<>(Arrays.asList(lines));
-                newLines.add(insertLine, indent + NUM_EXECUTIONS_FIELD_NAME + "+= 1;");
+                // Compose increment line in parts to avoid line length issues
+                String incrementLine = indent + NUM_EXECUTIONS_FIELD_NAME + "++;";
+                newLines.add(insertLine, incrementLine);
                 lines = newLines.toArray(new String[0]);
                 System.out.println("[DEBUG] Inserted numExecutions++; at safe line (1-based): " + (insertLine + 1));
-                // Increment counter only after target line has been executed, so one line after it
-                newLines.add(targetLineIndex + 1, indent + NUM_EXECUTIONS_FIELD_NAME + "++;");
-                lines = newLines.toArray(new String[0]);
-                System.out.println("[DEBUG] Inserted numExecutions++; at line (1-based): " + (targetLineIndex + 2));
             }
             Files.write(Paths.get(filePath), String.join("\n", lines).getBytes());
             System.out.println("numExecutions++; inserted at safe line, preserving all original code.");
