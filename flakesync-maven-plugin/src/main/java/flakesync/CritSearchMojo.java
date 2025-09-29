@@ -48,19 +48,23 @@ public class CritSearchMojo extends FlakeSyncAbstractMojo {
 
         locationsPath = String.valueOf(Constants.getMinLocationsFilepath(testName));
         try {
-            while (this.delay < 25600) {
+            boolean failed = false;
+            while (!failed && this.delay < 25600) {
                 SurefireExecution cleanExec = SurefireExecution.SurefireFactory.getDelayLocExec(this.surefire,
                         this.originalArgLine, this.mavenProject, this.mavenSession, this.pluginManager,
                         Paths.get(this.baseDir.getAbsolutePath(), ConfigurationDefaults.DEFAULT_FLAKESYNC_DIR).toString(),
                         this.localRepository, this.testName, this.delay * 2, locationsPath);
                 if (!executeSurefireExecution(null, cleanExec)) {
                     this.delay = this.delay * 2;
+                } else {
+                    failed = true;
                 }
             }
 
             // Parse the stacktrace file to get all the locations to iterate through
             stackTraceLines = new HashSet<String>();
             parseStackTrace();
+            System.out.println("PARSE STACK TRACE: " + stackTraceLines);
 
             // Iterate over stacktrace locations
             Set<String> visited = new HashSet<String>();    // Keep track of whether we have seen some exact trace
