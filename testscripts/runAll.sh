@@ -75,5 +75,6 @@ while read line; do
     echo "Patching: $duration_ns_patch"
 
     echo "$slug,$sha,$test_name,$duration_ns_conc_meth,$duration_ns_delay_inject,$duration_ns_dd,$duration_ns_critsearch,$duration_ns_barrierpointsearch,$duration_ns_patch" >> "$currentDir/$results/Time_Result.csv"
+    cd ../../..
 done < $1
 
