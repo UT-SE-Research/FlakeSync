@@ -69,6 +69,12 @@ while read line; do
     echo "Duration of each mojo:"
     echo "Concurrent method finder: $duration_ns_conc_meth"
     echo "Delay at all locations: $duration_ns_delay_inject"
+
+    echo "End-to-end plugin execution duration: ${duration_ns}ns"
+    echo "Duration of each mojo:"
+    echo "Concurrent method finder: $duration_ns_conc_meth"
+    echo "Delay at all locations: ,$duration_ns_delay_inject"
+
     echo "Delta Debugger: $duration_ns_dd"
     echo "Critical Point Search: $duration_ns_critsearch"
     echo "Barrier Point Search: $duration_ns_barrierpointsearch"
