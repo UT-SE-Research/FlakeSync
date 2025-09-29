@@ -48,13 +48,14 @@ public class CritSearchMojo extends FlakeSyncAbstractMojo {
 
         locationsPath = String.valueOf(Constants.getMinLocationsFilepath(testName));
         try {
-            SurefireExecution cleanExec = SurefireExecution.SurefireFactory.getDelayLocExec(this.surefire,
-                    this.originalArgLine, this.mavenProject, this.mavenSession, this.pluginManager,
-                    Paths.get(this.baseDir.getAbsolutePath(), ConfigurationDefaults.DEFAULT_FLAKESYNC_DIR).toString(),
-                    this.localRepository, this.testName, this.delay, locationsPath);
-            if (!executeSurefireExecution(null, cleanExec)) {
-                System.out.println("This minimized location is not a good one. Go back and run minimizer.");
-                return;
+            while (this.delay < 25600) {
+                SurefireExecution cleanExec = SurefireExecution.SurefireFactory.getDelayLocExec(this.surefire,
+                        this.originalArgLine, this.mavenProject, this.mavenSession, this.pluginManager,
+                        Paths.get(this.baseDir.getAbsolutePath(), ConfigurationDefaults.DEFAULT_FLAKESYNC_DIR).toString(),
+                        this.localRepository, this.testName, this.delay * 2, locationsPath);
+                if (!executeSurefireExecution(null, cleanExec)) {
+                    this.delay = this.delay * 2;
+                }
             }
 
             // Parse the stacktrace file to get all the locations to iterate through
