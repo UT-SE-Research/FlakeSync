@@ -343,8 +343,16 @@ public class CritSearchMojo extends FlakeSyncAbstractMojo {
             while (line != null) {
                 String[] tmp = line.split("#");
                 String className = tmp[0];
-                int lowerLineNumber = Integer.parseInt(tmp[1].substring(0, tmp[1].indexOf('-')));
-                int upperLineNumber = Integer.parseInt(tmp[2]);
+
+                int lowerLineNumber;
+                int upperLineNumber;
+                if (tmp.length < 3) {
+                    lowerLineNumber = Integer.parseInt(tmp[1]);
+                    upperLineNumber = Integer.parseInt(tmp[1]);
+                } else {
+                    lowerLineNumber  = Integer.parseInt(tmp[1].substring(0, tmp[1].indexOf('-')));
+                    upperLineNumber = Integer.parseInt(tmp[2]);
+                }
 
                 // Try to delay throughout the method, from first line to last line
                 for (int i = lowerLineNumber; i < upperLineNumber; i++) {
