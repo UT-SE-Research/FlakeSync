@@ -67,7 +67,7 @@ public class Constants {
     public static Path getBarrierPointsResultsFilepath(String baseDir, String testName) {
         String fileName = testName.replace("#", ".") + "-" + BARRIER_POINTS_FILE;
         File rootsDir = new File(String.valueOf(Paths.get(baseDir, DEFAULT_FLAKESYNC_DIR, BARRIER_SEARCH_RESULTS_DIR)));
-        if(!rootsDir.exists()) {
+        if (!rootsDir.exists()) {
             rootsDir.mkdirs();
         }
         return Paths.get(baseDir, DEFAULT_FLAKESYNC_DIR, BARRIER_SEARCH_RESULTS_DIR, fileName);
@@ -111,7 +111,7 @@ public class Constants {
     public static Path getRootMethodFilepath(String testName) {
         String fileName = testName.replace("#", ".") + "-" + ROOT_METHOD_FILE;
         File rootsDir = new File(String.valueOf(Paths.get(DEFAULT_FLAKESYNC_DIR, ROOTS_DIR)));
-        if(!rootsDir.exists()) {
+        if (!rootsDir.exists()) {
             rootsDir.mkdirs();
         }
         return Paths.get(".", DEFAULT_FLAKESYNC_DIR, ROOTS_DIR, fileName);
@@ -139,7 +139,7 @@ public class Constants {
     public static Path getRootMethodResultsFilepath(String baseDir, String testName) {
         String fileName = testName.replace("#", ".") + "-" + RMA_RESULTS_FILE;
         File rootsDir = new File(String.valueOf(Paths.get(baseDir, CRIT_SEARCH_RESULTS_DIR)));
-        if(!rootsDir.exists()) {
+        if (!rootsDir.exists()) {
             rootsDir.mkdirs();
         }
         return Paths.get(baseDir, DEFAULT_FLAKESYNC_DIR, CRIT_SEARCH_RESULTS_DIR, fileName);
@@ -148,7 +148,7 @@ public class Constants {
     public static Path getCritPointsResultsFilepath(String baseDir, String testName) {
         String fileName = testName.replace("#", ".") + "-" + CRIT_POINTS_FILE;
         File rootsDir = new File(String.valueOf(Paths.get(baseDir, DEFAULT_FLAKESYNC_DIR, CRIT_SEARCH_RESULTS_DIR)));
-        if(!rootsDir.exists()) {
+        if (!rootsDir.exists()) {
             rootsDir.mkdirs();
         }
         return Paths.get(baseDir, DEFAULT_FLAKESYNC_DIR, CRIT_SEARCH_RESULTS_DIR, fileName);
