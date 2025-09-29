@@ -69,7 +69,6 @@ public class InjectFlagInCriticalPoint {
             boolean needsGetStatus = !source.contains("public static int " + GET_EXECUTION_STATUS_METHOD_NAME);
 
             // 1. Inject field and helpers FIRST (always add 5 lines for helpers)
-            int insertLine = 0; // Line where the additional lines need to be inserted
             if (needsField || needsReset || needsGetStatus) {
                 // TODO: Currently assume standard case of one class in the Java file
                 String className = targetClass.substring(targetClass.lastIndexOf('.') + 1);
