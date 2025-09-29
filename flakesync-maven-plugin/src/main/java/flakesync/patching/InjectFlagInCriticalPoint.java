@@ -150,13 +150,12 @@ public class InjectFlagInCriticalPoint {
                 int insertLine = targetLineIndex;
                 System.out.println("SCANNING ABOVE LINE: " + (insertLine - 1) + " " + lines[insertLine - 1].trim());
                 while (insertLine > 0
-                        //&& lines[insertLine].trim().isEmpty()
                         && !lines[insertLine - 1].trim().endsWith(";")
-                        && (lines[insertLine - 1].trim().endsWith("{")
-                        || lines[insertLine - 1].trim().endsWith("}")
-                        || lines[insertLine - 1].trim().endsWith(")")
-                        || lines[insertLine - 1].trim().endsWith("("))) {
-                    insertLine--;
+                        && !lines[insertLine - 1].trim().endsWith("{")
+                        && !lines[insertLine - 1].trim().endsWith("}")
+                        && !lines[insertLine - 1].trim().endsWith(")")
+                        && !lines[insertLine - 1].trim().endsWith("(")) {
+                    insertLine++;
                 }
                 // Determine indentation
                 String refLine = lines[insertLine];
