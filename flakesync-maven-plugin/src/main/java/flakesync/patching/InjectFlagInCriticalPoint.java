@@ -40,9 +40,9 @@ import java.util.stream.Stream;
 
 public class InjectFlagInCriticalPoint {
 
-    public static final String NUM_EXECUTIONS_FIELD_NAME = "numExecutionsFlakeSync";
-    public static final String RESET_METHOD_NAME = "resetFlakeSync()";
-    public static final String GET_EXECUTION_STATUS_METHOD_NAME = "getExecutedStatusFlakeSync()";
+    public static final String NUM_EXECUTIONS_FIELD_NAME = "numExecutions";
+    public static final String RESET_METHOD_NAME = "resetExecutions()";
+    public static final String GET_EXECUTION_STATUS_METHOD_NAME = "getExecutedStatus()";
 
     public static Path findJavaFilePath(String slug, String className) throws IOException {
         // Use only the outer class name for the filename
