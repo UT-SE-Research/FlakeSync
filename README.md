@@ -23,7 +23,7 @@ For running step 1 which creates a list of concurrent methods and the thread cou
 For running step 2 which minimizes the list of locations, run:
 * Run delta-debugging to minimize list of locations
   * This will cut down the list of locations by getting the minimum subset of locations required for a test failure
-  * ```mvn edu.utexas.ece:flakesync-maven-plugin:1.0-SNAPSHOT:flakedeltadebug -Dflakesync.testName=org.apache.uniffle.common.rpc.GrpcServerTest#testGrpcExecutorPool -pl common```
+  * ```mvn edu.utexas.ece:flakesync-maven-plugin:1.0-SNAPSHOT:deltadebug -Dflakesync.testName=org.apache.uniffle.common.rpc.GrpcServerTest#testGrpcExecutorPool -pl common```
 ### Critical Point Search
 * Run critical point and root method search
   *  This will generate a list of root methods
