@@ -224,7 +224,6 @@ public class BarrierPointMojo extends FlakeSyncAbstractMojo {
             }
             trace = reader.readLine();
         }
-        System.out.println("is it here");
     }
 
     private boolean inBlackList(String className) throws IOException {

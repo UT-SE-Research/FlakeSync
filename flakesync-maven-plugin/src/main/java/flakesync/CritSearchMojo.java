@@ -60,7 +60,6 @@ public class CritSearchMojo extends FlakeSyncAbstractMojo {
             // Parse the stacktrace file to get all the locations to iterate through
             stackTraceLines = new HashSet<String>();
             parseStackTrace();
-            System.out.println("PARSE STACK TRACE: " + stackTraceLines);
 
             // Iterate over stacktrace locations
             Set<String> visited = new HashSet<String>();    // Keep track of whether we have seen some exact trace
