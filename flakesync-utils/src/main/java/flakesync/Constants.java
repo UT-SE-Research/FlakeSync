@@ -7,6 +7,8 @@ import java.nio.file.Paths;
 public class Constants {
     public static final String DEFAULT_FLAKESYNC_DIR = ".flakesync";
 
+    public static final String PATCH_DIR = "patch";
+
     // Agent Input Files
     public static final String CONCURRENT_METHODS_FILE = "ResultMethods.txt";
 
@@ -25,7 +27,8 @@ public class Constants {
     public static final String CRIT_POINTS_FILE = "CriticalPoints.csv";
 
     public static final String SEARCH_METHOD_END_FILE = "SearchedMethodEndLine.txt";
-    public static final String SEARCH_METHOD_AND_FILE = "SearchedMethodANDLine.txt";
+    public static final String SEARCH_METHOD_AND_FILE = "SearchedMethodAndLine.txt";
+
     public static final String THRESHOLD_FILE = "ExecutionMonitor.txt";
     public static final String YIELD_RESULT_FILE = "FlagDelayANDUpdateANDYielding.txt";
     public static final String BARRIER_SEARCH_RESULTS_DIR = "Results-BarrierSearch";
@@ -37,6 +40,14 @@ public class Constants {
 
     public static Path getExecutionDir(String baseDir, String executionId) {
         return Paths.get(baseDir, DEFAULT_FLAKESYNC_DIR, executionId);
+    }
+
+    public static Path getFlakeSyncDir(String baseDir) {
+        return Paths.get(baseDir, DEFAULT_FLAKESYNC_DIR);
+    }
+
+    public static Path getPatchDir(String baseDir) {
+        return Paths.get(baseDir, DEFAULT_FLAKESYNC_DIR, PATCH_DIR);
     }
 
     public static Path getConcurrentMethodsFilepath(String testName) {
@@ -57,7 +68,7 @@ public class Constants {
     public static Path getBarrierPointsResultsFilepath(String baseDir, String testName) {
         String fileName = testName.replace("#", ".") + "-" + BARRIER_POINTS_FILE;
         File rootsDir = new File(String.valueOf(Paths.get(baseDir, DEFAULT_FLAKESYNC_DIR, BARRIER_SEARCH_RESULTS_DIR)));
-        if(!rootsDir.exists()) {
+        if (!rootsDir.exists()) {
             rootsDir.mkdirs();
         }
         return Paths.get(baseDir, DEFAULT_FLAKESYNC_DIR, BARRIER_SEARCH_RESULTS_DIR, fileName);
@@ -68,7 +79,7 @@ public class Constants {
         return Paths.get(baseDir, DEFAULT_FLAKESYNC_DIR, fileName);
     }
 
-    public static Path getSearchMethodANDLineFilepath(String baseDir, String testName) {
+    public static Path getSearchMethodAndLineFilepath(String baseDir, String testName) {
         String fileName = testName.replace("#", ".") + "-" + SEARCH_METHOD_AND_FILE;
         return Paths.get(baseDir, DEFAULT_FLAKESYNC_DIR, fileName);
     }
@@ -101,7 +112,7 @@ public class Constants {
     public static Path getRootMethodFilepath(String testName) {
         String fileName = testName.replace("#", ".") + "-" + ROOT_METHOD_FILE;
         File rootsDir = new File(String.valueOf(Paths.get(DEFAULT_FLAKESYNC_DIR, ROOTS_DIR)));
-        if(!rootsDir.exists()) {
+        if (!rootsDir.exists()) {
             rootsDir.mkdirs();
         }
         return Paths.get(".", DEFAULT_FLAKESYNC_DIR, ROOTS_DIR, fileName);
@@ -129,7 +140,7 @@ public class Constants {
     public static Path getRootMethodResultsFilepath(String baseDir, String testName) {
         String fileName = testName.replace("#", ".") + "-" + RMA_RESULTS_FILE;
         File rootsDir = new File(String.valueOf(Paths.get(baseDir, CRIT_SEARCH_RESULTS_DIR)));
-        if(!rootsDir.exists()) {
+        if (!rootsDir.exists()) {
             rootsDir.mkdirs();
         }
         return Paths.get(baseDir, DEFAULT_FLAKESYNC_DIR, CRIT_SEARCH_RESULTS_DIR, fileName);
@@ -138,7 +149,7 @@ public class Constants {
     public static Path getCritPointsResultsFilepath(String baseDir, String testName) {
         String fileName = testName.replace("#", ".") + "-" + CRIT_POINTS_FILE;
         File rootsDir = new File(String.valueOf(Paths.get(baseDir, DEFAULT_FLAKESYNC_DIR, CRIT_SEARCH_RESULTS_DIR)));
-        if(!rootsDir.exists()) {
+        if (!rootsDir.exists()) {
             rootsDir.mkdirs();
         }
         return Paths.get(baseDir, DEFAULT_FLAKESYNC_DIR, CRIT_SEARCH_RESULTS_DIR, fileName);

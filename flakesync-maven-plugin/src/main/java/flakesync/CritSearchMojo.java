@@ -51,9 +51,9 @@ public class CritSearchMojo extends FlakeSyncAbstractMojo {
             SurefireExecution cleanExec = SurefireExecution.SurefireFactory.getDelayLocExec(this.surefire,
                     this.originalArgLine, this.mavenProject, this.mavenSession, this.pluginManager,
                     Paths.get(this.baseDir.getAbsolutePath(), ConfigurationDefaults.DEFAULT_FLAKESYNC_DIR).toString(),
-                    this.localRepository, this.testName, this.delay, locationsPath);
+                    this.localRepository, this.testName, this.delay * 2, locationsPath);
             if (!executeSurefireExecution(null, cleanExec)) {
-                System.out.println("This minimized location is not a good one. Go back and run minimizer.");
+                System.out.println("This location is not a good one. Go back and run minimizer again.");
                 return;
             }
 
@@ -343,6 +343,7 @@ public class CritSearchMojo extends FlakeSyncAbstractMojo {
             while (line != null) {
                 String[] tmp = line.split("#");
                 String className = tmp[0];
+
                 int lowerLineNumber;
                 int upperLineNumber;
                 if (tmp.length < 3) {

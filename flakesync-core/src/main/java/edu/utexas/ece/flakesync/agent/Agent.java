@@ -229,7 +229,7 @@ public class Agent {
                             if (DelayAndYieldInjector.methodAndLine != null) {
                                 try {
                                     BufferedWriter bf = new BufferedWriter(new FileWriter(
-                                            String.valueOf(Constants.getSearchMethodANDLineFilepath(".",
+                                            String.valueOf(Constants.getSearchMethodAndLineFilepath(".",
                                                     System.getProperty(".test")))
                                     ));
                                     bf.write(DelayAndYieldInjector.methodAndLine + "\n");

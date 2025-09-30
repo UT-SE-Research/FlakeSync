@@ -100,7 +100,7 @@ public class DelayAndYieldInjector extends ClassVisitor {
                     flag = 1;
                 }
 
-                if (System.getProperty("searchForMethodName") != null && testClassInfo.equals(classLine)) {
+                if (System.getProperty("agentmode").equals("ADD_YIELD_PT2") && testClassInfo.equals(classLine)) {
                     methodAndLine = methName + "#" + methodStartLineNum;
                 }
 

@@ -189,6 +189,7 @@ public class DeltaDebugMojo extends FlakeSyncAbstractMojo {
                     this.delay *= 2;
                     System.out.println("DELTA UPDATE DELAY: " + this.delay);
                 }
+
             }
             // If size is equal to number of chunks, we are finished, cannot go down more
             if (elements.size() == granularity) {

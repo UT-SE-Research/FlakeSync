@@ -69,12 +69,19 @@ while read line; do
     echo "Duration of each mojo:"
     echo "Concurrent method finder: $duration_ns_conc_meth"
     echo "Delay at all locations: $duration_ns_delay_inject"
+
+    echo "End-to-end plugin execution duration: ${duration_ns}ns"
+    echo "Duration of each mojo:"
+    echo "Concurrent method finder: $duration_ns_conc_meth"
+    echo "Delay at all locations: ,$duration_ns_delay_inject"
+
     echo "Delta Debugger: $duration_ns_dd"
     echo "Critical Point Search: $duration_ns_critsearch"
     echo "Barrier Point Search: $duration_ns_barrierpointsearch"
     echo "Patching: $duration_ns_patch"
 
     echo "$slug,$sha,$test_name,$duration_ns_conc_meth,$duration_ns_delay_inject,$duration_ns_dd,$duration_ns_critsearch,$duration_ns_barrierpointsearch,$duration_ns_patch" >> "$currentDir/$results/Time_Result.csv"
+
     cd ../../..
 done < $1
 
