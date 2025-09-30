@@ -195,6 +195,64 @@ public class Agent {
                             reader.accept(visitor, 0);
                             return writer.toByteArray();
                         }
+                    } else if (mode.equals("BARRIER_ST")) {
+                        String codeToIntroduceVariable = System.getProperty("CodeToIntroduceVariable");
+                        visitor = new StackTraceTracer(writer, codeToIntroduceVariable);
+                        reader.accept(visitor, 0);
+                        return writer.toByteArray();
+                    } else if (mode.equals("EXEC_MONITOR")) {
+                        synchronized (Utility.class) {
+                            String codeToIntroduceVariable = System.getProperty("CodeToIntroduceVariable");
+                            visitor = new ExecutionMonitorTracer(writer, codeToIntroduceVariable);
+                            reader.accept(visitor, 0);
+                        }
+                        return writer.toByteArray();
+                    } else if (mode.equals("DOWNWARD_MVN")) {
+                        synchronized (Utility.class) {
+                            String codeToIntroduceVariable = System.getProperty("CodeToIntroduceVariable");
+                            visitor = new MethodEndLineTracer(writer, codeToIntroduceVariable);
+                            reader.accept(visitor, 0);
+                        }
+                        return writer.toByteArray();
+                    } else if (mode.equals("ADD_YIELD_PT1") || mode.equals("ADD_YIELD_PT2")) {
+                        // YIELDING_POINT may or may not be a test_method's location
+                        String yieldPointInfo = System.getProperty("YieldingPoint");
+                        String tcls = yieldPointInfo.split("#")[0]; // test-class
+
+                        // Need substring match, test-class name is not coming here
+                        String codeToIntroduceVariable = System.getProperty("CodeToIntroduceVariable");
+                        String codeUnderTest = codeToIntroduceVariable.split("#")[0]; // code-under-test class
+                        if ((className.equals(codeUnderTest) || className.equals(tcls))) {
+                            visitor = new DelayAndYieldInjector(writer, yieldPointInfo, codeToIntroduceVariable);
+                            reader.accept(visitor, 0);
+
+                            if (DelayAndYieldInjector.methodAndLine != null) {
+                                try {
+                                    BufferedWriter bf = new BufferedWriter(new FileWriter(
+                                            String.valueOf(Constants.getSearchMethodANDLineFilepath(".",
+                                                    System.getProperty(".test")))
+                                    ));
+                                    bf.write(DelayAndYieldInjector.methodAndLine + "\n");
+                                    bf.flush();
+                                } catch (IOException ioe) {
+                                    ioe.printStackTrace();
+                                }
+                            }
+
+                            try {
+                                BufferedWriter bfFlag = new BufferedWriter(new FileWriter(
+                                        String.valueOf(Constants.getYieldResultFilepath(".",
+                                                System.getProperty(".test")))
+                                ));
+                                bfFlag.write("Delay=" + DelayAndYieldInjector.delayed + "\n");
+                                bfFlag.write("Update=" + DelayAndYieldInjector.updateFlag + "\n");
+                                bfFlag.write("Yield=" + DelayAndYieldInjector.yieldEntered + "\n");
+                                bfFlag.flush();
+                            } catch (IOException ioe) {
+                                ioe.printStackTrace();
+                            }
+                            return writer.toByteArray();
+                        }
                     // These modes rely on white list
                     } else if (whiteListContains(className)) {
                         if (mode.equals("ALL_LOCATIONS")) {
@@ -290,6 +348,31 @@ public class Agent {
                                     ex.printStackTrace();
                                 }
                             }
+                        }
+                    } else if (mode.equals("DOWNWARD_MVN")) {
+                        if (MethodEndLineTracer.methodEndLine != null) {
+                            try {
+                                java.io.BufferedWriter bf = new java.io.BufferedWriter(new java.io.FileWriter(
+                                        String.valueOf(Constants.getSearchMethodEndLineFilepath(".",
+                                                System.getProperty(".test")))
+                                ));
+                                bf.write("methodEndLine=" + MethodEndLineTracer.methodEndLine + "\n");
+                                bf.flush();
+
+                            } catch (IOException ioe) {
+                                ioe.printStackTrace();
+                            }
+                        }
+                    } else if (mode.equals("EXEC_MONITOR")) {
+                        try {
+                            java.io.BufferedWriter bf = new java.io.BufferedWriter(new java.io.FileWriter(
+                                        String.valueOf(Constants.getThresholdFilepath(".", System.getProperty(".test")))
+                                        ));
+                            bf.write("#execution=" + Utility.executionCount + "\n");
+                            bf.flush();
+
+                        } catch (IOException ioe) {
+                            ioe.printStackTrace();
                         }
                     }
                 } catch (IOException ioe) {

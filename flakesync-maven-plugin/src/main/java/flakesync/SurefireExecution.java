@@ -44,7 +44,6 @@ import org.twdata.maven.mojoexecutor.MojoExecutor;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import static flakesync.common.ConfigurationDefaults.BARRIER_SEARCH_JAR;
 import static flakesync.common.ConfigurationDefaults.CORE_JAR;
 
 public class SurefireExecution {
@@ -81,6 +80,10 @@ public class SurefireExecution {
         this.domNode = this.applyFlakeSyncConfig((Xpp3Dom) surefire.getConfiguration(), executionId);
     }
 
+    public String getExecutionId() {
+        return this.configuration.executionId;
+    }
+
     public void run() throws Throwable {
         try {
             MojoExecutor.executeMojo(this.surefire, MojoExecutor.goal("test"), domNode,
@@ -109,7 +112,7 @@ public class SurefireExecution {
 
     protected Xpp3Dom setReportOutputDirectory(Xpp3Dom configNode, String executionId) {
         configNode = this.addAttributeToConfig(configNode, "reportsDirectory",
-                Constants.getExecutionDir(executionId).toString());
+                Constants.getExecutionDir(this.mavenProject.getBasedir().toString(), executionId).toString());
         configNode = this.addAttributeToConfig(configNode, "disableXmlReport", "false");
         return configNode;
     }
@@ -132,17 +135,9 @@ public class SurefireExecution {
     }
 
     protected void setupArgline(PHASE phase, String originalArgLine) {
-
         String pathToJar = this.localRepository;
         // TODO: Encode path to agent in some final static variable for ease of access and potential changes to name/version
-        String argLineToSet = "-javaagent:" + pathToJar;
-        if (phase == PHASE.LOCATIONS_MINIMIZER) {
-            argLineToSet += CORE_JAR;
-        } else if (phase == PHASE.CRITICAL_POINT_SEARCH) {
-            argLineToSet += CORE_JAR;
-        } else if (phase == PHASE.BARRIER_POINT_SEARCH) {
-            argLineToSet += BARRIER_SEARCH_JAR;
-        }
+        String argLineToSet = "-javaagent:" + pathToJar + CORE_JAR;
 
         for (Xpp3Dom node : this.domNode.getChildren()) {
             if ("argLine".equals(node.getName()) && !node.getValue().contains(argLineToSet)) {
@@ -211,6 +206,43 @@ public class SurefireExecution {
                 Constants.getConcurrentMethodsFilepath(testname)));
     }
 
+    private void addSearchMethodEL() {
+        String properties = (!checkSysPropsDeprecated()) ? ("systemPropertyVariables") : ("systemProperties");
+        Xpp3Dom propertiesNode = addAttributeToConfig(this.domNode, properties, "").getChild(properties);
+        addAttributeToConfig(propertiesNode, "searchMethodEndLine", "search");
+    }
+
+    private void addSearchMethodMN() {
+        String properties = (!checkSysPropsDeprecated()) ? ("systemPropertyVariables") : ("systemProperties");
+        Xpp3Dom propertiesNode = addAttributeToConfig(this.domNode, properties, "").getChild(properties);
+        addAttributeToConfig(propertiesNode, "searchForMethodName", "search");
+    }
+
+    private void addCodeToIntroVar(String line) {
+        String properties = (!checkSysPropsDeprecated()) ? ("systemPropertyVariables") : ("systemProperties");
+        Xpp3Dom propertiesNode = addAttributeToConfig(this.domNode, properties, "").getChild(properties);
+        addAttributeToConfig(propertiesNode, "CodeToIntroduceVariable", line);
+    }
+
+    private void addCollectST() {
+        String properties = (!checkSysPropsDeprecated()) ? ("systemPropertyVariables") : ("systemProperties");
+        Xpp3Dom propertiesNode = addAttributeToConfig(this.domNode, properties, "").getChild(properties);
+        addAttributeToConfig(propertiesNode, "stackTraceCollect", "true");
+    }
+
+    private void addYieldPt(String yieldPt, int threshold) {
+        String properties = (!checkSysPropsDeprecated()) ? ("systemPropertyVariables") : ("systemProperties");
+        Xpp3Dom propertiesNode = addAttributeToConfig(this.domNode, properties, "").getChild(properties);
+        addAttributeToConfig(propertiesNode, "YieldingPoint", yieldPt);
+        addAttributeToConfig(propertiesNode, "threshold", threshold + "");
+    }
+
+    private void addMonitorFlag() {
+        String properties = (!checkSysPropsDeprecated()) ? ("systemPropertyVariables") : ("systemProperties");
+        Xpp3Dom propertiesNode = addAttributeToConfig(this.domNode, properties, "").getChild(properties);
+        addAttributeToConfig(propertiesNode, "executionMonitor", "flag");
+    }
+
     private void addLocs(String testname) {
         String properties = (!checkSysPropsDeprecated()) ? ("systemPropertyVariables") : ("systemProperties");
         Xpp3Dom propertiesNode = addAttributeToConfig(this.domNode, properties, "").getChild(properties);
@@ -274,6 +306,88 @@ public class SurefireExecution {
             execution.addWhitelist(testName);
             execution.setupArgline(PHASE.LOCATIONS_MINIMIZER, originalArgLine);
             execution.addAgentMode("ALL_LOCATIONS");
+
+            return execution;
+        }
+
+        public static SurefireExecution createDownwardMvnExec(Plugin surefire, String originalArgLine,
+                                                              MavenProject mavenProject, MavenSession mavenSession,
+                                                              BuildPluginManager pluginManager, String flakesyncDir,
+                                                              String localRepository, String testName, int delay,
+                                                              String line) {
+            SurefireExecution execution = new SurefireExecution(surefire, mavenProject, mavenSession, pluginManager,
+                    flakesyncDir, localRepository, delay);
+            execution.addTestName(testName);
+            execution.addDelay(delay + "");
+            execution.addSearchMethodEL();
+            execution.addCodeToIntroVar(line);
+            execution.setupArgline(PHASE.BARRIER_POINT_SEARCH, originalArgLine);
+            execution.addAgentMode("DOWNWARD_MVN");
+            return execution;
+        }
+
+        public static SurefireExecution createBarrierSTExec(Plugin surefire, String originalArgLine,
+                                                            MavenProject mavenProject, MavenSession mavenSession,
+                                                            BuildPluginManager pluginManager, String flakesyncDir,
+                                                            String localRepository, String testName, int delay,
+                                                            String line) {
+            SurefireExecution execution = new SurefireExecution(surefire, mavenProject, mavenSession, pluginManager,
+                    flakesyncDir, localRepository, delay);
+            execution.addTestName(testName);
+            execution.addDelay(delay + "");
+            execution.addCodeToIntroVar(line);
+            execution.addCollectST();
+            execution.setupArgline(PHASE.BARRIER_POINT_SEARCH, originalArgLine);
+            execution.addAgentMode("BARRIER_ST");
+            return execution;
+        }
+
+        public static SurefireExecution createYieldExec1(Plugin surefire, String originalArgLine,
+                                                        MavenProject mavenProject, MavenSession mavenSession,
+                                                        BuildPluginManager pluginManager, String flakesyncDir,
+                                                        String localRepository, String testName, int delay,
+                                                        String startLoc, String yieldPt, int threshold) {
+            SurefireExecution execution = new SurefireExecution(surefire, mavenProject, mavenSession, pluginManager,
+                    flakesyncDir, localRepository, delay);
+            execution.addTestName(testName);
+            execution.addDelay(delay + "");
+            execution.addCodeToIntroVar(startLoc);
+            execution.addYieldPt(yieldPt, threshold);
+            execution.setupArgline(PHASE.BARRIER_POINT_SEARCH, originalArgLine);
+            execution.addAgentMode("ADD_YIELD_PT1");
+            return execution;
+        }
+
+        public static SurefireExecution createYieldExec2(Plugin surefire, String originalArgLine,
+                                                         MavenProject mavenProject, MavenSession mavenSession,
+                                                         BuildPluginManager pluginManager, String flakesyncDir,
+                                                         String localRepository, String testName, int delay,
+                                                         String startLoc, String yieldPt) {
+            SurefireExecution execution = new SurefireExecution(surefire, mavenProject, mavenSession, pluginManager,
+                    flakesyncDir, localRepository, delay);
+            execution.addTestName(testName);
+            execution.addDelay(delay + "");
+            execution.addCodeToIntroVar(startLoc);
+            execution.addYieldPt(yieldPt, 1);
+            execution.addSearchMethodMN();
+            execution.setupArgline(PHASE.BARRIER_POINT_SEARCH, originalArgLine);
+            execution.addAgentMode("ADD_YIELD_PT2");
+            return execution;
+        }
+
+        public static SurefireExecution createExecMon(Plugin surefire, String originalArgLine,
+                                                      MavenProject mavenProject, MavenSession mavenSession,
+                                                      BuildPluginManager pluginManager, String flakesyncDir,
+                                                      String localRepository, String testName, int delay,
+                                                      String line) {
+            SurefireExecution execution = new SurefireExecution(surefire, mavenProject, mavenSession, pluginManager,
+                    flakesyncDir, localRepository, delay);
+            execution.addTestName(testName);
+            execution.addDelay(delay + "");
+            execution.addCodeToIntroVar(line);
+            execution.addMonitorFlag();
+            execution.setupArgline(PHASE.BARRIER_POINT_SEARCH, originalArgLine);
+            execution.addAgentMode("EXEC_MONITOR");
 
             return execution;
         }

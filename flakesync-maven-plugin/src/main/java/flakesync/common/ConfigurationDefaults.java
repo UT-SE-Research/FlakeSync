@@ -55,6 +55,4 @@ public class ConfigurationDefaults {
 
     public static final String CORE_JAR =
         "/edu/utexas/ece/flakesync-core/1.0-SNAPSHOT/flakesync-core-1.0-SNAPSHOT.jar";
-    public static final String BARRIER_SEARCH_JAR =
-        "/edu/utexas/ece/barrierSearch-core/1.0-SNAPSHOT/barrierSearch-core-1.0-SNAPSHOT.jar";
 }

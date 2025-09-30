@@ -59,11 +59,16 @@ public class Utility {
     // List of stack trace elements
     public static List<String> stackTraceList = new ArrayList<String>();
 
-    private static int delay;
+    public static int executionCount = 0;   // Number of times critical point is executed in passing run
+    public static int testVarCount = 0;     // Keep track of how often critcal point is executed, for threshold count
+
+    private static int delay;       // Amount to delay
+    private static int threshold;   // Execution threshold to reach when applying barrier point
 
     static {
         try {
             delay = Integer.parseInt(System.getProperty("delay", "100"));
+            threshold = Integer.parseInt(System.getProperty("threshold", "1"));
         } catch (NumberFormatException nfe) {
             delay = 100;
         }
@@ -133,7 +138,7 @@ public class Utility {
 
     // Helper method to collect the stack trace after a delay
     private static void collectStackTrace(String testName, String className) {
-        className = className.replaceAll("[/]",".");
+        className = className.replaceAll("[/]", ".");
         String[] classNameItems = className.split("#", 2);
         String fileName = String.valueOf(Constants.getStackTraceFilepath(testName));
         try {
@@ -179,5 +184,36 @@ public class Utility {
         } catch (Exception ex) {
             ex.printStackTrace();
         }
+    }
+
+    // Apply a yield for barrier point, waiting up until execution of critical point reaches a threshold
+    public static void yield() {
+        long start = System.currentTimeMillis();    // Set a time limit in case it goes too long
+        long end = start;
+        while ((testVarCount < threshold)
+                && ((end = System.currentTimeMillis()) < start + (delay * 200))) {
+            Thread.yield();
+        }
+
+        // Count as failure if it timed out
+        if (end > start + (delay * 200)) {
+            throw new RuntimeException("Yield timed out");
+        }
+        testVarCount = 0;
+    }
+
+    // Used to count how often the critical point was reached, for the barrier point
+    public static void update() {
+        testVarCount += 1;
+    }
+
+    // Used to count how often critical point was executed in normal run, to set threshold
+    public static void counter() {
+        executionCount += 1;
+    }
+
+    // Resets the count
+    public static void init() {
+        testVarCount = 0;
     }
 }
