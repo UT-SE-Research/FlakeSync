@@ -31,7 +31,6 @@ package flakesync;
 import flakesync.common.ConfigurationDefaults;
 import flakesync.common.Level;
 import flakesync.common.Logger;
-import jakarta.xml.bind.DatatypeConverter;
 
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -40,6 +39,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.Base64;
 import java.util.Properties;
 
 
@@ -58,8 +58,9 @@ public class Utils {
 
     public static String getFreshExecutionId() {
         try {
-            String id = DatatypeConverter.printBase64Binary(
-                    MessageDigest.getInstance("SHA-256").digest(Long.toString(System.currentTimeMillis()).getBytes()));
+            String id = Base64.getEncoder().encodeToString(
+                    MessageDigest.getInstance("SHA-256")
+                            .digest(Long.toString(System.currentTimeMillis()).getBytes()));
             id = id.replace("/", "");
             id = id.replace("\\", "");
             return id;
