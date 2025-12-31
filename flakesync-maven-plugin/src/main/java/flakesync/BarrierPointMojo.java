@@ -19,11 +19,18 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.Buffer;
 import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
 import java.util.Set;
+
+
+
+
 
 @Mojo(name = "barrierpointsearch", defaultPhase = LifecyclePhase.TEST,
         requiresDependencyResolution = ResolutionScope.TEST)
@@ -70,17 +77,61 @@ public class BarrierPointMojo extends FlakeSyncAbstractMojo {
                             String.valueOf(this.mavenProject.getBasedir()), testName)));
                     BufferedReader reader = new BufferedReader(new FileReader(endLineFile));
 
-                    String yieldingPoint = "";
-                    execution = SurefireExecution.SurefireFactory.createYieldExec1(this.surefire,
-                            this.originalArgLine, this.mavenProject, this.mavenSession, this.pluginManager,
-                            Paths.get(this.baseDir.getAbsolutePath(),
-                                    ConfigurationDefaults.DEFAULT_FLAKESYNC_DIR).toString(),
-                            this.localRepository, this.testName, delay, firstLoc, yieldingPoint, 1);
+                    String yieldPoint = reader.readLine().split("=")[1];
 
-                    boolean fail = executeSurefireExecution(null, execution);
+                    for (int ln = Integer.parseInt(endLoc.split("#")[1]);
+                         ln < Integer.parseInt(yieldPoint.split("#")[1]); ln++) {
+                        String yieldingPoint = yieldPoint.split("#")[0] + "#" + ln;
+                        System.out.println("TRYING TO YIELD AT: " + yieldingPoint);
 
-                    if (!fail && checkValidPass()) {
-                        addBarrierPointToResults(bw, firstLoc, yieldingPoint, delay);
+                        // Execute test with the delay and the new potential yield point
+                        // (no need to output starting line anymore)
+                        execution = SurefireExecution.SurefireFactory.createYieldExec1(this.surefire,
+                                this.originalArgLine, this.mavenProject, this.mavenSession, this.pluginManager,
+                                Paths.get(this.baseDir.getAbsolutePath(),
+                                        ConfigurationDefaults.DEFAULT_FLAKESYNC_DIR).toString(),
+                                this.localRepository, this.testName, delay, endLoc.replace("/", "."),
+                                yieldingPoint, 1);
+                        boolean fail = executeSurefireExecution(null, execution);
+
+                        // If the test now passes, and it was valid, add this point as the barrier point
+                        System.out.println("Whether this warrants adding a barrier pt: " + (!fail && checkValidPass()));
+                        if (!fail && checkValidPass()) {
+                            addBarrierPointToResults(bw, line, yieldingPoint, 1);
+                            break;
+                        } else {
+                            // If test still fails, maybe critical point needs to execute more often
+                            // Count how often it was executed
+                            // TODO: Refactor createExecMon to just never use delay explicitly
+                            SurefireExecution execMon = SurefireExecution.SurefireFactory.createExecMon(
+                                    this.surefire, this.originalArgLine, this.mavenProject, this.mavenSession,
+                                    this.pluginManager, Paths.get(this.baseDir.getAbsolutePath(),
+                                            ConfigurationDefaults.DEFAULT_FLAKESYNC_DIR).toString(),
+                                    this.localRepository, this.testName, delay, endLoc);
+                            executeSurefireExecution(null, execMon);
+
+                            // Parse threshold file for new threshold and store in numExecutions
+                            File execsFile = new File(String.valueOf(Constants.getThresholdFilepath(
+                                    String.valueOf(this.mavenProject.getBasedir()), testName)));
+                            reader = new BufferedReader(new FileReader(execsFile));
+                            int numExecutions = Integer.parseInt(reader.readLine().split("=")[1]);
+
+                            // Run again with delay and potential yield point, but now check for threshold
+                            execution = SurefireExecution.SurefireFactory.createYieldExec1(this.surefire,
+                                    this.originalArgLine, this.mavenProject, this.mavenSession, this.pluginManager,
+                                    Paths.get(this.baseDir.getAbsolutePath(),
+                                            ConfigurationDefaults.DEFAULT_FLAKESYNC_DIR).toString(),
+                                    this.localRepository, this.testName, delay, endLoc.replace("/", "."),
+                                    yieldingPoint, 1);
+                            fail = executeSurefireExecution(null, execution);
+
+                            System.out.println("Whether this warrants adding a barrier pt: " + (!fail && checkValidPass()));
+                            if (!fail && checkValidPass()) {
+                                // If test passed, barrier point worked, and add to results file
+                                addBarrierPointToResults(bw, line, yieldingPoint, numExecutions);
+                                break;
+                            }
+                        }
                     }
                 } else {
                     SurefireExecution stackTraceExec = SurefireExecution.SurefireFactory.createBarrierSTExec(this.surefire,
@@ -104,8 +155,13 @@ public class BarrierPointMojo extends FlakeSyncAbstractMojo {
                     Map<String, String> classes = new HashMap<>();
                     parseStackTrace(classes, stackTraceFile);
 
+                    System.out.println("Candidate barrier classes: " + classes);
+
                     Set<String> visited = new HashSet<String>();
-                    for (String classN : classes.keySet()) {
+                    List<String> reversedClasses = new ArrayList<String>(classes.keySet());
+                    Collections.reverse(reversedClasses);
+                    for (String classN : reversedClasses) {
+                        System.out.println("CANDIDATE: " + classN + " from " + classes.keySet());
                         String yieldPoint = classN + "#" + classes.get(classN);
                         endLoc = endLoc.replace("/", ".");
                         System.out.println(endLoc + "\n" + yieldPoint);
@@ -143,9 +199,9 @@ public class BarrierPointMojo extends FlakeSyncAbstractMojo {
                                                 ConfigurationDefaults.DEFAULT_FLAKESYNC_DIR).toString(),
                                         this.localRepository, this.testName, delay, endLoc, yieldingPoint, 1);
                                 boolean fail = executeSurefireExecution(null, barrierPoint);
-
-                                // If the test now passes and it was valid, add this point as the barrier point
+                                // If the test now passes, and it was valid, add this point as the barrier point
                                 if (!fail && checkValidPass()) {
+                                    System.out.println("About to write");
                                     addBarrierPointToResults(bw, line, yieldingPoint, 1);
                                     break;
                                 } else {
@@ -173,14 +229,16 @@ public class BarrierPointMojo extends FlakeSyncAbstractMojo {
                                             this.localRepository, this.testName, delay, endLoc, yieldingPoint,
                                             numExecutions);
                                     fail = executeSurefireExecution(null, barrierPoint);
-
                                     if (!fail && checkValidPass()) {
+                                        System.out.println("About to write");
                                         // If test passed, barrier point worked, and add to results file
                                         addBarrierPointToResults(bw, line, yieldingPoint, numExecutions);
                                         break;
                                     }
                                 }
                             }
+                            System.out.println("DONE WITH A CANDIDATE CLASS ");
+                            System.out.println("DONE WITH A CANDIDATE CLASS " + classes.size());
                         }
                     }
                 }
@@ -242,6 +300,7 @@ public class BarrierPointMojo extends FlakeSyncAbstractMojo {
 
     private void addBarrierPointToResults(BufferedWriter bw, String bop, String bap, int threshold)
             throws IOException {
+        System.out.println("TRYING TO WRITE BARRIER PT: " + this.testName + "," + bop + "," + bap + "," + threshold);
         bw.write(this.testName + "," + bop + "," + bap + "," + threshold);
         bw.newLine();
         bw.flush();
@@ -257,12 +316,25 @@ public class BarrierPointMojo extends FlakeSyncAbstractMojo {
         // File being read should have three lines for booleans representing:
         //   delay happened, yield happened, test passed
         String flagLine = reader.readLine();
+        if (flagLine.equals("null")) {
+            return false;
+        }
         boolean hitscriteria = true;
         while (flagLine != null) {
             System.out.println(Boolean.parseBoolean(flagLine.split("=")[1]));
-            hitscriteria &= Boolean.parseBoolean(flagLine.split("=")[1]);
+            if (!flagLine.split("=")[0].equals("Update")) {
+                hitscriteria &= (Boolean.parseBoolean(flagLine.split("=")[1]));
+            }
             flagLine = reader.readLine();
         }
+
+        BufferedWriter bw = new BufferedWriter(new FileWriter(barrierResultFile));
+        bw.write("null");
+        bw.newLine();
+        bw.close();
+
+        reader.close();
+
         // As long as all three criteria hold, the passing result was valid
         if (hitscriteria) {
             return true;
