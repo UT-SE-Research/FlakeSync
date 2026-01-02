@@ -144,6 +144,7 @@ public class CritSearchMojo extends FlakeSyncAbstractMojo {
 
             // Iterate over each root method to identify specific critical points
             visited = new HashSet<String>();    // Do not check duplicate methods
+            HashMap<String, Integer> vistedLines = new HashMap<String, Integer>();
             for (String root : roots) {
                 String[] rootNameElements = root.split("/");
                 // Method name is the part right next to ( near end of root name
@@ -178,7 +179,7 @@ public class CritSearchMojo extends FlakeSyncAbstractMojo {
                     executeSurefireExecution(null, rootMethodAnalysisExecution);
 
                     // Try adding delays from beginning of method until it can fail
-                    sequentialDebug(workingDelay);
+                    sequentialDebug(workingDelay, vistedLines);
                     this.delay = workingDelay;
                     writeClustersToFile(bw);
                 }
@@ -291,13 +292,15 @@ public class CritSearchMojo extends FlakeSyncAbstractMojo {
                 } else {
                     String tmp = data[1].substring(0, data[1].indexOf('('));    // Parse out the class+method part
                     String className = tmp.substring(0, tmp.lastIndexOf('/'));  // Parse out the class name
-                    int lineNumber = Integer.parseInt(data[1].split(":")[1]     // Parse out the line number
-                        .substring(0, data[1].split(":")[1].length() - 1));
-                    // Format of element is className#lineNumber
-                    parsedInfo.append(className);
-                    parsedInfo.append("#");
-                    parsedInfo.append(lineNumber);
-                    parsedInfo.append(",");
+                    if (data[1].split(":").length > 1) {
+                        int lineNumber = Integer.parseInt(data[1].split(":")[1]     // Parse out the line number
+                                .substring(0, data[1].split(":")[1].length() - 1));
+                        // Format of element is className#lineNumber
+                        parsedInfo.append(className);
+                        parsedInfo.append("#");
+                        parsedInfo.append(lineNumber);
+                        parsedInfo.append(",");
+                    }
                 }
                 // Read next line
                 line = reader.readLine();
@@ -331,8 +334,7 @@ public class CritSearchMojo extends FlakeSyncAbstractMojo {
     }
 
     // Search through method one location at a time, injecting the specified delay amount
-    private void sequentialDebug(int workingDelay) throws Throwable {
-        String upperBoundary = "";
+    private void sequentialDebug(int workingDelay, HashMap<String, Integer> visitedLines) throws Throwable {
         ArrayList<String> currentLines = new ArrayList<String>();
         try {
             String path = Constants.getMethodStartEndLineFile(String.valueOf(this.mavenProject.getBasedir()), testName);
@@ -376,7 +378,10 @@ public class CritSearchMojo extends FlakeSyncAbstractMojo {
                     // Check if delaying at current location makes the test fail (means it is in region)
                     boolean failed = executeSurefireExecution(null, execution);
                     if (failed) {
-                        currentLines.add(className + "#" + i);
+                        if (!visitedLines.containsKey(className + "#" + i)) {
+                            currentLines.add(className + "#" + i);
+                            visitedLines.put(className + "#" + i, workingDelay);
+                        }
                     } else {
                         // Delaying at this line stops the failures, we are at the end of the region
                         if (!currentLines.isEmpty()) {
