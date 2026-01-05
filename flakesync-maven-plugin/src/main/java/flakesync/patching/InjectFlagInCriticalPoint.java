@@ -44,15 +44,19 @@ public class InjectFlagInCriticalPoint {
     public static final String RESET_METHOD_NAME = "resetExecutions()";
     public static final String GET_EXECUTION_STATUS_METHOD_NAME = "getExecutedStatus()";
 
+
     public static Path findJavaFilePath(String slug, String className) throws IOException {
-        // Use only the outer class name for the filename
         String outerClassName = className.substring(className.lastIndexOf('.') + 1).split("\\$")[0];
-        String classFileName = outerClassName + ".java";
+        String fileName = outerClassName + ".java";
+
+        String packagePathMatch = className.replace('.', File.separatorChar).replace('$', File.separatorChar) + ".java";
 
         try (Stream<Path> stream = Files.walk(Paths.get(slug))) {
             return stream
-                    .filter(path -> path.getFileName().toString().equals(classFileName))
-                    .filter(path -> path.toString().replace(File.separatorChar, '.').contains(className.replace('$', '.')))
+                    .filter(Files::isRegularFile)
+                    .filter(path -> path.getFileName().toString().equals(fileName))
+                    .filter(path -> path.toString().endsWith(packagePathMatch)
+                          ||  path.toString().contains(packagePathMatch))
                     .findFirst()
                     .orElseThrow(() -> new IOException("Could not find Java file for class: " + className));
         }

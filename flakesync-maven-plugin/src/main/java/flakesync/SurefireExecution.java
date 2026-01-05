@@ -78,6 +78,7 @@ public class SurefireExecution {
         String executionId = "clean_" + Utils.getFreshExecutionId();
         this.configuration = new Configuration(executionId, flakesyncDir);
         this.domNode = this.applyFlakeSyncConfig((Xpp3Dom) surefire.getConfiguration(), executionId);
+        //addAttributeToConfig(this.domNode, "forkedProcessTimeoutInSeconds", "7200");
     }
 
     public String getExecutionId() {

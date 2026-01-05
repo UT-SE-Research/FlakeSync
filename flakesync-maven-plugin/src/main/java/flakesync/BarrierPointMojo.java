@@ -95,7 +95,6 @@ public class BarrierPointMojo extends FlakeSyncAbstractMojo {
                         boolean fail = executeSurefireExecution(null, execution);
 
                         // If the test now passes, and it was valid, add this point as the barrier point
-                        System.out.println("Whether this warrants adding a barrier pt: " + (!fail && checkValidPass()));
                         if (!fail && checkValidPass()) {
                             addBarrierPointToResults(bw, line, yieldingPoint, 1);
                             break;
@@ -125,7 +124,6 @@ public class BarrierPointMojo extends FlakeSyncAbstractMojo {
                                     yieldingPoint, 1);
                             fail = executeSurefireExecution(null, execution);
 
-                            System.out.println("Whether this warrants adding a barrier pt: " + (!fail && checkValidPass()));
                             if (!fail && checkValidPass()) {
                                 // If test passed, barrier point worked, and add to results file
                                 addBarrierPointToResults(bw, line, yieldingPoint, numExecutions);
@@ -161,6 +159,9 @@ public class BarrierPointMojo extends FlakeSyncAbstractMojo {
                     List<String> reversedClasses = new ArrayList<String>(classes.keySet());
                     Collections.reverse(reversedClasses);
                     for (String classN : reversedClasses) {
+                        if (classN.contains(",")) {
+                            classN = classN.substring(0, classN.lastIndexOf(','));
+                        }
                         System.out.println("CANDIDATE: " + classN + " from " + classes.keySet());
                         String yieldPoint = classN + "#" + classes.get(classN);
                         endLoc = endLoc.replace("/", ".");
@@ -201,7 +202,6 @@ public class BarrierPointMojo extends FlakeSyncAbstractMojo {
                                 boolean fail = executeSurefireExecution(null, barrierPoint);
                                 // If the test now passes, and it was valid, add this point as the barrier point
                                 if (!fail && checkValidPass()) {
-                                    System.out.println("About to write");
                                     addBarrierPointToResults(bw, line, yieldingPoint, 1);
                                     break;
                                 } else {
@@ -230,7 +230,6 @@ public class BarrierPointMojo extends FlakeSyncAbstractMojo {
                                             numExecutions);
                                     fail = executeSurefireExecution(null, barrierPoint);
                                     if (!fail && checkValidPass()) {
-                                        System.out.println("About to write");
                                         // If test passed, barrier point worked, and add to results file
                                         addBarrierPointToResults(bw, line, yieldingPoint, numExecutions);
                                         break;
@@ -277,7 +276,11 @@ public class BarrierPointMojo extends FlakeSyncAbstractMojo {
                 // Only keep track of those not in black list, e.g., from JUnit or Maven
                 if (!inBlackList(className)) {
                     System.out.println(trace);
-                    classes.put(className, lineNum);
+                    if (classes.containsKey(className)) {
+                        classes.put(className + ",", lineNum);
+                    } else {
+                        classes.put(className, lineNum);
+                    }
                 }
             }
             trace = reader.readLine();
@@ -300,7 +303,6 @@ public class BarrierPointMojo extends FlakeSyncAbstractMojo {
 
     private void addBarrierPointToResults(BufferedWriter bw, String bop, String bap, int threshold)
             throws IOException {
-        System.out.println("TRYING TO WRITE BARRIER PT: " + this.testName + "," + bop + "," + bap + "," + threshold);
         bw.write(this.testName + "," + bop + "," + bap + "," + threshold);
         bw.newLine();
         bw.flush();

@@ -45,17 +45,17 @@ public class CritSearchMojo extends FlakeSyncAbstractMojo {
         String locationsPath = String.valueOf(Constants.getMinLocationsFilepath(testName));
         generateLocsList(locations, locationsPath);
 
-
         locationsPath = String.valueOf(Constants.getMinLocationsFilepath(testName));
         try {
             SurefireExecution cleanExec = SurefireExecution.SurefireFactory.getDelayLocExec(this.surefire,
                     this.originalArgLine, this.mavenProject, this.mavenSession, this.pluginManager,
                     Paths.get(this.baseDir.getAbsolutePath(), ConfigurationDefaults.DEFAULT_FLAKESYNC_DIR).toString(),
-                    this.localRepository, this.testName, this.delay * 2, locationsPath);
+                    this.localRepository, this.testName, this.delay, locationsPath);
             if (!executeSurefireExecution(null, cleanExec)) {
                 System.out.println("This location is not a good one. Go back and run minimizer again.");
                 return;
             }
+
 
             // Parse the stacktrace file to get all the locations to iterate through
             stackTraceLines = new HashSet<String>();
@@ -178,10 +178,12 @@ public class CritSearchMojo extends FlakeSyncAbstractMojo {
                                     this.localRepository, this.testName, workingDelay, methodName);
                     executeSurefireExecution(null, rootMethodAnalysisExecution);
 
+
                     // Try adding delays from beginning of method until it can fail
                     sequentialDebug(workingDelay, vistedLines);
                     this.delay = workingDelay;
                     writeClustersToFile(bw);
+                    clusters.clear();
                 }
             }
         } catch (Throwable exception) {
@@ -336,12 +338,12 @@ public class CritSearchMojo extends FlakeSyncAbstractMojo {
     // Search through method one location at a time, injecting the specified delay amount
     private void sequentialDebug(int workingDelay, HashMap<String, Integer> visitedLines) throws Throwable {
         ArrayList<String> currentLines = new ArrayList<String>();
+        int cluster = 1;    // Want to keep track of different "clusters" or regions of failing locations
         try {
             String path = Constants.getMethodStartEndLineFile(String.valueOf(this.mavenProject.getBasedir()), testName);
             File lines = new File(path);
             BufferedReader reader = new BufferedReader(new FileReader(lines));
             String line = reader.readLine();
-            int cluster = 1;    // Want to keep track of different "clusters" or regions of failing locations
             while (line != null) {
                 String[] tmp = line.split("#");
                 String className = tmp[0];
@@ -378,10 +380,8 @@ public class CritSearchMojo extends FlakeSyncAbstractMojo {
                     // Check if delaying at current location makes the test fail (means it is in region)
                     boolean failed = executeSurefireExecution(null, execution);
                     if (failed) {
-                        if (!visitedLines.containsKey(className + "#" + i)) {
-                            currentLines.add(className + "#" + i);
-                            visitedLines.put(className + "#" + i, workingDelay);
-                        }
+                        currentLines.add(className + "#" + i);
+                        visitedLines.put(className + "#" + i, workingDelay);
                     } else {
                         // Delaying at this line stops the failures, we are at the end of the region
                         if (!currentLines.isEmpty()) {
@@ -395,12 +395,12 @@ public class CritSearchMojo extends FlakeSyncAbstractMojo {
             }
             reader.close();
 
-            // Record each region or "cluster" of failing delay locations
+        } catch (IOException ioe) {
+            ioe.printStackTrace();
+        } finally {
             if (!currentLines.isEmpty()) {
                 clusters.put(cluster, currentLines);
             }
-        } catch (IOException ioe) {
-            ioe.printStackTrace();
         }
     }
 

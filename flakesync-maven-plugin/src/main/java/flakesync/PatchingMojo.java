@@ -65,7 +65,7 @@ public class PatchingMojo extends FlakeSyncAbstractMojo {
             String line = br.readLine(); // Skip line with headers
             while (line != null && !line.isEmpty()) {
                 if (line.charAt(0) != '#') {
-                    String baseDir = this.mavenProject.getBasedir().toString();
+                    String baseDir = this.mavenSession.getExecutionRootDirectory();
 
                     String[] lineItems = line.split(",");
                     String critPoint = lineItems[1];
@@ -78,6 +78,8 @@ public class PatchingMojo extends FlakeSyncAbstractMojo {
                     String target = critPoint.split("-")[1].split("#")[0];
                     int targetLine = Integer.parseInt(critPoint.split("-")[1].split("#")[1].split("\\[")[0]);
                     target = target.split("\\$")[0].replace("/", ".");
+
+                    System.out.println("Crit pt target: " + target);
 
                     // Find the corresponding Java file, saving the original file to revert later
                     Path critPath = InjectFlagInCriticalPoint.findJavaFilePath(baseDir, target);
