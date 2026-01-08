@@ -1,7 +1,7 @@
 # FlakeSync
 
 ## Using FlakeSync
-* Run the three phases(6 goals total) of the Flakesync tool on your desired maven project to identify the sources of flakiness for a given flaky test
+* Run the four phases(6 goals total) of the Flakesync tool on your desired maven project to identify the sources of flakiness for a given flaky test
 * Each phase will produce output files that will be listed under the following directory: `./<repo>/<module>/.flakesync/`
 
 ### Setup
