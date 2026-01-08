@@ -5,6 +5,7 @@
 * Each phase will produce output files that will be listed under the following directory: `./<repo>/<module>/.flakesync/`
 
 ### Setup
+* Can be built on Java 8+
 * Run ```mvn clean install -U in test project```
 
 ### Running Delay Injection and Location Minimization 
