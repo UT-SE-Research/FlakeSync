@@ -44,8 +44,9 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.List;
-import java.util.stream.Collectors;
+import java.util.Enumeration;
+import java.util.jar.JarEntry;
+import java.util.jar.JarFile;
 import java.util.stream.Stream;
 
 @Mojo(name = "delaylocs", defaultPhase = LifecyclePhase.TEST, requiresDependencyResolution = ResolutionScope.TEST)
@@ -90,36 +91,67 @@ public class RunWithDelaysMojo extends FlakeSyncAbstractMojo {
 
     private boolean createWhiteList() {
         System.out.println("Inside createWhiteList");
+
         File whitelist = new File(
-                String.valueOf(Paths.get(String.valueOf(this.baseDir),
-                        String.valueOf(Constants.getWhitelistFilepath(this.testName)))));
+                String.valueOf(Paths.get(this.baseDir.toString(),
+                        Constants.getWhitelistFilepath(this.testName).toString())));
+
+
         File outputDir = new File(this.mavenProject.getBuild().getOutputDirectory());
 
-        try {
-            whitelist.createNewFile();
-            FileWriter outputLocationsFile = new FileWriter(whitelist);
-            BufferedWriter bw = new BufferedWriter(outputLocationsFile);
+        try (BufferedWriter bw = new BufferedWriter(new FileWriter(whitelist))) {
 
-            try (Stream<Path> paths = Files.walk(Paths.get(outputDir.toURI()))) {
-                List<String> classNames = paths
-                        .filter(Files::isRegularFile)
-                        .filter(path -> path.toString().endsWith(".class"))
-                        .filter(path -> !path.toString().contains("Tests"))
-                        .map(path -> path.toString()
-                                .replaceFirst(".*target/classes/", "")
-                                .replace("/", ".")
-                                .replace(".class", ""))
-                        .collect(Collectors.toList());
 
-                for (String location : classNames) {
-                    bw.write(location);
-                    bw.newLine();
+            Path outputPath = outputDir.toPath();
+            if (Files.exists(outputPath)) {
+                try (Stream<Path> paths = Files.walk(outputPath)) {
+                    paths.filter(Files::isRegularFile)
+                            .filter(path -> path.toString().endsWith(".class"))
+                            .filter(path -> !path.toString().contains("Tests"))
+                            .map(path -> outputPath.relativize(path)) // relative to outputDir
+                            .map(Path::toString)
+                            .map(s -> s.replace(File.separatorChar, '.')) // convert to package style
+                            .map(s -> s.replaceAll("\\.class$", ""))
+                            .forEach(className -> {
+                                try {
+                                    bw.write(className);
+                                    bw.newLine();
+                                } catch (IOException ioe) {
+                                    System.out.println("Exception when creating whitelist: " + ioe);
+                                }
+                            });
                 }
-                bw.flush();
             }
+
+
+            String classpath = System.getProperty("java.class.path");
+            String[] jars = classpath.split(File.pathSeparator);
+
+            for (String jarPath : jars) {
+                if (jarPath.endsWith(".jar")) {
+                    try (JarFile jarFile = new JarFile(jarPath)) {
+                        Enumeration<JarEntry> entries = jarFile.entries();
+                        while (entries.hasMoreElements()) {
+                            JarEntry entry = entries.nextElement();
+                            if (!entry.isDirectory() && entry.getName().endsWith(".class")) {
+                                String className = entry.getName()
+                                        .replace('/', '.')
+                                        .replaceAll("\\.class$", "");
+                                bw.write(className);
+                                bw.newLine();
+                            }
+                        }
+                    } catch (IOException ioe) {
+                        System.err.println("Failed to read JAR: " + jarPath);
+                    }
+                }
+            }
+
+            bw.flush();
         } catch (IOException ioe) {
             throw new RuntimeException(ioe);
         }
+
         return true;
     }
 }

@@ -237,20 +237,21 @@ public class Agent {
                                 } catch (IOException ioe) {
                                     ioe.printStackTrace();
                                 }
+                            } else {
+                                try {
+                                    BufferedWriter bfFlag = new BufferedWriter(new FileWriter(
+                                            String.valueOf(Constants.getYieldResultFilepath(".",
+                                                    System.getProperty(".test")))
+                                    ));
+                                    bfFlag.write("Delay=" + DelayAndYieldInjector.delayed + "\n");
+                                    bfFlag.write("Update=" + DelayAndYieldInjector.updateFlag + "\n");
+                                    bfFlag.write("Yield=" + DelayAndYieldInjector.yieldEntered + "\n");
+                                    bfFlag.flush();
+                                } catch (IOException ioe) {
+                                    ioe.printStackTrace();
+                                }
                             }
 
-                            try {
-                                BufferedWriter bfFlag = new BufferedWriter(new FileWriter(
-                                        String.valueOf(Constants.getYieldResultFilepath(".",
-                                                System.getProperty(".test")))
-                                ));
-                                bfFlag.write("Delay=" + DelayAndYieldInjector.delayed + "\n");
-                                bfFlag.write("Update=" + DelayAndYieldInjector.updateFlag + "\n");
-                                bfFlag.write("Yield=" + DelayAndYieldInjector.yieldEntered + "\n");
-                                bfFlag.flush();
-                            } catch (IOException ioe) {
-                                ioe.printStackTrace();
-                            }
                             return writer.toByteArray();
                         }
                     // These modes rely on white list

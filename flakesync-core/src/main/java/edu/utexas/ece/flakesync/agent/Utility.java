@@ -86,8 +86,8 @@ public class Utility {
     // Delay a specified amount of time, but also log stack trace
     public static void delay(String testName, String className) {
         try {
-            Thread.sleep(delay);
             collectStackTrace(testName, className);
+            Thread.sleep(delay);
         } catch (InterruptedException ie) {
             ie.printStackTrace();
         }

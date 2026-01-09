@@ -17,13 +17,14 @@ import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
-import java.nio.Buffer;
 import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Scanner;
-import java.util.Set;
+
 
 @Mojo(name = "barrierpointsearch", defaultPhase = LifecyclePhase.TEST,
         requiresDependencyResolution = ResolutionScope.TEST)
@@ -70,17 +71,58 @@ public class BarrierPointMojo extends FlakeSyncAbstractMojo {
                             String.valueOf(this.mavenProject.getBasedir()), testName)));
                     BufferedReader reader = new BufferedReader(new FileReader(endLineFile));
 
-                    String yieldingPoint = "";
-                    execution = SurefireExecution.SurefireFactory.createYieldExec1(this.surefire,
-                            this.originalArgLine, this.mavenProject, this.mavenSession, this.pluginManager,
-                            Paths.get(this.baseDir.getAbsolutePath(),
-                                    ConfigurationDefaults.DEFAULT_FLAKESYNC_DIR).toString(),
-                            this.localRepository, this.testName, delay, firstLoc, yieldingPoint, 1);
+                    String yieldPoint = reader.readLine().split("=")[1];
+                    for (int ln = Integer.parseInt(endLoc.split("#")[1]);
+                         ln < Integer.parseInt(yieldPoint.split("#")[1]); ln++) {
+                        String yieldingPoint = yieldPoint.split("#")[0] + "#" + ln;
+                        System.out.println("TRYING TO YIELD AT: " + yieldingPoint);
 
-                    boolean fail = executeSurefireExecution(null, execution);
+                        // Execute test with the delay and the new potential yield point
+                        // (no need to output starting line anymore)
+                        execution = SurefireExecution.SurefireFactory.createYieldExec1(this.surefire,
+                                this.originalArgLine, this.mavenProject, this.mavenSession, this.pluginManager,
+                                Paths.get(this.baseDir.getAbsolutePath(),
+                                        ConfigurationDefaults.DEFAULT_FLAKESYNC_DIR).toString(),
+                                this.localRepository, this.testName, delay, endLoc.replace("/", "."),
+                                yieldingPoint, 1);
+                        boolean fail = executeSurefireExecution(null, execution);
 
-                    if (!fail && checkValidPass()) {
-                        addBarrierPointToResults(bw, firstLoc, yieldingPoint, delay);
+                        // If the test now passes, and it was valid, add this point as the barrier point
+                        if (!fail && checkValidPass()) {
+                            addBarrierPointToResults(bw, line, yieldingPoint, 1);
+                            break;
+                        } else {
+                            // If test still fails, maybe critical point needs to execute more often
+                            // Count how often it was executed
+                            // TODO: Refactor createExecMon to just never use delay explicitly
+                            SurefireExecution execMon = SurefireExecution.SurefireFactory.createExecMon(
+                                    this.surefire, this.originalArgLine, this.mavenProject, this.mavenSession,
+                                    this.pluginManager, Paths.get(this.baseDir.getAbsolutePath(),
+                                            ConfigurationDefaults.DEFAULT_FLAKESYNC_DIR).toString(),
+                                    this.localRepository, this.testName, delay, endLoc);
+                            executeSurefireExecution(null, execMon);
+
+                            // Parse threshold file for new threshold and store in numExecutions
+                            File execsFile = new File(String.valueOf(Constants.getThresholdFilepath(
+                                    String.valueOf(this.mavenProject.getBasedir()), testName)));
+                            reader = new BufferedReader(new FileReader(execsFile));
+                            int numExecutions = Integer.parseInt(reader.readLine().split("=")[1]);
+
+                            // Run again with delay and potential yield point, but now check for threshold
+                            execution = SurefireExecution.SurefireFactory.createYieldExec1(this.surefire,
+                                    this.originalArgLine, this.mavenProject, this.mavenSession, this.pluginManager,
+                                    Paths.get(this.baseDir.getAbsolutePath(),
+                                            ConfigurationDefaults.DEFAULT_FLAKESYNC_DIR).toString(),
+                                    this.localRepository, this.testName, delay, endLoc.replace("/", "."),
+                                    yieldingPoint, 1);
+                            fail = executeSurefireExecution(null, execution);
+
+                            if (!fail && checkValidPass()) {
+                                // If test passed, barrier point worked, and add to results file
+                                addBarrierPointToResults(bw, line, yieldingPoint, numExecutions);
+                                break;
+                            }
+                        }
                     }
                 } else {
                     SurefireExecution stackTraceExec = SurefireExecution.SurefireFactory.createBarrierSTExec(this.surefire,
@@ -104,8 +146,14 @@ public class BarrierPointMojo extends FlakeSyncAbstractMojo {
                     Map<String, String> classes = new HashMap<>();
                     parseStackTrace(classes, stackTraceFile);
 
-                    Set<String> visited = new HashSet<String>();
-                    for (String classN : classes.keySet()) {
+                    ArrayList<String> reversedClasses = new ArrayList<String>(classes.keySet());
+                    Collections.reverse(reversedClasses);
+
+                    HashSet<String> visited = new HashSet<String>();
+                    for (String classN : reversedClasses) {
+                        if (classN.contains(",")) {
+                            classN = classN.substring(0, classN.lastIndexOf(','));
+                        }
                         String yieldPoint = classN + "#" + classes.get(classN);
                         endLoc = endLoc.replace("/", ".");
                         System.out.println(endLoc + "\n" + yieldPoint);
@@ -218,9 +266,13 @@ public class BarrierPointMojo extends FlakeSyncAbstractMojo {
                 System.out.println(className + " " + lineNum);
                 // Only keep track of those not in black list, e.g., from JUnit or Maven
                 if (!inBlackList(className)) {
-                    System.out.println(trace);
-                    classes.put(className, lineNum);
+                    if (classes.containsKey(className)) {
+                        classes.put(className + ",", lineNum);
+                    } else {
+                        classes.put(className, lineNum);
+                    }
                 }
+
             }
             trace = reader.readLine();
         }

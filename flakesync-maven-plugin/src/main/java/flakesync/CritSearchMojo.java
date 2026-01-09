@@ -51,7 +51,7 @@ public class CritSearchMojo extends FlakeSyncAbstractMojo {
             SurefireExecution cleanExec = SurefireExecution.SurefireFactory.getDelayLocExec(this.surefire,
                     this.originalArgLine, this.mavenProject, this.mavenSession, this.pluginManager,
                     Paths.get(this.baseDir.getAbsolutePath(), ConfigurationDefaults.DEFAULT_FLAKESYNC_DIR).toString(),
-                    this.localRepository, this.testName, this.delay * 2, locationsPath);
+                    this.localRepository, this.testName, this.delay, locationsPath);
             if (!executeSurefireExecution(null, cleanExec)) {
                 System.out.println("This location is not a good one. Go back and run minimizer again.");
                 return;
@@ -291,13 +291,15 @@ public class CritSearchMojo extends FlakeSyncAbstractMojo {
                 } else {
                     String tmp = data[1].substring(0, data[1].indexOf('('));    // Parse out the class+method part
                     String className = tmp.substring(0, tmp.lastIndexOf('/'));  // Parse out the class name
-                    int lineNumber = Integer.parseInt(data[1].split(":")[1]     // Parse out the line number
-                        .substring(0, data[1].split(":")[1].length() - 1));
-                    // Format of element is className#lineNumber
-                    parsedInfo.append(className);
-                    parsedInfo.append("#");
-                    parsedInfo.append(lineNumber);
-                    parsedInfo.append(",");
+                    if (data[1].split(":").length > 1) {
+                        int lineNumber = Integer.parseInt(data[1].split(":")[1]     // Parse out the line number
+                                .substring(0, data[1].split(":")[1].length() - 1));
+                        // Format of element is className#lineNumber
+                        parsedInfo.append(className);
+                        parsedInfo.append("#");
+                        parsedInfo.append(lineNumber);
+                        parsedInfo.append(",");
+                    }
                 }
                 // Read next line
                 line = reader.readLine();
