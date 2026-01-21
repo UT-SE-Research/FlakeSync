@@ -37,7 +37,7 @@ For running step 2 which minimizes the list of locations, run:
 * Run patcher
   * This will generate the patch files for files containing the critical points, barrier points, and test methods. These patch files can be applied to their counterparts to repair the source of flakiness.
     * These patch files will be named: \<original class name>.patch, and they will be created at `./<repo>/.flakesync/patch/`
-  * ex. ```mvn edu.utexas.ece:flakesync-maven-plugin:1.0-SNAPSHOT:barrierpointsearch -Dflakesync.testName=org.apache.uniffle.common.rpc.GrpcServerTest#testGrpcExecutorPool -pl common```
+  * ex. ```mvn edu.utexas.ece:flakesync-maven-plugin:1.0-SNAPSHOT:patch -Dflakesync.testName=org.apache.uniffle.common.rpc.GrpcServerTest#testGrpcExecutorPool -pl common```
 
 ...
 
