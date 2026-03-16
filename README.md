@@ -6,7 +6,7 @@
 
 ### Setup
 * Can be built on Java 8+
-* Run ```mvn clean install -U in test project```
+* Run ```mvn clean install -U``1 in the test project
 
 ### Running Delay Injection and Location Minimization 
 To run step 1 which creates a list of concurrent methods, run:
