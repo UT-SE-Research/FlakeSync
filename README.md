@@ -9,7 +9,7 @@
 * Run ```mvn clean install -U``` in the test project
 
 ### Running Delay Injection and Location Minimization 
-To run step 1 which creates a list of concurrent methods, run:
+To run step 1 which creates a list of concurrent methods and then inject delays in those methods to see whether the test fails, run:
 * Find concurrent methods
   * ex. ```mvn edu.utexas.ece:flakesync-maven-plugin:1.0-SNAPSHOT:concurrentfind -Dflakesync.testName=org.apache.uniffle.common.rpc.GrpcServerTest#testGrpcExecutorPool -pl common```
     * This generates two files:
@@ -28,13 +28,13 @@ For running step 2 which minimizes the list of locations, run:
 ### Critical Point Search
 * Run critical point and root method search
   * ex. ```mvn edu.utexas.ece:flakesync-maven-plugin:1.0-SNAPSHOT:critsearch -Dflakesync.testName=org.apache.uniffle.common.rpc.GrpcServerTest#testGrpcExecutorPool -pl common```
-  * This will generate a list of root methods and a list of critical points. These files are placed in their own critical point search directory (Results-CritSearch/) for easy locating.
+  * This will generate a list of root methods and a list of critical points. These files are placed in their own critical point search directory (`Results-CritSearch/`) for easy locating.
     * `Results-CritSearch/<test name>-RootMethods.csv`
     * `Results-CritSearch/<test name>-CriticalPoints.csv`
 ### Barrier Point Search
 * Run barrier point search
   * ex. ```mvn edu.utexas.ece:flakesync-maven-plugin:1.0-SNAPSHOT:barrierpointsearch -Dflakesync.testName=org.apache.uniffle.common.rpc.GrpcServerTest#testGrpcExecutorPool -pl common```
-  * This will generate the list of barrier points, linking them to the critical points found earlier. This file is placed in its own barrier point search directory (Results-BarrierSearch/) for easy locating.
+  * This will generate the list of barrier points, linking them to the critical points found earlier. This file is placed in its own barrier point search directory (`Results-BarrierSearch/`) for easy locating.
     * `Results-BarrierSearch/<test name>-BarrierPoints.csv`
 ### Patcher
 * Run patcher
