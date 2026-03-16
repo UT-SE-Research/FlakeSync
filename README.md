@@ -14,10 +14,11 @@ To run step 1 which creates a list of concurrent methods, run:
   * ex. ```mvn edu.utexas.ece:flakesync-maven-plugin:1.0-SNAPSHOT:concurrentfind -Dflakesync.testName=org.apache.uniffle.common.rpc.GrpcServerTest#testGrpcExecutorPool -pl common```
     * This generates two files:
       *  `<test name>-ResultMethods.txt: List of concurrent methods`
-* Get list of locations
+* Inject delays through concurrent methods to obtain list of locations where injecting delays there make test fail
   * ex. ```mvn edu.utexas.ece:flakesync-maven-plugin:1.0-SNAPSHOT:delaylocs -Dflakesync.testName=org.apache.uniffle.common.rpc.GrpcServerTest#testGrpcExecutorPool -pl common```
     * This generates one file:
       * `<test name>-Locations.txt`: List of locations where delays can be injected for the test to fail
+
 For running step 2 which minimizes the list of locations, run:
 * Delta-debugging to minimize list of locations
   * This will cut down the list of locations by getting the minimum subset of locations required for a test failure
