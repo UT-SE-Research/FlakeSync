@@ -1,5 +1,6 @@
 # FlakeSync
 This repository contains tools for repairing async flaky tests.
+
 More details about FlakeSync can be found in its [full-paper](http://https://utexas.app.box.com/v/august-shi-ICSE2024), [demo-paper](https://utexas.app.box.com/v/august-shi-ICSEDEMO2026).
 
 ## Using FlakeSync
