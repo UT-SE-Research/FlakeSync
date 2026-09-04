@@ -1,4 +1,6 @@
 # FlakeSync
+This repository contains tools for repairing async flaky tests.
+More details about FlakeSync can be found in its original [paper](http://https://utexas.app.box.com/v/august-shi-ICSE2024).
 
 ## Using FlakeSync
 * Run the four phases (6 goals total) of the FlakeSync tool on your desired maven project to identify the sources of flakiness for a given flaky test
