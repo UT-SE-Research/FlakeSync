@@ -9,6 +9,7 @@ More details about FlakeSync can be found in its [full-paper](https://utexas.app
 
 ### Setup
 * Can be built on Java 8+
+* On Windows, diff.exe must be available on your system PATH in order to successfully generate patch files. If you are using Git for Windows, diff.exe is typically located in C:\Program Files\Git\usr\bin
 * Run ```mvn clean install -U``` in the test project
 
 ### Running Delay Injection and Location Minimization 
