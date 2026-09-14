@@ -111,12 +111,12 @@ public class PatchingMojo extends FlakeSyncAbstractMojo {
                     String originalBarrierFilePath = getFilePath(baseDir, className, true);
                     String modifiedBarrierFilePath = String.valueOf(InjectFlagInCriticalPoint
                             .findJavaFilePath(baseDir, className));
-                    makePatch(originalBarrierFilePath, modifiedBarrierFilePath,
+                    makePatch(baseDir,originalBarrierFilePath, modifiedBarrierFilePath,
                         Constants.getPatchDir(baseDir.toString()).toString());
                     String originalCriticalFilePath = getFilePath(baseDir, target, true);
                     String modifiedCriticalFilePath = String.valueOf(InjectFlagInCriticalPoint
                             .findJavaFilePath(baseDir, target));
-                    makePatch(originalCriticalFilePath, modifiedCriticalFilePath,
+                    makePatch(baseDir,originalCriticalFilePath, modifiedCriticalFilePath,
                         Constants.getPatchDir(baseDir.toString()).toString());
 
                     // Reset all the files

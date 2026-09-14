@@ -30,6 +30,7 @@ package flakesync.patching;
 
 import flakesync.Constants;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -47,7 +48,7 @@ public class SavePatch {
         return filePath.toString();
     }
 
-    public static void makePatch(String originalFilePath, String modifiedFilePath, String patchDir) {
+    public static void makePatch(String baseDir, String originalFilePath, String modifiedFilePath, String patchDir) {
         System.out.println("Generating patch for: " + originalFilePath + " and " + modifiedFilePath);
         System.out.println("Original path: " + patchDir);
         Path patchDirectory = Paths.get(patchDir);
@@ -58,7 +59,11 @@ public class SavePatch {
             // Generate unified diff using 'diff -u'
             String patchFileName = Paths.get(modifiedFilePath).getFileName().toString() + ".patch";
             Path patchFilePath = patchDirectory.resolve(patchFileName);
-            ProcessBuilder pb = new ProcessBuilder("diff", "-u", originalFilePath, modifiedFilePath);
+            String relPath = toPatchPath(baseDir, modifiedFilePath);
+            ProcessBuilder pb = new ProcessBuilder("diff", "-u",
+                    "--label", "a/" + relPath,
+                    "--label", "b/" + relPath,
+                    originalFilePath, modifiedFilePath);
             pb.redirectOutput(patchFilePath.toFile());
             Process process = pb.start();
             int exitCode = process.waitFor();
@@ -71,5 +76,11 @@ public class SavePatch {
             System.err.println("Error generating patch: " + ine.getMessage());
             ine.printStackTrace();
         }
+    }
+
+    private static String toPatchPath(String baseDir, String filePath) {
+        Path base = Paths.get(baseDir).toAbsolutePath().normalize();
+        Path file = Paths.get(filePath).toAbsolutePath().normalize();
+        return base.relativize(file).toString().replace(File.separatorChar, '/');
     }
 }
