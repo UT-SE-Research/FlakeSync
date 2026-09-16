@@ -635,6 +635,7 @@ dependencies {
 
     testImplementation(platform("org.junit:junit-bom:5.10.2"))
     testImplementation("org.junit.jupiter:junit-jupiter")
+    testRuntimeOnly("org.junit.platform:junit-platform-launcher")
     testImplementation(gradleTestKit())
 }
 
@@ -651,6 +652,8 @@ gradlePlugin {
     }
 }
 ```
+
+(Gradle 9 note: `testRuntimeOnly("org.junit.platform:junit-platform-launcher")` above is required — without it `./gradlew test` fails at runtime with "Failed to load JUnit Platform," since Gradle 9 no longer resolves a compatible launcher version automatically the way earlier Gradle versions did.)
 
 - [ ] **Step 4: Generate the Gradle wrapper**
 
@@ -753,7 +756,6 @@ public class FlakeSyncPlugin implements Plugin<Project> {
         extension.getLoggingLevel().convention("CONFIG");
 
         Configuration agentConfiguration = project.getConfigurations().create(AGENT_CONFIGURATION_NAME, c -> {
-            c.setVisible(false);
             c.setCanBeConsumed(false);
             c.setCanBeResolved(true);
             c.setDescription("Resolves the flakesync-core agent/launcher jar.");

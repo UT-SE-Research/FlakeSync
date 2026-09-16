@@ -8,3 +8,5 @@ target/
 .idea/
 *.iml
 .flakesync/
+flakesync-gradle-plugin/.gradle/
+flakesync-gradle-plugin/build/
