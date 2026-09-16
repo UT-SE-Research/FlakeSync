@@ -3052,7 +3052,9 @@ plugins {
 
 (during development, resolve it via an `includeBuild("../FlakeSync/flakesync-gradle-plugin")`
 composite build, or `./gradlew publishToMavenLocal` from `flakesync-gradle-plugin/` and add
-`mavenLocal()` to your target project's plugin repositories.)
+`mavenLocal()` to your target project's plugin repositories.) Your target project's own
+`repositories { }` also needs `mavenLocal()`, since the plugin resolves `flakesync-core` as a
+regular dependency in your project's context, not the plugin's.
 
 Then run the same phases as goals — `--test-name` takes the place of Maven's
 `-Dflakesync.testName`:
@@ -3068,7 +3070,16 @@ Then run the same phases as goals — `--test-name` takes the place of Maven's
 
 Output files land under the same `./<repo>/<module>/.flakesync/` layout as the Maven plugin.
 
-**Limitation:** v1 supports JUnit4-style test methods only.
+**Limitations:**
+* v1 supports JUnit4-style test methods only.
+* `flakesync-core` bundles ASM 9.0, which cannot instrument class files newer than Java 15. If
+  your target project's Gradle build compiles to a newer bytecode target than that, bytecode
+  transformation silently has no effect instead of erroring — pin your target project's
+  `sourceCompatibility`/`targetCompatibility` (or Java toolchain) to Java 15 or earlier if you hit
+  this. (Discovered while executing this plan: a Java-17 Gradle daemon compiling the integration
+  test's fixture project to Java-17-target bytecode by default caused exactly this silent no-op,
+  passing every task whose output file gets written unconditionally while failing `critsearch`,
+  the first task whose output genuinely depends on transformation having happened.)
 ```
 
 - [ ] **Step 4: Commit**

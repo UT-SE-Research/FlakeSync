@@ -44,3 +44,51 @@ For running step 2 which minimizes the list of locations, run:
   * This will generate the patch files for files containing the critical points, barrier points, and test methods. These patch files can be applied to their counterparts to repair the source of flakiness.
     * These patch files will be named: `<original class name>.patch`, and they will be created under a new patch directory `patch/`
   * ex. ```mvn edu.utexas.ece:flakesync-maven-plugin:1.0-SNAPSHOT:patch -Dflakesync.testName=org.apache.uniffle.common.rpc.GrpcServerTest#testGrpcExecutorPool -pl common```
+
+## Using FlakeSync with Gradle
+
+`flakesync-gradle-plugin` provides the same 6 goals as Gradle tasks, for Gradle-built target
+projects. It is a separate Gradle build living in this repo (not part of the Maven reactor);
+build and publish `flakesync-core` and `flakesync-utils` to your local Maven repository first,
+then build the plugin itself:
+
+```bash
+mvn -pl flakesync-core,flakesync-utils -am -DskipTests install
+cd flakesync-gradle-plugin && ./gradlew build
+```
+
+Apply the plugin in your target Gradle project's `build.gradle(.kts)`:
+
+```kotlin
+plugins {
+    id("edu.utexas.ece.flakesync")
+}
+```
+
+(during development, resolve it via an `includeBuild("../FlakeSync/flakesync-gradle-plugin")`
+composite build, or `./gradlew publishToMavenLocal` from `flakesync-gradle-plugin/` and add
+`mavenLocal()` to your target project's plugin repositories.) Your target project's own
+`repositories { }` also needs `mavenLocal()`, since the plugin resolves `flakesync-core` as a
+regular dependency in your project's context, not the plugin's.
+
+Then run the same phases as goals — `--test-name` takes the place of Maven's
+`-Dflakesync.testName`:
+
+```bash
+./gradlew concurrentfind --test-name=org.apache.uniffle.common.rpc.GrpcServerTest#testGrpcExecutorPool
+./gradlew delaylocs --test-name=org.apache.uniffle.common.rpc.GrpcServerTest#testGrpcExecutorPool
+./gradlew deltadebug --test-name=org.apache.uniffle.common.rpc.GrpcServerTest#testGrpcExecutorPool
+./gradlew critsearch --test-name=org.apache.uniffle.common.rpc.GrpcServerTest#testGrpcExecutorPool
+./gradlew barrierpointsearch --test-name=org.apache.uniffle.common.rpc.GrpcServerTest#testGrpcExecutorPool
+./gradlew patch --test-name=org.apache.uniffle.common.rpc.GrpcServerTest#testGrpcExecutorPool
+```
+
+Output files land under the same `./<repo>/<module>/.flakesync/` layout as the Maven plugin.
+
+**Limitations:**
+* v1 supports JUnit4-style test methods only.
+* `flakesync-core` bundles ASM 9.0, which cannot instrument class files newer than Java 15. If
+  your target project's Gradle build compiles to a newer bytecode target than that, bytecode
+  transformation silently has no effect instead of erroring — pin your target project's
+  `sourceCompatibility`/`targetCompatibility` (or Java toolchain) to Java 15 or earlier if you hit
+  this.
