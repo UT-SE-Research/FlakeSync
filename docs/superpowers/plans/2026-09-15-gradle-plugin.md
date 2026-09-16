@@ -6,7 +6,7 @@
 
 **Architecture:** A new sibling Gradle build (`flakesync-gradle-plugin/`) depends on `flakesync-core` and `flakesync-utils` as ordinary jars (via `mavenLocal()`). Each goal is a Gradle task that forks a JVM directly (via `ProcessBuilder`, for reliable timeout/kill semantics) running a new `SingleTestLauncher` main class added to `flakesync-core`, with the same `-javaagent` and system properties the Maven plugin's `SurefireExecution` sets today. Two small utility packages (`DeltaDebugger`, `patching`) move from `flakesync-maven-plugin` to `flakesync-utils` so both plugins share identical algorithms.
 
-**Tech Stack:** Java 8 source/target (matching the existing modules), Gradle 8.10 (wrapper) for the new module, JUnit4 (`org.junit.runner.JUnitCore`) as the target-project-facing test runner, JUnit5 for testing the plugin's own code, Gradle TestKit for task-execution tests.
+**Tech Stack:** Java 8 source/target (matching the existing modules), Gradle 9.7.1 (wrapper) for the new module, JUnit4 (`org.junit.runner.JUnitCore`) as the target-project-facing test runner, JUnit5 for testing the plugin's own code, Gradle TestKit for task-execution tests.
 
 **Spec:** `docs/superpowers/specs/2026-09-15-gradle-plugin-design.md`
 
@@ -650,7 +650,7 @@ gradlePlugin {
 Run (needs a system Gradle install, or `gradle` from a previous project, just to bootstrap the wrapper once):
 ```bash
 cd flakesync-gradle-plugin
-gradle wrapper --gradle-version 8.10
+gradle wrapper --gradle-version 9.7.1
 ```
 Expected: `gradlew`, `gradlew.bat`, and `gradle/wrapper/gradle-wrapper.{jar,properties}` are created. From then on, always invoke this module via `./gradlew` from within `flakesync-gradle-plugin/`.
 
