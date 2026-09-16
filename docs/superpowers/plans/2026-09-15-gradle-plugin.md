@@ -1318,7 +1318,7 @@ class AbstractFlakeSyncTaskTest {
     void requiresTestNameToBeSet() {
         Project project = ProjectBuilder.builder().build();
         project.getPluginManager().apply("edu.utexas.ece.flakesync");
-        NoOpTask task = project.getTasks().create("noop", NoOpTask.class);
+        NoOpTask task = project.getTasks().register("noop", NoOpTask.class).get();
 
         assertThrows(GradleException.class, task::getTestName);
     }
@@ -1327,7 +1327,7 @@ class AbstractFlakeSyncTaskTest {
     void exposesTheConfiguredTestName() {
         Project project = ProjectBuilder.builder().build();
         project.getPluginManager().apply("edu.utexas.ece.flakesync");
-        NoOpTask task = project.getTasks().create("noop", NoOpTask.class);
+        NoOpTask task = project.getTasks().register("noop", NoOpTask.class).get();
 
         task.setTestName("pkg.Foo#bar");
 
@@ -1338,7 +1338,7 @@ class AbstractFlakeSyncTaskTest {
     void resolvesRelativeConstantsPathsAgainstTheProjectDirectory() {
         Project project = ProjectBuilder.builder().build();
         project.getPluginManager().apply("edu.utexas.ece.flakesync");
-        NoOpTask task = project.getTasks().create("noop", NoOpTask.class);
+        NoOpTask task = project.getTasks().register("noop", NoOpTask.class).get();
 
         java.io.File resolved = task.resolve(java.nio.file.Paths.get(".", ".flakesync", "pkg.Foo.bar-Locations.txt"));
 
@@ -1352,7 +1352,7 @@ class AbstractFlakeSyncTaskTest {
     void resolveCreatesTheParentDirectoryRegardlessOfWhatConstantsMkdirsItself() {
         Project project = ProjectBuilder.builder().build();
         project.getPluginManager().apply("edu.utexas.ece.flakesync");
-        NoOpTask task = project.getTasks().create("noop", NoOpTask.class);
+        NoOpTask task = project.getTasks().register("noop", NoOpTask.class).get();
 
         java.io.File resolved = task.resolve(
                 java.nio.file.Paths.get(".", ".flakesync", "Results-CritSearch", "pkg.Foo.bar-RootMethods.csv"));
@@ -1420,8 +1420,9 @@ public abstract class AbstractFlakeSyncTask extends DefaultTask {
                 .getSourceSets().getByName("test").getRuntimeClasspath();
     }
 
-    @Internal
     protected File resolve(Path constantsRelativePath) {
+        // No @Internal here: Gradle's validatePlugins task rejects input/output annotations on
+        // anything that isn't a zero-arg getter, and this takes a parameter.
         File file = getProject().getProjectDir().toPath().resolve(constantsRelativePath).normalize().toFile();
         // flakesync.Constants' own path-builder methods sometimes mkdirs() a directory computed
         // relative to the JVM's raw working directory instead of the baseDir argument they were
