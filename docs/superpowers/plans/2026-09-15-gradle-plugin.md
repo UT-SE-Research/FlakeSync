@@ -507,16 +507,23 @@ public final class SingleTestLauncher {
             return EXIT_CONFIG_ERROR;
         }
 
+        // Check the method exists before invoking JUnit at all: Request.method(...) does not
+        // surface a missing method as an empty/zero-count Result the way this comment used to
+        // assume — it reports a single failing "test" (initializationError) indistinguishable
+        // from a real failure by getRunCount() alone. Reflection sidesteps parsing JUnit's
+        // internal failure description entirely.
+        try {
+            testClass.getMethod(methodName);
+        } catch (NoSuchMethodException nsme) {
+            System.err.println("Could not find test method: " + className + "#" + methodName);
+            return EXIT_CONFIG_ERROR;
+        }
+
         Result result;
         try {
             result = new JUnitCore().run(Request.method(testClass, methodName));
         } catch (NoClassDefFoundError ncdfe) {
             System.err.println("JUnit4 is not available on the test classpath: " + ncdfe.getMessage());
-            return EXIT_CONFIG_ERROR;
-        }
-
-        if (result.getRunCount() == 0) {
-            System.err.println("Could not find test method: " + className + "#" + methodName);
             return EXIT_CONFIG_ERROR;
         }
 
