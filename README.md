@@ -47,6 +47,9 @@ For running step 2 which minimizes the list of locations, run:
 
 ## Using FlakeSync with Gradle
 
+(For a full step-by-step runbook with real-project gotchas, see
+[`docs/running-flakesync-gradle-on-a-project.md`](docs/running-flakesync-gradle-on-a-project.md).)
+
 `flakesync-gradle-plugin` provides the same 6 goals as Gradle tasks, for Gradle-built target
 projects. It is a separate Gradle build living in this repo (not part of the Maven reactor);
 build and publish `flakesync-core` and `flakesync-utils` to your local Maven repository first,
