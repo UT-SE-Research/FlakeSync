@@ -32,5 +32,6 @@ public class FlakeSyncPlugin implements Plugin<Project> {
 
         project.getTasks().register("concurrentfind", ConcurrentFindTask.class);
         project.getTasks().register("delaylocs", DelayLocsTask.class);
+        project.getTasks().register("deltadebug", DeltaDebugTask.class);
     }
 }
