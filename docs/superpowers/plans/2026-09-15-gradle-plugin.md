@@ -741,6 +741,7 @@ package edu.utexas.ece.flakesync.gradle;
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
 import org.gradle.api.artifacts.Configuration;
+import org.gradle.api.artifacts.ModuleDependency;
 
 public class FlakeSyncPlugin implements Plugin<Project> {
 
@@ -760,7 +761,13 @@ public class FlakeSyncPlugin implements Plugin<Project> {
             c.setCanBeResolved(true);
             c.setDescription("Resolves the flakesync-core agent/launcher jar.");
         });
-        project.getDependencies().add(AGENT_CONFIGURATION_NAME, AGENT_COORDINATES);
+        // flakesync-core is published as a shaded jar that already bundles flakesync-utils'
+        // classes directly (Constants, DeltaDebugger, patching/*) — pulling flakesync-utils in
+        // again transitively would make this configuration resolve to two files instead of one,
+        // which breaks every task's getAgentJar() (Task 6) at getSingleFile().
+        ModuleDependency agentDependency =
+                (ModuleDependency) project.getDependencies().add(AGENT_CONFIGURATION_NAME, AGENT_COORDINATES);
+        agentDependency.setTransitive(false);
     }
 }
 ```
@@ -1185,6 +1192,7 @@ plugins {
 }
 
 repositories {
+    mavenLocal()
     mavenCentral()
 }
 
@@ -1192,6 +1200,8 @@ dependencies {
     testImplementation("junit:junit:4.13.1")
 }
 ```
+
+(`mavenLocal()` is required here, not just in `flakesync-gradle-plugin`'s own `build.gradle.kts` — the `flakesyncAgent` configuration's dependency on `edu.utexas.ece:flakesync-core` is resolved in *this* project's context when a task actually runs, since the plugin only declares the dependency, it doesn't bundle the jar. Without it, `concurrentfind` fails with "Could not resolve all files for configuration ':flakesyncAgent'.")
 
 - [ ] **Step 2: Write the fixture project's test class**
 

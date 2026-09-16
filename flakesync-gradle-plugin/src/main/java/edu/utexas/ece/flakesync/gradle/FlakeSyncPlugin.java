@@ -3,6 +3,7 @@ package edu.utexas.ece.flakesync.gradle;
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
 import org.gradle.api.artifacts.Configuration;
+import org.gradle.api.artifacts.ModuleDependency;
 
 public class FlakeSyncPlugin implements Plugin<Project> {
 
@@ -22,6 +23,13 @@ public class FlakeSyncPlugin implements Plugin<Project> {
             c.setCanBeResolved(true);
             c.setDescription("Resolves the flakesync-core agent/launcher jar.");
         });
-        project.getDependencies().add(AGENT_CONFIGURATION_NAME, AGENT_COORDINATES);
+        // flakesync-core is published as a shaded jar that already bundles flakesync-utils'
+        // classes directly (Constants, DeltaDebugger, patching/*) — pulling flakesync-utils in
+        // again transitively would make this configuration resolve to two files instead of one.
+        ModuleDependency agentDependency =
+                (ModuleDependency) project.getDependencies().add(AGENT_CONFIGURATION_NAME, AGENT_COORDINATES);
+        agentDependency.setTransitive(false);
+
+        project.getTasks().register("concurrentfind", ConcurrentFindTask.class);
     }
 }
