@@ -1191,6 +1191,22 @@ plugins {
     id("edu.utexas.ece.flakesync")
 }
 
+// flakesync-core bundles ASM 9.0, which cannot parse class files newer than Java 15 (major
+// version 59). Without pinning this, the fixture project compiles to whatever bytecode version
+// the JDK running Gradle defaults to, and the agent's bytecode transformation silently no-ops
+// (the JVM instrumentation framework swallows a ClassFileTransformer's exception and just uses
+// the original, untransformed bytecode) — a failure mode invisible to any test that only asserts
+// an output file exists rather than that it reflects real instrumentation. Confirmed by running
+// this plan against a machine with a JDK 17 Gradle daemon: concurrentfind/delaylocs/deltadebug's
+// tests kept passing throughout (their assertions don't require transformation to have actually
+// happened — the agent writes those output files unconditionally), while critsearch's test
+// failed with a missing MethodStartAndEndLine.txt, the first assertion in this plan that actually
+// depends on transformation succeeding.
+java {
+    sourceCompatibility = JavaVersion.VERSION_1_8
+    targetCompatibility = JavaVersion.VERSION_1_8
+}
+
 repositories {
     mavenLocal()
     mavenCentral()
@@ -2004,7 +2020,13 @@ git commit -m "Add deltadebug Gradle task"
 - Consumes: `AbstractFlakeSyncTask`, `TestExecutionRequest`, `flakesync.Constants.getMinLocationsFilepath/getWorkingLocationsFilepath/getStackTraceFilepath/getIndLocFilepath/getRootMethodFilepath/getRootMethodResultsFilepath/getCritPointsResultsFilepath/getMethodStartEndLineFile/getIndRootFilepath`.
 - Produces: registers the `critsearch` task. This is a direct, mechanical port of `CritSearchMojo`'s algorithm — every `SurefireExecution.SurefireFactory.xxx(...)` + `execution.run()` call site becomes a `TestExecutionRequest...build()` + `newExecutor().run(request)` call site with the same system properties; every `this.mavenProject.getBasedir()`-based file path becomes `resolve(Constants.xxx(...))`.
 
-**Note on integration-test scope:** unlike `concurrentfind`/`delaylocs`/`deltadebug` (which chain organically off each other and off real forked executions from a cold start), `critsearch` needs a `Locations_minimized.txt` and a `StackTrace.txt` as input — in the real tool these come from the earlier phases' bytecode-instrumented stack-trace capture, which requires an actually-racy test to produce meaningfully. This task's test hand-seeds those two input files with minimal, well-formed content (matching `StackTraceElement`-style `pkg/Class.method(File.java:line)` formatting, no leading `"at "`, since `CritSearchMojo.parseStackTrace`'s parsing — ported unchanged — expects that shape) and asserts the task drives real forked executions and produces the two expected results files. Caveat for the implementer: this plan did not audit `flakesync-core`'s `InjectDelayWithStackTraceTracer` (the class that would normally populate `StackTrace.txt` as a side effect of the `DELAY_INJECTION_BY_LOC` execution this task also runs) — if that execution overwrites the seeded file with different content before `parseStackTrace()` reads it back, adjust the seeded content or the assertions once you observe the actual behavior. This is a wiring-level integration test either way, not a claim that it proves flakiness-detection accuracy end to end (that stays a manual exercise against a real racy project, same as `testscripts/` today).
+**Note on integration-test scope:** unlike `concurrentfind`/`delaylocs`/`deltadebug` (which chain organically off each other and off real forked executions from a cold start), `critsearch` needs a `Locations_minimized.txt` and a `StackTrace.txt` as input — in the real tool these come from the earlier phases' bytecode-instrumented stack-trace capture, which requires an actually-racy test to produce meaningfully. This task's test hand-seeds those two input files.
+
+`StackTrace.txt`'s real format (confirmed by reading `flakesync-core`'s `Utility.collectStackTrace`, which populates it) is **not** a plain `pkg/Class.method(File.java:line)` string — it's `threadId + "," + StackTraceElement.toString()` with **every** `.` replaced by `/`, including the one before the `.java` extension and the one between class and method name. So a real line for `com.example.Foo.bar(Foo.java:42)` is written as `0,com/example/Foo/bar(Foo/java:42)` — two trailing `/`-introduced segments (`bar(Foo` and `java[delay]`) that `CritSearchMojo`'s (unchanged) string-parsing deliberately strips via its two `substring(0, lastIndexOf("/"))` calls. Get this format wrong (as an earlier draft of this plan did, using a literal `.java:line` suffix) and `CritSearchTask.run()` throws `StringIndexOutOfBoundsException` at the second `substring` call — a real bug this plan's own execution caught. The seeded content below uses the correct format.
+
+Separately: **pin the fixture project's bytecode target** (see the fixture project's `build.gradle.kts` in Task 6) — `flakesync-core` bundles ASM 9.0, which cannot parse class files newer than Java 15. If the fixture project compiles to whatever the host JDK defaults to (e.g. Java 17), the agent's transformation silently no-ops instead of erroring, and this task fails later with a missing `MethodStartAndEndLine.txt` because `FunctionTracer` never actually visited the class. `concurrentfind`/`delaylocs`/`deltadebug`'s tests don't surface this because their output files get written unconditionally regardless of whether transformation happened — this task's test is the first one that actually depends on it.
+
+This is a wiring-level integration test either way, not a claim that it proves flakiness-detection accuracy end to end (that stays a manual exercise against a real racy project, same as `testscripts/` today).
 
 - [ ] **Step 1: Write the failing test**
 
@@ -2047,7 +2069,7 @@ class CritSearchTaskTest {
 
         try (BufferedWriter bw = new BufferedWriter(new FileWriter(
                 flakesyncDir.resolve("fixture.FlakySampleTest.alwaysFails-StackTrace.txt").toFile()))) {
-            bw.write("0,fixture/FlakySampleTest.alwaysFails(FlakySampleTest.java:20)\n");
+            bw.write("0,fixture/FlakySampleTest/alwaysFails(FlakySampleTest/java:20)\n");
             bw.write("0,END\n");
         }
 
