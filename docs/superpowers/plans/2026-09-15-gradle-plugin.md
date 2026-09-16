@@ -2759,13 +2759,37 @@ git commit -m "Add barrierpointsearch Gradle task"
 **Files:**
 - Create: `flakesync-gradle-plugin/src/main/java/edu/utexas/ece/flakesync/gradle/PatchTask.java`
 - Modify: `flakesync-gradle-plugin/src/main/java/edu/utexas/ece/flakesync/gradle/FlakeSyncPlugin.java`
+- Create: `flakesync-gradle-plugin/src/test/resources/fixture-project/src/test/java/fixture/Helper.java`
 - Test: `flakesync-gradle-plugin/src/test/java/edu/utexas/ece/flakesync/gradle/PatchTaskTest.java`
 
 **Interfaces:**
 - Consumes: `AbstractFlakeSyncTask`, `flakesync.Constants.getBarrierPointsResultsFilepath/getPatchDir`, `flakesync.patching.InjectFlagInCriticalPoint`, `flakesync.patching.InjectYieldStatement`, `flakesync.patching.SavePatch` (all moved to `flakesync-utils` in Task 2).
 - Produces: registers the `patch` task — a direct port of `PatchingMojo`; no `SingleTestExecutor` involved at all (this goal only does source-file patching, no test execution), so it's the simplest of the six.
 
-- [ ] **Step 1: Write the failing test**
+**Note on the test fixture's critical/barrier point placement:** two real, pre-existing assumptions in `PatchingMojo` (both faithfully ported, neither worth "fixing") shape how this test's input must be seeded:
+1. The critical point and barrier point must be in **different files** — `PatchTask` copies each to a sibling `.orig` before patching, and if both points resolve to the same file, the second `Files.copy` throws `FileAlreadyExistsException`.
+2. The barrier point's file must contain a method named after the test (`"void " + testName.split("#")[1] + "("`) — `InjectYieldStatement` searches the barrier point's own file for that method to insert its `reset()` call, which only makes sense when the barrier point lands inside the test class itself.
+
+This is why the fixture needs a second class (`Helper`): the critical point goes in `Helper`, the barrier point stays in `FlakySampleTest`.
+
+- [ ] **Step 1: Add a second fixture class**
+
+Create `flakesync-gradle-plugin/src/test/resources/fixture-project/src/test/java/fixture/Helper.java`:
+
+```java
+package fixture;
+
+public class Helper {
+
+    public static void doWork() {
+        int x = 1;
+        int y = 2;
+        int z = x + y;
+    }
+}
+```
+
+- [ ] **Step 2: Write the failing test**
 
 Create `flakesync-gradle-plugin/src/test/java/edu/utexas/ece/flakesync/gradle/PatchTaskTest.java`:
 
@@ -2798,11 +2822,16 @@ class PatchTaskTest {
 
         String testName = "fixture.FlakySampleTest#alwaysFails";
 
+        Path barrierSearchDir = flakesyncDir.resolve("Results-BarrierSearch");
+        Files.createDirectories(barrierSearchDir);
         try (BufferedWriter bw = new BufferedWriter(new FileWriter(
-                flakesyncDir.resolve("fixture.FlakySampleTest.alwaysFails-BarrierPoints.csv").toFile()))) {
+                barrierSearchDir.resolve("fixture.FlakySampleTest.alwaysFails-BarrierPoints.csv").toFile()))) {
             bw.write("#Test-Name,Boundary-Point,Barrier-Point,Threshold\n");
-            bw.write(testName + ",fixture/FlakySampleTest#10-fixture/FlakySampleTest#20[100],"
-                    + "fixture/FlakySampleTest#8,1\n");
+            // Critical point (Helper) and barrier point (FlakySampleTest) are in different
+            // classes, and the barrier point lands in the file containing "void alwaysFails(" —
+            // see this task's note above on why both of those matter.
+            bw.write(testName + ",fixture/Helper#6-fixture/Helper#6[100],"
+                    + "fixture/FlakySampleTest#12,1\n");
         }
 
         BuildResult result = FixtureProject.runnerFor(projectDir, "patch", "--test-name=" + testName).build();
@@ -2817,12 +2846,14 @@ class PatchTaskTest {
 }
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+`PatchTask` reads `Constants.getBarrierPointsResultsFilepath(".", getTestName())`, which resolves under `.flakesync/Results-BarrierSearch/` (matching what `BarrierPointSearchTask`, Task 11, actually writes) — not directly under `.flakesync/`.
+
+- [ ] **Step 3: Run test to verify it fails**
 
 Run: `./gradlew test --tests PatchTaskTest`
 Expected: FAIL — task `patch` does not exist.
 
-- [ ] **Step 3: Implement `PatchTask`**
+- [ ] **Step 4: Implement `PatchTask`**
 
 Create `flakesync-gradle-plugin/src/main/java/edu/utexas/ece/flakesync/gradle/PatchTask.java`:
 
@@ -2910,7 +2941,7 @@ public class PatchTask extends AbstractFlakeSyncTask {
 }
 ```
 
-- [ ] **Step 4: Register the task in `FlakeSyncPlugin`**
+- [ ] **Step 5: Register the task in `FlakeSyncPlugin`**
 
 Add to `FlakeSyncPlugin.apply(...)`:
 
@@ -2918,12 +2949,12 @@ Add to `FlakeSyncPlugin.apply(...)`:
         project.getTasks().register("patch", PatchTask.class);
 ```
 
-- [ ] **Step 5: Run test to verify it passes**
+- [ ] **Step 6: Run test to verify it passes**
 
 Run: `./gradlew test --tests PatchTaskTest`
 Expected: PASS.
 
-- [ ] **Step 6: Commit**
+- [ ] **Step 7: Commit**
 
 ```bash
 git add flakesync-gradle-plugin
