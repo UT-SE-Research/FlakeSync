@@ -28,8 +28,8 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 package flakesync;
 
 
+import flakesync.DeltaDebugger;
 import flakesync.common.ConfigurationDefaults;
-import flakesync.common.DeltaDebugger;
 import flakesync.common.Level;
 import flakesync.common.Logger;
 import org.apache.maven.execution.MavenSession;
