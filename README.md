@@ -85,10 +85,16 @@ Then run the same phases as goals — `--test-name` takes the place of Maven's
 
 Output files land under the same `./<repo>/<module>/.flakesync/` layout as the Maven plugin.
 
+Both JUnit4 (`org.junit.Test`) and JUnit5 (`org.junit.jupiter.api.Test`) test methods are
+supported — `SingleTestLauncher` detects which annotation the target method carries and dispatches
+to the matching runner accordingly.
+
 **Limitations:**
-* v1 supports JUnit4-style test methods only.
 * `flakesync-core` bundles ASM 9.0, which cannot instrument class files newer than Java 15. If
   your target project's Gradle build compiles to a newer bytecode target than that, bytecode
   transformation silently has no effect instead of erroring — pin your target project's
   `sourceCompatibility`/`targetCompatibility` (or Java toolchain) to Java 15 or earlier if you hit
   this.
+* For JUnit5 targets, your project's test runtime classpath needs `junit-platform-launcher` on it
+  (Gradle 9+ requires this explicitly via `testRuntimeOnly("org.junit.platform:junit-platform-launcher")`
+  even for your own `test` task — the forked JVM this plugin launches needs the same jar present).

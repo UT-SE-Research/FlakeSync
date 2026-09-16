@@ -29,6 +29,11 @@ dependencies {
 
 tasks.test {
     useJUnitPlatform()
+    // These classes exist only to be forked and run by SingleTestExecutor (see
+    // SingleTestExecutorTest) — the JUnit4 ones are already invisible to this task since there's
+    // no vintage engine on this module's own test classpath, but the JUnit5 ones would otherwise
+    // be discovered and run directly by this very task, including the one that deliberately fails.
+    exclude("**/fixtures/**")
 }
 
 gradlePlugin {

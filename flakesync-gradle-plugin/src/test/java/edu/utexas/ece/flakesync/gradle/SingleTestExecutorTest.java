@@ -79,4 +79,28 @@ class SingleTestExecutorTest {
 
         assertThrows(TestExecutionTimeoutException.class, () -> executor.run(request));
     }
+
+    @Test
+    void returnsFalseWhenTheForkedJUnit5TestPasses() {
+        SingleTestExecutor executor = new SingleTestExecutor(AGENT_JAR, testClasspath(), new File("."));
+
+        TestExecutionRequest request = TestExecutionRequest
+                .forTest("edu.utexas.ece.flakesync.gradle.fixtures.AlwaysPassesJUnit5Test#thisAlwaysPasses")
+                .agentMode("CONCURRENT_METHODS")
+                .build();
+
+        assertFalse(executor.run(request));
+    }
+
+    @Test
+    void returnsTrueWhenTheForkedJUnit5TestFails() {
+        SingleTestExecutor executor = new SingleTestExecutor(AGENT_JAR, testClasspath(), new File("."));
+
+        TestExecutionRequest request = TestExecutionRequest
+                .forTest("edu.utexas.ece.flakesync.gradle.fixtures.AlwaysFailsJUnit5Test#thisAlwaysFails")
+                .agentMode("CONCURRENT_METHODS")
+                .build();
+
+        assertTrue(executor.run(request));
+    }
 }

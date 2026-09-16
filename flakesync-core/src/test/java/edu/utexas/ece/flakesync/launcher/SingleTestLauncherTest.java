@@ -75,4 +75,36 @@ public class SingleTestLauncherTest {
             System.clearProperty("stackTraceOutputFile");
         }
     }
+
+    @Test
+    public void exitsZeroWhenTheJUnit5TestPasses() {
+        int exitCode = SingleTestLauncher.run(new String[] {
+            "edu.utexas.ece.flakesync.launcher.fixtures.AlwaysPassesJUnit5Test#thisAlwaysPasses"
+        });
+        assertEquals(SingleTestLauncher.EXIT_PASSED, exitCode);
+    }
+
+    @Test
+    public void exitsOneWhenTheJUnit5TestFails() {
+        int exitCode = SingleTestLauncher.run(new String[] {
+            "edu.utexas.ece.flakesync.launcher.fixtures.AlwaysFailsJUnit5Test#thisAlwaysFails"
+        });
+        assertEquals(SingleTestLauncher.EXIT_FAILED, exitCode);
+    }
+
+    @Test
+    public void writesTheFailureStackTraceForAJUnit5Failure() throws java.io.IOException {
+        java.io.File output = java.io.File.createTempFile("flakesync-stacktrace", ".txt");
+        output.deleteOnExit();
+        System.setProperty("stackTraceOutputFile", output.getAbsolutePath());
+        try {
+            SingleTestLauncher.run(new String[] {
+                "edu.utexas.ece.flakesync.launcher.fixtures.AlwaysFailsJUnit5Test#thisAlwaysFails"
+            });
+            String contents = new String(java.nio.file.Files.readAllBytes(output.toPath()));
+            assertTrue(contents.contains("AlwaysFailsJUnit5Test"));
+        } finally {
+            System.clearProperty("stackTraceOutputFile");
+        }
+    }
 }

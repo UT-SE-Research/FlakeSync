@@ -37,7 +37,6 @@ execution is pass/fail, not a rich report.
 ## Non-goals
 
 - Replacing or deprecating the Maven plugin.
-- JUnit5-native target project support in v1 (see Limitations).
 - Publishing to the Gradle Plugin Portal (out of scope for this design;
   can be revisited once the plugin works via `mavenLocal()`/composite
   build).
@@ -128,11 +127,19 @@ both the `-javaagent` and the launcher's entry point — no new module.
 
 ### Limitations (v1)
 
-- Only JUnit4-style test methods are supported by the launcher. JUnit5
-  (Jupiter) native projects are not supported in v1. A follow-up could
-  add a second launcher variant using `junit-platform-launcher`
-  (`compileOnly`, same runtime-resolution pattern) without changing this
-  design's shape.
+- **Update (post-v1):** `SingleTestLauncher` now supports both JUnit4
+  and JUnit5 test methods, exactly via the follow-up path this section
+  originally sketched — a second dispatch branch using
+  `junit-platform-launcher` (`provided` scope, same runtime-resolution
+  pattern as the JUnit4 path), selected by checking which `@Test`
+  annotation (`org.junit.Test` vs `org.junit.jupiter.api.Test`) the
+  target method actually carries, via reflection on the annotation's
+  fully-qualified name rather than a hard class reference — so checking
+  for one framework's annotation never risks a `NoClassDefFoundError`
+  on a classpath that only has the other. Driven by wanting to validate
+  the plugin against real-world async-flaky-test datasets (e.g. IDoFT),
+  where actively-maintained Gradle projects have almost entirely moved
+  to JUnit5.
 - No standard JUnit XML report is produced per execution (matches
   today's Maven behavior, where reports aren't consulted for logic
   either — `reportsDirectory` in `SurefireExecution` is bookkeeping, not
