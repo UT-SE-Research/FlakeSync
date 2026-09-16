@@ -51,10 +51,8 @@ public final class SingleTestLauncher {
             return EXIT_CONFIG_ERROR;
         }
 
-        Method method;
-        try {
-            method = testClass.getMethod(methodName);
-        } catch (NoSuchMethodException nsme) {
+        Method method = findMethod(testClass, methodName);
+        if (method == null) {
             System.err.println("Could not find test method: " + className + "#" + methodName);
             return EXIT_CONFIG_ERROR;
         }
@@ -68,6 +66,28 @@ public final class SingleTestLauncher {
         System.err.println("Method is not annotated with a recognized @Test annotation: "
                 + className + "#" + methodName);
         return EXIT_CONFIG_ERROR;
+    }
+
+    // JUnit5 idiomatically allows package-private test methods, including ones inherited from an
+    // abstract base class — Class#getMethod alone only finds public methods, so walk the
+    // superclass chain looking for a declared method of any visibility (getDeclaredMethod isn't
+    // inherited by itself; it only searches the exact class it's called on).
+    private static Method findMethod(Class<?> testClass, String methodName) {
+        for (Class<?> current = testClass; current != null; current = current.getSuperclass()) {
+            Method declared = declaredMethodOrNull(current, methodName);
+            if (declared != null) {
+                return declared;
+            }
+        }
+        return null;
+    }
+
+    private static Method declaredMethodOrNull(Class<?> declaringClass, String methodName) {
+        try {
+            return declaringClass.getDeclaredMethod(methodName);
+        } catch (NoSuchMethodException nsme) {
+            return null;
+        }
     }
 
     // Checks the annotation by fully-qualified name via reflection, rather than referencing the

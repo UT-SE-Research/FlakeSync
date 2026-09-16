@@ -93,6 +93,18 @@ public class SingleTestLauncherTest {
     }
 
     @Test
+    public void findsAnInheritedPackagePrivateJUnit5TestMethod() {
+        // JUnit5 idiomatically allows package-private test methods, including ones inherited from
+        // an abstract base class (a real pattern seen in real-world projects, e.g. Apple's
+        // ServiceTalk) — Class#getMethod alone (public-only, non-inherited-from-package-private-
+        // declaring-class) cannot find these.
+        int exitCode = SingleTestLauncher.run(new String[] {
+            "edu.utexas.ece.flakesync.launcher.fixtures.InheritedPackagePrivateJUnit5Test#thisAlwaysPasses"
+        });
+        assertEquals(SingleTestLauncher.EXIT_PASSED, exitCode);
+    }
+
+    @Test
     public void writesTheFailureStackTraceForAJUnit5Failure() throws java.io.IOException {
         java.io.File output = java.io.File.createTempFile("flakesync-stacktrace", ".txt");
         output.deleteOnExit();
