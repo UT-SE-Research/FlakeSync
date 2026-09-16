@@ -34,5 +34,6 @@ public class FlakeSyncPlugin implements Plugin<Project> {
         project.getTasks().register("delaylocs", DelayLocsTask.class);
         project.getTasks().register("deltadebug", DeltaDebugTask.class);
         project.getTasks().register("critsearch", CritSearchTask.class);
+        project.getTasks().register("barrierpointsearch", BarrierPointSearchTask.class);
     }
 }
