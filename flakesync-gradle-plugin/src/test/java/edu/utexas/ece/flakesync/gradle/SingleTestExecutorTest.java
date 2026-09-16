@@ -8,6 +8,7 @@ import org.junit.jupiter.api.Test;
 
 import java.io.File;
 import java.nio.file.Paths;
+import java.util.Collections;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -102,5 +103,52 @@ class SingleTestExecutorTest {
                 .build();
 
         assertTrue(executor.run(request));
+    }
+
+    @Test
+    void propagatesTheTargetProjectsOwnSystemPropertiesIntoTheForkedJvm() {
+        // Mirrors what the Maven plugin does by preserving Surefire's existing argLine: the target
+        // project's own test-task system properties (e.g. ones its tests depend on for setup/
+        // extension registration) must reach the forked JVM, not just flakesync's own properties.
+        SingleTestExecutor executor = new SingleTestExecutor(AGENT_JAR, testClasspath(), new File("."),
+                Collections.emptyList(), Collections.singletonMap("flakesync.trial.customProperty", "expected-value"));
+
+        TestExecutionRequest request = TestExecutionRequest
+                .forTest("edu.utexas.ece.flakesync.gradle.fixtures.PropertyCheckingTest#checksCustomProperty")
+                .agentMode("CONCURRENT_METHODS")
+                .build();
+
+        assertFalse(executor.run(request));
+    }
+
+    @Test
+    void theForkedTestFailsWhenTheTargetProjectsSystemPropertyIsMissing() {
+        // Same test method, but without propagating the target property — proves the previous
+        // test's pass genuinely depends on propagation working, not just always passing.
+        SingleTestExecutor executor = new SingleTestExecutor(AGENT_JAR, testClasspath(), new File("."),
+                Collections.emptyList(), Collections.emptyMap());
+
+        TestExecutionRequest request = TestExecutionRequest
+                .forTest("edu.utexas.ece.flakesync.gradle.fixtures.PropertyCheckingTest#checksCustomProperty")
+                .agentMode("CONCURRENT_METHODS")
+                .build();
+
+        assertTrue(executor.run(request));
+    }
+
+    @Test
+    void propagatesTheTargetProjectsOwnJvmArgsIntoTheForkedJvm() {
+        // A -D system property set via jvmArgs (as ServiceTalk's own test task does, e.g. for JVM
+        // heap sizing and assertion flags) rather than Gradle's separate systemProperties map must
+        // also reach the forked JVM as a plain JVM argument.
+        SingleTestExecutor executor = new SingleTestExecutor(AGENT_JAR, testClasspath(), new File("."),
+                Collections.singletonList("-Dflakesync.trial.customProperty=expected-value"), Collections.emptyMap());
+
+        TestExecutionRequest request = TestExecutionRequest
+                .forTest("edu.utexas.ece.flakesync.gradle.fixtures.PropertyCheckingTest#checksCustomProperty")
+                .agentMode("CONCURRENT_METHODS")
+                .build();
+
+        assertFalse(executor.run(request));
     }
 }

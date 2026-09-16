@@ -62,4 +62,35 @@ class AbstractFlakeSyncTaskTest {
 
         assertTrue(resolved.getParentFile().isDirectory());
     }
+
+    @Test
+    void readsTheTargetProjectsOwnTestTaskJvmArgsAndSystemProperties() {
+        Project project = ProjectBuilder.builder().build();
+        project.getPluginManager().apply("edu.utexas.ece.flakesync");
+        project.getTasks().named("test", org.gradle.api.tasks.testing.Test.class, testTask -> {
+            testTask.jvmArgs("-server", "-ea:io.example...");
+            testTask.systemProperty("io.example.requireNativeLibs", "true");
+        });
+        NoOpTask task = project.getTasks().register("noop", NoOpTask.class).get();
+
+        assertEquals(java.util.Arrays.asList("-server", "-ea:io.example..."), task.getTargetJvmArgs());
+        assertEquals("true", task.getTargetSystemProperties().get("io.example.requireNativeLibs"));
+    }
+
+    @Test
+    void includesTheTargetProjectsOwnHeapSizingInTheJvmArgs() {
+        // Test#jvmArgs("-Xmx...", "-Xms...") is special-cased by Gradle: it parses those flags out
+        // into minHeapSize/maxHeapSize rather than leaving them in getJvmArgs() — so heap sizing
+        // has to be read from those properties separately, or it silently disappears when
+        // forwarded to the forked JVM.
+        Project project = ProjectBuilder.builder().build();
+        project.getPluginManager().apply("edu.utexas.ece.flakesync");
+        project.getTasks().named("test", org.gradle.api.tasks.testing.Test.class, testTask -> {
+            testTask.setMinHeapSize("2g");
+            testTask.setMaxHeapSize("4g");
+        });
+        NoOpTask task = project.getTasks().register("noop", NoOpTask.class).get();
+
+        assertEquals(java.util.Arrays.asList("-Xms2g", "-Xmx4g"), task.getTargetJvmArgs());
+    }
 }

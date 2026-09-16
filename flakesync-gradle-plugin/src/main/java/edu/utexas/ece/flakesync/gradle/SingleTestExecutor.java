@@ -11,6 +11,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -24,11 +25,27 @@ public class SingleTestExecutor {
     private final File agentJar;
     private final FileCollection testClasspath;
     private final File workingDir;
+    private final List<String> targetJvmArgs;
+    private final Map<String, String> targetSystemProperties;
 
     public SingleTestExecutor(File agentJar, FileCollection testClasspath, File workingDir) {
+        this(agentJar, testClasspath, workingDir, Collections.emptyList(), Collections.emptyMap());
+    }
+
+    /**
+     * @param targetJvmArgs the target project's own {@code test} task jvmArgs (e.g. heap sizing,
+     *         assertion flags) — preserved so the forked JVM behaves like the project's own test
+     *         execution, mirroring how the Maven plugin preserves Surefire's existing argLine.
+     * @param targetSystemProperties the target project's own {@code test} task system properties
+     *         (e.g. ones its tests depend on for setup or extension registration).
+     */
+    public SingleTestExecutor(File agentJar, FileCollection testClasspath, File workingDir,
+                               List<String> targetJvmArgs, Map<String, String> targetSystemProperties) {
         this.agentJar = agentJar;
         this.testClasspath = testClasspath;
         this.workingDir = workingDir;
+        this.targetJvmArgs = targetJvmArgs;
+        this.targetSystemProperties = targetSystemProperties;
     }
 
     /**
@@ -73,7 +90,12 @@ public class SingleTestExecutor {
 
         List<String> command = new ArrayList<>();
         command.add(javaBin);
+        command.addAll(targetJvmArgs);
         command.add("-javaagent:" + agentJar.getAbsolutePath());
+        for (Map.Entry<String, String> property : targetSystemProperties.entrySet()) {
+            command.add("-D" + property.getKey() + "=" + property.getValue());
+        }
+        // flakesync's own properties are added last so they win over same-named target properties.
         for (Map.Entry<String, String> property : request.getSystemProperties().entrySet()) {
             command.add("-D" + property.getKey() + "=" + property.getValue());
         }
