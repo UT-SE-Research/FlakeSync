@@ -258,7 +258,10 @@ public class BarrierPointMojo extends FlakeSyncAbstractMojo {
         BufferedReader reader = new BufferedReader(new FileReader(stackTraceFile));
         String trace = reader.readLine();
         while (trace != null) {
-            if (trace.contains(".java:")) {
+            // A stack trace element always carries the "at " prefix. Other lines in the
+            // report, such as output the test printed, can contain ".java:" without being
+            // frames, and split("at ")[1] then throws ArrayIndexOutOfBoundsException.
+            if (trace.contains(".java:") && trace.contains("at ")) {
                 // Extract class name and line number from the stack trace element String format
                 String className = trace.split("at ")[1].split("\\(")[0];
                 className = className.substring(0, className.lastIndexOf("."));
