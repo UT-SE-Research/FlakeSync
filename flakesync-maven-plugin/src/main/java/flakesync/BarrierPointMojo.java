@@ -1,5 +1,7 @@
 package flakesync;
 
+import com.github.javaparser.JavaParser;
+import com.github.javaparser.JavaToken;
 import flakesync.common.ConfigurationDefaults;
 import flakesync.common.Level;
 import flakesync.common.Logger;
@@ -24,6 +26,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Scanner;
+import java.util.Set;
 
 
 @Mojo(name = "barrierpointsearch", defaultPhase = LifecyclePhase.TEST,
@@ -72,8 +75,12 @@ public class BarrierPointMojo extends FlakeSyncAbstractMojo {
                     BufferedReader reader = new BufferedReader(new FileReader(endLineFile));
 
                     String yieldPoint = reader.readLine().split("=")[1];
+                    Set<Integer> executableLines = codeLines(yieldPoint.split("#")[0]);
                     for (int ln = Integer.parseInt(endLoc.split("#")[1]);
                          ln < Integer.parseInt(yieldPoint.split("#")[1]); ln++) {
+                        if (executableLines != null && !executableLines.contains(ln)) {
+                            continue;
+                        }
                         String yieldingPoint = yieldPoint.split("#")[0] + "#" + ln;
                         System.out.println("TRYING TO YIELD AT: " + yieldingPoint);
 
@@ -166,7 +173,7 @@ public class BarrierPointMojo extends FlakeSyncAbstractMojo {
                             SurefireExecution barrierPoint = SurefireExecution.SurefireFactory.createYieldExec2(
                                     this.surefire, this.originalArgLine, this.mavenProject, this.mavenSession,
                                     this.pluginManager, Paths.get(this.baseDir.getAbsolutePath(),
-                                    ConfigurationDefaults.DEFAULT_FLAKESYNC_DIR).toString(),
+                                            ConfigurationDefaults.DEFAULT_FLAKESYNC_DIR).toString(),
                                     this.localRepository, this.testName, delay, endLoc, yieldPoint);
                             executeSurefireExecution(null, barrierPoint);
 
@@ -179,7 +186,11 @@ public class BarrierPointMojo extends FlakeSyncAbstractMojo {
                             int beginning = Integer.parseInt(beginLine.split("#")[1]); // Parse from file
 
                             // Iterate upwards towards the start of the method, line-by-line
+                            Set<Integer> executableLines = codeLines(classN);
                             for (int ln = Integer.parseInt(yieldPoint.split("#")[1]); ln >= beginning; ln--) {
+                                if (executableLines != null && !executableLines.contains(ln)) {
+                                    continue;
+                                }
                                 String yieldingPoint = classN + "#" + ln;
                                 System.out.println("TRYING TO YIELD AT: " + yieldingPoint);
 
@@ -203,7 +214,7 @@ public class BarrierPointMojo extends FlakeSyncAbstractMojo {
                                     SurefireExecution execMon = SurefireExecution.SurefireFactory.createExecMon(
                                             this.surefire, this.originalArgLine, this.mavenProject, this.mavenSession,
                                             this.pluginManager, Paths.get(this.baseDir.getAbsolutePath(),
-                                            ConfigurationDefaults.DEFAULT_FLAKESYNC_DIR).toString(),
+                                                    ConfigurationDefaults.DEFAULT_FLAKESYNC_DIR).toString(),
                                             this.localRepository, this.testName, delay, endLoc);
                                     executeSurefireExecution(null, execMon);
 
@@ -241,6 +252,44 @@ public class BarrierPointMojo extends FlakeSyncAbstractMojo {
             throw new RuntimeException(exception);
         }
 
+    }
+
+    // Return null to preserve the original search if source is unavailable.
+    private Set<Integer> codeLines(String className) {
+        String path = className.replace('.', '/').split("\\$")[0] + ".java";
+        for (String root : mavenProject.getTestCompileSourceRoots()) {
+            File source = new File(root, path);
+            if (source.isFile()) {
+                return codeLinesIn(source);
+            }
+        }
+        for (String root : mavenProject.getCompileSourceRoots()) {
+            File source = new File(root, path);
+            if (source.isFile()) {
+                return codeLinesIn(source);
+            }
+        }
+        return null;
+    }
+
+    private Set<Integer> codeLinesIn(File source) {
+        try {
+            Set<Integer> lines = new HashSet<>();
+            for (JavaToken token : new JavaParser().parse(source).getResult().get().getTokenRange().get()) {
+                if (token.getCategory().name().contains("COMMENT") || token.getText().trim().isEmpty()) {
+                    continue;
+                }
+                token.getRange().ifPresent(range -> {
+                    for (int ln = range.begin.line; ln <= range.end.line; ln++) {
+                        lines.add(ln);
+                    }
+                });
+            }
+            return lines;
+        } catch (IOException | RuntimeException exception) {
+            getLog().warn("Could not inspect " + source + "; searching all lines", exception);
+            return null;
+        }
     }
 
     private File findSTFile(File directory) {
