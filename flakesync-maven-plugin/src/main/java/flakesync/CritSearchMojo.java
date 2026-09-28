@@ -34,6 +34,14 @@ public class CritSearchMojo extends FlakeSyncAbstractMojo {
     private boolean beginningFail = false;
     private Map<Integer, ArrayList<String>> clusters = new HashMap<Integer, ArrayList<String>>();
 
+    // [SearchLogger] state for the line-by-line critical point scan
+    private int lastFailOrder = 0;
+    private String lastFailLine = null;
+    private String lastFailGroup = null;
+
+    private void logCandidate(String phase, String group, int order, String candidate, String result, int runs) {
+        SearchLogger.log(this.baseDir.getAbsolutePath(), testName, phase, group, order, candidate, result, runs);
+    }
 
     @Override
     public void execute() throws MojoExecutionException, MojoFailureException {
@@ -63,12 +71,14 @@ public class CritSearchMojo extends FlakeSyncAbstractMojo {
 
             // Iterate over stacktrace locations
             Set<String> visited = new HashSet<String>();    // Keep track of whether we have seen some exact trace
+            int traceIdx = 0;                               // [SearchLogger]
             for (String line : stackTraceLines) {
                 // Check whether we have gone through this exact trace (without thread ID)
                 if (visited.contains(line.substring(0, line.lastIndexOf(",")))) {
                     continue;
                 }
                 visited.add(line.substring(0, line.lastIndexOf(",")));
+                traceIdx++;                                             // [SearchLogger]
 
                 String[] locs = line.split(",");                        // All elements are comma-delimited
                 int threadId = Integer.parseInt(locs[locs.length - 1]); // Thread ID is the last element
@@ -99,12 +109,15 @@ public class CritSearchMojo extends FlakeSyncAbstractMojo {
                     }
 
                     boolean result = runWithDelayAtLoc(newLoc, workingDelay, threadId, i);
+                    int runs = 1;                                   // [SearchLogger] Surefire runs for this call site
+                    String rootGroup = "trace" + traceIdx + "-thread" + threadId;   // [SearchLogger]
 
                     if (!result) { // Test passes, we need to try longer delays
                         int maxDelay = 25600;
                         workingDelay *= 2;
                         while (workingDelay <= maxDelay) {
                             result = runWithDelayAtLoc(newLoc, workingDelay, threadId, i);
+                            runs++;
 
                             if (result) { // We got a failure, we can stop
                                 break;
@@ -114,9 +127,13 @@ public class CritSearchMojo extends FlakeSyncAbstractMojo {
                         // If tried to max delay and still does not fail, then we need to stop
                         // The previous location is a root
                         if (!result) {
+                            // [SearchLogger] no failure even at max delay: previous call site is the root
+                            logCandidate("crit-root", rootGroup, i + 1, newLoc, "NO_FAIL_STOP", runs);
                             break;
                         }
                     }
+                    // [SearchLogger] delay at this call site reproduces the failure (candidate is a root so far)
+                    logCandidate("crit-root", rootGroup, i + 1, newLoc, "FAIL_REPRODUCED", runs);
 
                     rootLine = searchStackTrace(className, ":" + lineNumber);
                     rootLine += "[" + workingDelay + "]";
@@ -342,6 +359,9 @@ public class CritSearchMojo extends FlakeSyncAbstractMojo {
             BufferedReader reader = new BufferedReader(new FileReader(lines));
             String line = reader.readLine();
             int cluster = 1;    // Want to keep track of different "clusters" or regions of failing locations
+            lastFailOrder = 0;      // [SearchLogger]
+            lastFailLine = null;
+            lastFailGroup = null;
             while (line != null) {
                 String[] tmp = line.split("#");
                 String className = tmp[0];
@@ -355,6 +375,8 @@ public class CritSearchMojo extends FlakeSyncAbstractMojo {
                     lowerLineNumber  = Integer.parseInt(tmp[1].substring(0, tmp[1].indexOf('-')));
                     upperLineNumber = Integer.parseInt(tmp[2]);
                 }
+
+                String seqGroup = className + "#" + lowerLineNumber + "-" + upperLineNumber;  // [SearchLogger]
 
                 // Try to delay throughout the method, from first line to last line
                 for (int i = lowerLineNumber; i < upperLineNumber; i++) {
@@ -377,11 +399,18 @@ public class CritSearchMojo extends FlakeSyncAbstractMojo {
 
                     // Check if delaying at current location makes the test fail (means it is in region)
                     boolean failed = executeSurefireExecution(null, execution);
+                    int seqOrder = i - lowerLineNumber + 1;         // [SearchLogger] position in the original scan
+                    logCandidate("crit-line", seqGroup, seqOrder, className + "#" + i, failed ? "FAIL" : "PASS", 1);
                     if (failed) {
                         currentLines.add(className + "#" + i);
+                        lastFailOrder = seqOrder;                   // [SearchLogger]
+                        lastFailLine = className + "#" + i;
+                        lastFailGroup = seqGroup;
                     } else {
                         // Delaying at this line stops the failures, we are at the end of the region
                         if (!currentLines.isEmpty()) {
+                            // [SearchLogger] last failing line of the region is the critical point
+                            logCandidate("crit-point", lastFailGroup, lastFailOrder, lastFailLine, "CRITICAL", 0);
                             clusters.put(cluster, currentLines);
                             cluster++;
                         }
@@ -394,6 +423,8 @@ public class CritSearchMojo extends FlakeSyncAbstractMojo {
 
             // Record each region or "cluster" of failing delay locations
             if (!currentLines.isEmpty()) {
+                // [SearchLogger] region reaches the end of the scan: last failing line is the critical point
+                logCandidate("crit-point", lastFailGroup, lastFailOrder, lastFailLine, "CRITICAL", 0);
                 clusters.put(cluster, currentLines);
             }
         } catch (IOException ioe) {
