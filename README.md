@@ -8,7 +8,13 @@ More details about FlakeSync can be found in its [full-paper](https://utexas.app
 * Each phase will produce output files and potentially new directories, which can be found under the following directory: `./<repo>/<module>/.flakesync/`
 
 ### Setup
-* Can be built on Java 8+
+* Can be built on Java 8+. 
+* Install Java 8.
+```
+#installation steps for apple silicon macos. 
+brew install --cask temurin@8 
+export JAVA_HOME=$(/usr/libexec/java_home -v 1.8)
+```
 * Run ```mvn clean install -U``` in the test project
 
 ### Running Delay Injection and Location Minimization 
