@@ -27,7 +27,6 @@ More details about FlakeSync can be found in its [full-paper](https://utexas.app
   $env:Path = "$env:JAVA_HOME\bin;" + $env:Path
   ```
   Verify with `java -version`
-
 * Run ```mvn clean install -U``` in the test project. 
 
 ### Running Delay Injection and Location Minimization 
