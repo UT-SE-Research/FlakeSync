@@ -10,12 +10,25 @@ More details about FlakeSync can be found in its [full-paper](https://utexas.app
 ### Setup
 * Can be built on Java 8+
 * Install Java 8 and set JAVA_HOME before running the mvn commands that follow.
-```
-#installation steps for macos on apple silicon. 
-brew install --cask temurin@8 
-export JAVA_HOME=$(/usr/libexec/java_home -v 1.8)
-```
-* Run ```mvn clean install -U``` in the test project
+
+  **macOS** (Intel or Apple Silicon):
+  ```
+  brew install --cask temurin@8
+  export JAVA_HOME=$(/usr/libexec/java_home -v 1.8)
+  ```
+  **Windows** (PowerShell):
+  ```powershell
+  winget install --id EclipseAdoptium.Temurin.8.JDK -e
+  #You may also download manually from https://adoptium.net/temurin/releases/?version=8
+
+  # Note where java 8 has been installed.
+  # Set environment path variables.
+  $env:JAVA_HOME = "C:\Program Files\Eclipse Adoptium\jdk-8.0.<replace exact jdk path>"
+  $env:Path = "$env:JAVA_HOME\bin;" + $env:Path
+  ```
+  Verify with `java -version`
+
+* Run ```mvn clean install -U``` in the test project. 
 
 ### Running Delay Injection and Location Minimization 
 To run step 1 which creates a list of concurrent methods and then inject delays in those methods to see whether the test fails, run:
