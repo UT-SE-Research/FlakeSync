@@ -32,6 +32,7 @@ import flakesync.common.ConfigurationDefaults;
 import flakesync.common.DeltaDebugger;
 import flakesync.common.Level;
 import flakesync.common.Logger;
+import flakesync.heuristic.CandidateScorer;
 import org.apache.maven.execution.MavenSession;
 import org.apache.maven.model.Plugin;
 import org.apache.maven.plugin.BuildPluginManager;
@@ -59,6 +60,11 @@ public class DeltaDebugMojo extends FlakeSyncAbstractMojo {
 
     protected int delay;
 
+    // [SearchLogger] one row per Surefire run of this step, plus order and total rows
+    private void logCandidate(String phase, String group, int order, String candidate, String result, int runs) {
+        SearchLogger.log(this.baseDir.getAbsolutePath(), testName, phase, group, order, candidate, result, runs);
+    }
+
     @Override
     public void execute() throws MojoExecutionException, MojoFailureException {
         super.execute();
@@ -68,6 +74,20 @@ public class DeltaDebugMojo extends FlakeSyncAbstractMojo {
         //Generate list of all locations
         List<String> locations = new ArrayList<String>();
         this.delay = generateLocsList(locations);
+
+        // [Heuristics] puts the locations that the critical point heuristics (CP1-CP3) rate highest first, so they end
+        // up in the same chunks (-Dflakesync.heuristics=false keeps the original order)
+        int totalLocations = locations.size();
+        CandidateScorer scorer = CandidateScorer.forProject(this.mavenProject.getBasedir());
+        Logger.getGlobal().log(Level.INFO, scorer.describe());
+        CandidateScorer.LocationOrder ordering = scorer.orderCriticalLocations(locations);
+        locations = ordering.locations;
+        if (ordering.reordered) {
+            // [SearchLogger] "order" is the new position, the score is in "result"
+            for (int k = 0; k < locations.size(); k++) {
+                logCandidate("deltadebug-order", "initial", k + 1, locations.get(k), "score=" + ordering.scores[k], 0);
+            }
+        }
 
         LocationsDeltaDebug deltaDebug = new LocationsDeltaDebug(
                 this.surefire, this.originalArgLine, this.mavenProject,
@@ -81,6 +101,11 @@ public class DeltaDebugMojo extends FlakeSyncAbstractMojo {
         locations = deltaDebug.deltaDebug(locations, 2);
         this.delay = deltaDebug.delay;  // Get the delay after delta debugging finished
         writeLocationsToFile(locations);
+
+        // [SearchLogger] total number of Surefire runs of this step (the "runs" column)
+        logCandidate("deltadebug-total", "all", 0, "locations=" + totalLocations + "->" + locations.size()
+                + ";iterations=" + deltaDebug.getIterations() + ";ordering=" + (scorer.isOn() ? "ON" : "OFF")
+                + ";final_delay=" + this.delay, "TOTAL", deltaDebug.calls);
     }
 
     private void writeLocationsToFile(List<String> locs) {
@@ -139,6 +164,11 @@ public class DeltaDebugMojo extends FlakeSyncAbstractMojo {
         protected String originalArgLine;
         protected int delay;
 
+        // [SearchLogger] Surefire runs so far, and what the next runs are for
+        private int calls = 0;
+        private String group = "start";
+        private String kind = "";
+
         private LocationsDeltaDebug(Plugin surefire, String argLine, MavenProject mavenProject,
                                     MavenSession mavenSession, BuildPluginManager pluginManager,
                                     File baseDir, String localRepository, String testName, int delay) {
@@ -157,6 +187,7 @@ public class DeltaDebugMojo extends FlakeSyncAbstractMojo {
         @Override
         public List<String> deltaDebug(final List<String> elements, int granularity) {
             this.iterations++;
+            this.group = "level" + this.iterations + "-n" + elements.size() + "-g" + granularity;   // [SearchLogger]
 
             // If n granularity is greater than number of tests, then finished, simply return passed in tests
             if (elements.size() < granularity) {
@@ -179,10 +210,12 @@ public class DeltaDebugMojo extends FlakeSyncAbstractMojo {
 
                 while (this.delay <= MAX_DELAY) {
                     // Try to other, complement chunk first, with theory that valid elements are closer to end
+                    this.kind = "complement";
                     if (checkValid(otherChunk)) {
                         return deltaDebug(otherChunk, 2);   // If works, then delta debug some more the complement chunk
                     }
                     // Check if running this chunk works
+                    this.kind = "chunk";
                     if (checkValid(chunk)) {
                         return deltaDebug(chunk, 2);        // If works, then delta debug some more this chunk
                     }
@@ -214,12 +247,19 @@ public class DeltaDebugMojo extends FlakeSyncAbstractMojo {
                     Paths.get(this.baseDir.getAbsolutePath(), ConfigurationDefaults.DEFAULT_FLAKESYNC_DIR).toString(),
                     this.localRepository, this.testName, this.delay);
 
+            boolean reproduced;
             try {
-                return this.executeSurefireExecution(null, cleanExec);
+                reproduced = this.executeSurefireExecution(null, cleanExec);
             } catch (Throwable exception) {
                 System.out.println(exception);
                 throw new RuntimeException();
             }
+            // [SearchLogger] one Surefire run: was the failure reproduced with only these locations delayed?
+            this.calls++;
+            logCandidate("deltadebug", this.group, this.calls,
+                    this.kind + "[" + elements.size() + "]@delay=" + this.delay,
+                    reproduced ? "REPRODUCED" : "NOT_REPRODUCED", 1);
+            return reproduced;
         }
 
         private void createTempFile(List<String> elements) {

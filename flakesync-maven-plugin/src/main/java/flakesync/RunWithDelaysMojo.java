@@ -54,6 +54,11 @@ public class RunWithDelaysMojo extends FlakeSyncAbstractMojo {
 
     int[] delays = {100, 200, 400, 800, 1600, 3200, 6400, 12800};
 
+    // [SearchLogger] one row per Surefire run of this step, plus a total row
+    private void logCandidate(String phase, String group, int order, String candidate, String result, int runs) {
+        SearchLogger.log(this.baseDir.getAbsolutePath(), testName, phase, group, order, candidate, result, runs);
+    }
+
     @Override
     public void execute() throws MojoExecutionException, MojoFailureException {
         super.execute();
@@ -61,20 +66,31 @@ public class RunWithDelaysMojo extends FlakeSyncAbstractMojo {
 
         createWhiteList();
 
+        int calls = 0;      // [SearchLogger] Surefire runs spent in this step
         for (int i = 0; i < delays.length; i++) {
             SurefireExecution cleanExec = SurefireExecution.SurefireFactory.createDelayAllExec(
                     this.surefire, this.originalArgLine, this.mavenProject,
                     this.mavenSession, this.pluginManager,
                     Paths.get(this.baseDir.getAbsolutePath(), ConfigurationDefaults.DEFAULT_FLAKESYNC_DIR).toString(),
                     this.localRepository, this.testName, delays[i]);
+            String result = "PASS";        // [SearchLogger]
+            boolean stop = false;
             try {
                 this.executeSurefireExecution(null, cleanExec);
             } catch (MojoExecutionException mee) {
-                break;
+                result = "FAIL";
+                stop = true;
             } catch (Throwable exception) {
                 System.out.println("Surefire Execution failed: " + exception);
+                result = "ERROR";
+            }
+            calls++;
+            logCandidate("delaylocs", "delay-all", i + 1, "delay=" + delays[i], result, 1);
+            if (stop) {
+                break;
             }
         }
+        logCandidate("delaylocs-total", "all", 0, "delays_tried=" + calls, "TOTAL", calls);
     }
 
 

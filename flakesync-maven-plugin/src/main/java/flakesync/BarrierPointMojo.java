@@ -3,6 +3,7 @@ package flakesync;
 import flakesync.common.ConfigurationDefaults;
 import flakesync.common.Level;
 import flakesync.common.Logger;
+import flakesync.heuristic.CandidateScorer;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
 import org.apache.maven.plugin.PluginExecutionException;
@@ -22,6 +23,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
 
@@ -55,6 +57,11 @@ public class BarrierPointMojo extends FlakeSyncAbstractMojo {
             bw.newLine();
             bw.flush();
 
+            // [Heuristics] scores barrier candidates so the likeliest ones are tried first (-Dflakesync.heuristics=false
+            // keeps the original order)
+            CandidateScorer scorer = CandidateScorer.forProject(this.mavenProject.getBasedir());
+            Logger.getGlobal().log(Level.INFO, scorer.describe());
+
             FileReader boundaryResults = new FileReader(String.valueOf(Constants.getCritPointsResultsFilepath(
                     String.valueOf(this.mavenProject.getBasedir()), testName)));
             BufferedReader br = new BufferedReader(boundaryResults);
@@ -85,11 +92,20 @@ public class BarrierPointMojo extends FlakeSyncAbstractMojo {
 
                     boolean foundHere = false;
                     String yieldPoint = reader.readLine().split("=")[1];
-                    for (int ln = Integer.parseInt(endLoc.split("#")[1]);
-                         ln < Integer.parseInt(yieldPoint.split("#")[1]); ln++) {
+                    // [Heuristics] lines below the critical point, ordered by score (original order if scoring is off)
+                    List<Integer> testLines = new ArrayList<Integer>();
+                    for (int l = Integer.parseInt(endLoc.split("#")[1]);
+                         l < Integer.parseInt(yieldPoint.split("#")[1]); l++) {
+                        testLines.add(l);
+                    }
+                    CandidateScorer.Plan testPlan = scorer.planBarrierLines(yieldPoint.split("#")[0], testLines, endLoc);
+                    int testBase = candIdx;
+                    for (int k = 0; k < testPlan.size(); k++) {
+                        int ln = testPlan.line(k);
                         String yieldingPoint = yieldPoint.split("#")[0] + "#" + ln;
                         System.out.println("TRYING TO YIELD AT: " + yieldingPoint);
-                        int order = ++candIdx;      // [SearchLogger]
+                        // [SearchLogger] "order" stays the position in FlakeSync's original order
+                        int order = testPlan.reordered() ? testBase + testPlan.originalPosition(k) : ++candIdx;
                         int runs = 1;               // [SearchLogger] Surefire executions spent on this candidate
 
                         // Execute test with the delay and the new potential yield point
@@ -156,6 +172,9 @@ public class BarrierPointMojo extends FlakeSyncAbstractMojo {
                         }
                         logCandidate("barrier-test", endLoc, order, yieldingPoint, "NOT_FOUND", runs);
                     }
+                    if (testPlan.reordered()) {
+                        candIdx = testBase + testPlan.size();   // [SearchLogger]
+                    }
                 } else {
                     SurefireExecution stackTraceExec = SurefireExecution.SurefireFactory.createBarrierSTExec(this.surefire,
                             this.originalArgLine, this.mavenProject, this.mavenSession, this.pluginManager,
@@ -212,10 +231,20 @@ public class BarrierPointMojo extends FlakeSyncAbstractMojo {
 
                             boolean foundInFrame = false;
                             // Iterate upwards towards the start of the method, line-by-line
-                            for (int ln = Integer.parseInt(yieldPoint.split("#")[1]); ln >= beginning; ln--) {
+                            // [Heuristics] the lines of this frame, ordered by score (original order if scoring is off)
+                            List<Integer> frameLines = new ArrayList<Integer>();
+                            for (int fl = Integer.parseInt(yieldPoint.split("#")[1]); fl >= beginning; fl--) {
+                                frameLines.add(fl);
+                            }
+                            CandidateScorer.Plan framePlan = scorer.planBarrierLines(classN, frameLines, endLoc);
+                            int frameBase = candIdx;
+                            for (int k = 0; k < framePlan.size(); k++) {
+                                int ln = framePlan.line(k);
                                 String yieldingPoint = classN + "#" + ln;
                                 System.out.println("TRYING TO YIELD AT: " + yieldingPoint);
-                                int order = ++candIdx;      // [SearchLogger] continues counting across stack frames
+                                // [SearchLogger] continues counting across stack frames, in the original order
+                                int order = framePlan.reordered() ? frameBase + framePlan.originalPosition(k)
+                                        : ++candIdx;
                                 int runs = 1;               // [SearchLogger]
 
                                 // Execute test with the delay and the new potential yield point
@@ -280,6 +309,9 @@ public class BarrierPointMojo extends FlakeSyncAbstractMojo {
                                     }
                                 }
                                 logCandidate("barrier-frame", endLoc, order, yieldingPoint, "NOT_FOUND", runs);
+                            }
+                            if (framePlan.reordered()) {
+                                candIdx = frameBase + framePlan.size();     // [SearchLogger]
                             }
                         }
                     }
