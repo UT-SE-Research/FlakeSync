@@ -356,8 +356,9 @@ public class CritSearchMojo extends FlakeSyncAbstractMojo {
                     upperLineNumber = Integer.parseInt(tmp[2]);
                 }
 
-                // Try to delay throughout the method, from first line to last line
-                for (int i = lowerLineNumber; i < upperLineNumber; i++) {
+                // Bound was exclusive, so the last line of every range went untested; and the
+                // single-line branch above sets lower == upper, which tested nothing at all.
+                for (int i = lowerLineNumber; i <= upperLineNumber; i++) {
                     // Configure where to write the delay
                     String path2 = String.valueOf(Constants.getIndRootFilepath(
                             String.valueOf(this.mavenProject.getBasedir()), testName, i));
