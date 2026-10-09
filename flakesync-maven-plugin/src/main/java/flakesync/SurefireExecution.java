@@ -114,6 +114,8 @@ public class SurefireExecution {
         configNode = this.addAttributeToConfig(configNode, "reportsDirectory",
                 Constants.getExecutionDir(this.mavenProject.getBasedir().toString(), executionId).toString());
         configNode = this.addAttributeToConfig(configNode, "disableXmlReport", "false");
+        // Barrier search parses the trace from this report; the default of true can strip it entirely.
+        configNode = this.addAttributeToConfig(configNode, "trimStackTrace", "false");
         return configNode;
     }
 
