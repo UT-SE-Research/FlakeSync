@@ -31,6 +31,7 @@ package flakesync;
 import flakesync.common.ConfigurationDefaults;
 import flakesync.common.Level;
 import flakesync.common.Logger;
+import flakesync.similarity.SimilaritySearch;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
 import org.apache.maven.plugins.annotations.LifecyclePhase;
@@ -54,8 +55,11 @@ public class RunWithDelaysMojo extends FlakeSyncAbstractMojo {
 
     int[] delays = {100, 200, 400, 800, 1600, 3200, 6400, 12800};
 
+    private SimilaritySearch similarity;
+
     @Override
     public void execute() throws MojoExecutionException, MojoFailureException {
+        this.similarity = new SimilaritySearch("DELAY", this.mavenProject.getBasedir().toString(), testName);
         super.execute();
         Logger.getGlobal().log(Level.INFO, ("Running RunWithDelaysMojo"));
 
@@ -70,6 +74,7 @@ public class RunWithDelaysMojo extends FlakeSyncAbstractMojo {
             try {
                 this.executeSurefireExecution(null, cleanExec);
             } catch (MojoExecutionException mee) {
+                similarity.judge(cleanExec.getExecutionId());   // record the baseline failure for later stages
                 break;
             } catch (Throwable exception) {
                 System.out.println("Surefire Execution failed: " + exception);
