@@ -4,6 +4,7 @@ import flakesync.common.ConfigurationDefaults;
 import flakesync.common.Level;
 import flakesync.common.Logger;
 import flakesync.common.Output;
+import flakesync.similarity.SimilaritySearch;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
 import org.apache.maven.plugins.annotations.LifecyclePhase;
@@ -34,9 +35,12 @@ public class CritSearchMojo extends FlakeSyncAbstractMojo {
     private boolean beginningFail = false;
     private Map<Integer, ArrayList<String>> clusters = new HashMap<Integer, ArrayList<String>>();
 
+    private SimilaritySearch similarity;
+
 
     @Override
     public void execute() throws MojoExecutionException, MojoFailureException {
+        this.similarity = new SimilaritySearch("CRIT", this.mavenProject.getBasedir().toString(), testName);
         super.execute();
         Logger.getGlobal().log(Level.INFO, ("Running CritSearchMojo"));
         MojoExecutionException allExceptions = null;
@@ -408,7 +412,7 @@ public class CritSearchMojo extends FlakeSyncAbstractMojo {
         try {
             execution.run();
         } catch (MojoExecutionException ex) {
-            return true;
+            return similarity.accepts(execution.getExecutionId());
         }
         return false;
     }
@@ -422,7 +426,7 @@ public class CritSearchMojo extends FlakeSyncAbstractMojo {
             execution.run();
         } catch (MojoExecutionException ex) {
             Utils.linkException(ex, allExceptions);
-            return true;
+            return similarity.accepts(execution.getExecutionId());
         }
         return false;
     }
