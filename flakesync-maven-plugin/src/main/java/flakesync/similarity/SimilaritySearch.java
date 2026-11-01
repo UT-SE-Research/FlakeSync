@@ -26,7 +26,7 @@ import java.util.regex.Pattern;
  */
 public final class SimilaritySearch {
 
-    public enum Verdict { SELF, MATCH, SAMETEST, REJECT, UNREADABLE }
+    public enum Verdict { SELF, MATCH, REJECT, UNREADABLE }
 
     /** Frames from the test framework and JDK: identical for every failure, so they carry no signal. */
     private static final String[] SCAFFOLDING = {"org.junit", "sun.reflect", "jdk.internal", "java.base",
@@ -57,7 +57,7 @@ public final class SimilaritySearch {
     /** True unless this run failed in a clearly different way from the target. */
     // in: executionId "clean_3+EGtp3wuz0wHAV2BajvRMH8u3whjf2O3O4d8tCJBY="
     public boolean accepts(String executionId) {
-        // out: MATCH / SAMETEST / SELF / UNREADABLE -> true;  REJECT -> false
+        // out: MATCH / SELF / UNREADABLE -> true;  REJECT -> false
         return judge(executionId) != Verdict.REJECT;
     }
 
@@ -75,14 +75,9 @@ public final class SimilaritySearch {
             return Verdict.SELF;
         }
         double score = jaccard(failure.signature, target.signature);
-        // Same exception in the same test class is the same test failing, whichever
-        // assertion caught it; the message only says which check came first.
-        boolean sameTest = Boolean.parseBoolean(System.getProperty("flakesync.sameTestRule", "false"))
-                && failure.type.equals(target.type)
-                && !failure.frameClass.equals("none") && failure.frameClass.equals(target.frameClass);
-        Verdict verdict = score >= threshold ? Verdict.MATCH : sameTest ? Verdict.SAMETEST : Verdict.REJECT;
+        Verdict verdict = score >= threshold ? Verdict.MATCH : Verdict.REJECT;
         System.out.printf("%s %-8s %.2f  %s%n", stage, verdict, score, shown(failure.signature));
-        // out: MATCH 1.00 (same line) | SAMETEST 0.64 (@GrpcServerTest:92, same test) | REJECT 0.04 (a RemotingException)
+        // out: MATCH 1.00 (same line) | REJECT 0.64 (@GrpcServerTest:92, other assertion) | REJECT 0.04 (RemotingException)
         return verdict;
     }
 
@@ -268,7 +263,6 @@ public final class SimilaritySearch {
         public final String message;
         public final String trace;
         public final String frame;
-        public final String frameClass;
         public final String frames;
         public final String signature;
 
@@ -279,7 +273,6 @@ public final class SimilaritySearch {
             this.message = message;
             this.trace = trace;
             this.frame = frame;
-            this.frameClass = frame.contains(":") ? frame.substring(0, frame.indexOf(':')) : frame;
             this.frames = frames;
             this.signature = type + ": " + message + " @" + frame + (frames.isEmpty() ? "" : " | " + frames);
             // signature: "org.opentest4j.AssertionFailedError: expected: <n.n> but was: <n.n> @GrpcServerTest:90 | at
