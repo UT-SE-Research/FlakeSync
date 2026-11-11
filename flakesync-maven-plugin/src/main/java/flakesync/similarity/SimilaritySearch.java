@@ -50,18 +50,14 @@ public final class SimilaritySearch {
             throw new IllegalStateException("No baseline from delaylocs: " + targetFile());
         }
         System.out.println(stage + " BASELINE  " + shown(this.target.signature));
-        // out (log): DD BASELINE  org.opentest4j.AssertionFailedError: expected: <n.n> but was: <n.n>
-        //    @GrpcServerTest:90 | ...
     }
 
     /** True unless this run failed in a clearly different way from the target. */
-    // in: executionId "clean_3+EGtp3wuz0wHAV2BajvRMH8u3whjf2O3O4d8tCJBY="
     public boolean accepts(String executionId) {
         // out: MATCH / SELF / UNREADABLE -> true;  REJECT -> false
         return judge(executionId) != Verdict.REJECT;
     }
 
-    // in: executionId "clean_3+EGtp3w..."  whose .flakesync/clean_.../TEST-*.xml holds this run's failure
     public Verdict judge(String executionId) {
         File reportDir = new File(String.valueOf(Constants.getExecutionDir(baseDir, executionId)));
         Failure failure = read(reportDir);
@@ -71,7 +67,6 @@ public final class SimilaritySearch {
         }
         if (failure.selfInflicted()) {
             System.out.println(stage + " SELF    " + shown(failure.signature));
-            // out: SELF  e.g. "org.junit...TestTimedOutException: test timed out after n seconds @CompatibilityTest:167"
             return Verdict.SELF;
         }
         double score = jaccard(failure.signature, target.signature);
@@ -82,7 +77,6 @@ public final class SimilaritySearch {
     }
 
     /** The one failure Surefire recorded in a run's TEST-*.xml, or null if the run passed. */
-    // in: reportDir ".flakesync/clean_3+EGtp3w.../"  containing TEST-org.apache.uniffle.common.rpc.GrpcServerTest.xml
     public static Failure read(File reportDir) {
         File[] files = reportDir.listFiles();
         if (files == null) {
@@ -123,8 +117,6 @@ public final class SimilaritySearch {
                         where = hit.group(2) + ":" + hit.group(3);
                     }
                 }
-                // out: Failure(type "org.opentest4j.AssertionFailedError", message "expected: <n.n> but was: <n.n>",
-                //    frame "GrpcServerTest:90")
                 return type == null ? null
                         : new Failure(type, normalize(message), trace.toString(), where, String.join(" | ", kept));
             } catch (IOException ioe) {
@@ -137,8 +129,6 @@ public final class SimilaritySearch {
     }
 
     /** Jaccard index over the two signatures' word sets. */
-    // in: ("...AssertionFailedError: expected: <n.n> but was: <n.n> @GrpcServerTest:90 | ...", the same but
-    //    @GrpcServerTest:92)
     public static double jaccard(String one, String two) {
         Set<String> left = words(one);
         Set<String> right = words(two);
@@ -146,74 +136,55 @@ public final class SimilaritySearch {
         both.retainAll(right);
         Set<String> union = new HashSet<>(left);
         union.addAll(right);
-        // out: 1.00 identical | 0.64 uniffle :90 vs :92 | 0.38 db-scheduler :87 vs :88 | 0.04 AssertionError vs
-        //    RemotingException
         return union.isEmpty() ? 0.0 : (double) both.size() / union.size();
     }
 
     // in: "expected: &lt;0.0&gt; but was: &lt;1.0&gt;"    out: "expected: <n.n> but was: <n.n>"
     public static String normalize(String text) {
-        // out: "expected: <n.n> but was: <n.n>"
         return text.replace("&lt;", "<").replace("&gt;", ">").replace("&quot;", "\"")
                 .replace("&apos;", "'").replace("&#10;", " ").replace("&#13;", " ").replace("&amp;", "&")
                 .replaceAll("@[0-9a-fA-F]{4,}", "@H").replaceAll("\\d+", "N")
                 .replaceAll("\\s+", " ").trim().toLowerCase();
     }
 
-    // in: "at org.junit.jupiter.api.AssertEquals.assertEquals(AssertEquals.java:70)" -> true;  "at
-    //    ...GrpcServerTest...(GrpcServerTest.java:90)" -> false
     private static boolean scaffolding(String frame) {
         for (String prefix : SCAFFOLDING) {
             if (frame.contains(prefix)) {
-                // out: true  (e.g. the frame is under org.junit)
                 return true;
             }
         }
-        // out: false  (an application frame, e.g. ...GrpcServerTest.testGrpcExecutorPool(GrpcServerTest.java:90))
         return false;
     }
 
     /** Log lines carry the signature's head: type, message, test frame. The frames behind it are cut. */
-    // in: a 300-char signature    out: its first 117 chars + "..."
     private static String shown(String signature) {
-        // out: "org.opentest4j.AssertionFailedError: expected: <n.n> but was: <n.n> @GrpcServerTest:90 | at
-        //    org.apache.un..."
         return signature.length() <= 120 ? signature : signature.substring(0, 117) + "...";
     }
 
-    // in: "java.lang.AssertionError: expected: is <n> but: was <n> @CompatibilityTest:87"
     private static Set<String> words(String text) {
         Set<String> out = new HashSet<>(Arrays.asList(text.toLowerCase().split("[^a-z0-9$.:@]+")));
         out.remove("");
-        // out: {java.lang.assertionerror:, expected:, is, n, but:, was, @compatibilitytest:87}
         return out;
     }
 
-    // in: ('<failure message="expected: &lt;0.0&gt; but was: &lt;1.0&gt;" type="org.opentest4j.AssertionFailedError">',
-    //    "type")
     private static String attribute(String tag, String name) {
         Matcher hit = Pattern.compile(name + "=\"([^\"]*)\"").matcher(tag);
         // out: "org.opentest4j.AssertionFailedError";  "" when the attribute is absent
         return hit.find() ? hit.group(1) : "";
     }
 
-    // out: <module>/.flakesync/org.apache.uniffle.common.rpc.GrpcServerTest.testGrpcExecutorPool-TargetFailure.txt
     private File targetFile() {
-        // out: <module>/.flakesync/org.apache.uniffle.common.rpc.GrpcServerTest.testGrpcExecutorPool-TargetFailure.txt
         return new File(String.valueOf(Constants.getTargetFailureFilepath(baseDir, testName)));
     }
 
     /** delaylocs calls this once, on its failing run: writes the baseline unless the failure was self-inflicted. */
-    // in: ("<module dir>", "org.apache.uniffle.common.rpc.GrpcServerTest#testGrpcExecutorPool", "clean_0XQmf3...")
     public static void saveBaseline(String baseDir, String testName, String executionId) {
         Failure failure = read(new File(String.valueOf(Constants.getExecutionDir(baseDir, executionId))));
         if (failure == null) {
-            // out (log): DELAY no baseline: no failure recorded in the report
             System.out.println("DELAY no baseline: no failure recorded in the report");
             return;
         }
         if (failure.selfInflicted()) {
-            // out (log): DELAY no baseline: self-inflicted  org.junit...TestTimedOutException: test timed out ...
             System.out.println("DELAY no baseline: self-inflicted  " + shown(failure.signature));
             return;
         }
@@ -227,20 +198,16 @@ public final class SimilaritySearch {
             out.newLine();
             out.write(failure.frames);
             out.newLine();
-            // out (log): DELAY BASELINE  org.opentest4j.AssertionFailedError: expected: <n.n> but was: <n.n>
-            //    @GrpcServerTest:90 | ...
+
             System.out.println("DELAY BASELINE  " + shown(failure.signature));
         } catch (IOException ioe) {
             System.out.println("DELAY could not save baseline: " + ioe.getMessage());
         }
     }
 
-    // in: the 4-line file: "org.opentest4j.AssertionFailedError" / "GrpcServerTest:90" / "expected: <n.n> but was:
-    //    <n.n>" / "at ..."
     private Failure loadTarget() {
         File file = targetFile();
         if (!file.exists()) {
-            // out: null  (delaylocs wrote no baseline; the constructor turns this into a stop)
             return null;
         }
         try (BufferedReader in = new BufferedReader(new FileReader(file))) {
@@ -248,7 +215,6 @@ public final class SimilaritySearch {
             String frame = in.readLine();
             String message = in.readLine();
             String frames = in.readLine();
-            // out: the Failure delaylocs saved, rebuilt from the file; trace is "" (not stored, not needed again)
             return type == null || frame == null ? null
                     : new Failure(type, message == null ? "" : message, "", frame, frames == null ? "" : frames);
         } catch (IOException ioe) {
@@ -266,8 +232,6 @@ public final class SimilaritySearch {
         public final String frames;
         public final String signature;
 
-        // in: ("org.opentest4j.AssertionFailedError", "expected: <n.n> but was: <n.n>", <trace>, "GrpcServerTest:90",
-        //    "at ...:90)")
         Failure(String type, String message, String trace, String frame, String frames) {
             this.type = type;
             this.message = message;
@@ -275,15 +239,9 @@ public final class SimilaritySearch {
             this.frame = frame;
             this.frames = frames;
             this.signature = type + ": " + message + " @" + frame + (frames.isEmpty() ? "" : " | " + frames);
-            // signature: "org.opentest4j.AssertionFailedError: expected: <n.n> but was: <n.n> @GrpcServerTest:90 | at
-            //    ...GrpcServerTest.java:90)"
         }
 
-        /** The delay did this, not the subject: a timeout, our own sleep interrupted, our own file missing. */
-        // out: true for "TestTimedOutException: test timed out after n seconds";  false for an AssertionError from the test
         public boolean selfInflicted() {
-            // out: true  for "org.junit.runners.model.TestTimedOutException";  false for
-            //    "org.opentest4j.AssertionFailedError"
             return type.contains("TestTimedOutException")
                     || (type.contains("InterruptedException") && trace.contains("Utility.delay"))
                     || (type.contains("FileNotFoundException") && message.contains(".flakesync"));
