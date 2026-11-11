@@ -31,6 +31,7 @@ package flakesync;
 import flakesync.common.ConfigurationDefaults;
 import flakesync.common.Level;
 import flakesync.common.Logger;
+import flakesync.similarity.SimilaritySearch;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
 import org.apache.maven.plugins.annotations.LifecyclePhase;
@@ -70,6 +71,8 @@ public class RunWithDelaysMojo extends FlakeSyncAbstractMojo {
             try {
                 this.executeSurefireExecution(null, cleanExec);
             } catch (MojoExecutionException mee) {
+                SimilaritySearch.saveBaseline(this.mavenProject.getBasedir().toString(), testName,
+                        cleanExec.getExecutionId());   // the baseline failure for later stages
                 break;
             } catch (Throwable exception) {
                 System.out.println("Surefire Execution failed: " + exception);

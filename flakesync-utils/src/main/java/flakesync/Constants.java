@@ -33,6 +33,7 @@ public class Constants {
     public static final String YIELD_RESULT_FILE = "FlagDelayANDUpdateANDYielding.txt";
     public static final String BARRIER_SEARCH_RESULTS_DIR = "Results-BarrierSearch";
     public static final String BARRIER_POINTS_FILE = "BarrierPoints.csv";
+    public static final String TARGET_FAILURE_FILE = "TargetFailure.txt";
 
     public static void createExecutionDirIfNeeded(String executionId) {
         Paths.get(DEFAULT_FLAKESYNC_DIR, executionId).toFile().mkdirs();
@@ -63,6 +64,11 @@ public class Constants {
     public static Path getAllLocationsFilepath(String testName) {
         String fileName = testName.replace("#", ".") + "-" + LOCATIONS_FILE;
         return Paths.get(".", DEFAULT_FLAKESYNC_DIR, fileName);
+    }
+
+    public static Path getTargetFailureFilepath(String baseDir, String testName) {
+        String fileName = testName.replace("#", ".") + "-" + TARGET_FAILURE_FILE;
+        return Paths.get(baseDir, DEFAULT_FLAKESYNC_DIR, fileName);
     }
 
     public static Path getBarrierPointsResultsFilepath(String baseDir, String testName) {

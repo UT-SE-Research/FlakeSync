@@ -32,6 +32,7 @@ import flakesync.common.ConfigurationDefaults;
 import flakesync.common.DeltaDebugger;
 import flakesync.common.Level;
 import flakesync.common.Logger;
+import flakesync.similarity.SimilaritySearch;
 import org.apache.maven.execution.MavenSession;
 import org.apache.maven.model.Plugin;
 import org.apache.maven.plugin.BuildPluginManager;
@@ -138,6 +139,7 @@ public class DeltaDebugMojo extends FlakeSyncAbstractMojo {
         protected String localRepository;
         protected String originalArgLine;
         protected int delay;
+        private final SimilaritySearch similarity;
 
         private LocationsDeltaDebug(Plugin surefire, String argLine, MavenProject mavenProject,
                                     MavenSession mavenSession, BuildPluginManager pluginManager,
@@ -151,6 +153,7 @@ public class DeltaDebugMojo extends FlakeSyncAbstractMojo {
             this.localRepository = localRepository;
             this.testName = testName;
             this.delay = delay;
+            this.similarity = new SimilaritySearch("DD", mavenProject.getBasedir().toString(), testName);
         }
 
         // Redo core delta debug logic since we need to rerun with higher delays in middle
@@ -245,7 +248,7 @@ public class DeltaDebugMojo extends FlakeSyncAbstractMojo {
             try {
                 execution.run();
             } catch (Exception ex) {
-                return true;
+                return similarity.accepts(execution.getExecutionId());
             }
             return false;
         }
