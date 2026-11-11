@@ -79,16 +79,8 @@ public class BarrierPointMojo extends FlakeSyncAbstractMojo {
 
                         // Execute test with the delay and the new potential yield point
                         // (no need to output starting line anymore)
-                        execution = SurefireExecution.SurefireFactory.createYieldExec1(this.surefire,
-                                this.originalArgLine, this.mavenProject, this.mavenSession, this.pluginManager,
-                                Paths.get(this.baseDir.getAbsolutePath(),
-                                        ConfigurationDefaults.DEFAULT_FLAKESYNC_DIR).toString(),
-                                this.localRepository, this.testName, delay, endLoc.replace("/", "."),
-                                yieldingPoint, 1);
-                        boolean fail = executeSurefireExecution(null, execution);
-
                         // If the test now passes, and it was valid, add this point as the barrier point
-                        if (!fail && checkValidPass()) {
+                        if (passesRepeatedly(delay, endLoc.replace("/", "."), yieldingPoint, 1)) {
                             addBarrierPointToResults(bw, line, yieldingPoint, 1);
                             break;
                         } else {
@@ -109,15 +101,7 @@ public class BarrierPointMojo extends FlakeSyncAbstractMojo {
                             int numExecutions = Integer.parseInt(reader.readLine().split("=")[1]);
 
                             // Run again with delay and potential yield point, but now check for threshold
-                            execution = SurefireExecution.SurefireFactory.createYieldExec1(this.surefire,
-                                    this.originalArgLine, this.mavenProject, this.mavenSession, this.pluginManager,
-                                    Paths.get(this.baseDir.getAbsolutePath(),
-                                            ConfigurationDefaults.DEFAULT_FLAKESYNC_DIR).toString(),
-                                    this.localRepository, this.testName, delay, endLoc.replace("/", "."),
-                                    yieldingPoint, 1);
-                            fail = executeSurefireExecution(null, execution);
-
-                            if (!fail && checkValidPass()) {
+                            if (passesRepeatedly(delay, endLoc.replace("/", "."), yieldingPoint, numExecutions)) {
                                 // If test passed, barrier point worked, and add to results file
                                 addBarrierPointToResults(bw, line, yieldingPoint, numExecutions);
                                 break;
@@ -125,12 +109,30 @@ public class BarrierPointMojo extends FlakeSyncAbstractMojo {
                         }
                     }
                 } else {
-                    SurefireExecution stackTraceExec = SurefireExecution.SurefireFactory.createBarrierSTExec(this.surefire,
-                            this.originalArgLine, this.mavenProject, this.mavenSession, this.pluginManager,
-                            Paths.get(this.baseDir.getAbsolutePath(),
-                                    ConfigurationDefaults.DEFAULT_FLAKESYNC_DIR).toString(),
-                            this.localRepository, this.testName, delay, endLoc.replace("/", "."));
-                    executeSurefireExecution(null, stackTraceExec);
+                    // This run must FAIL to leave a trace to parse; it sometimes passes, so retry.
+                    int captureAttempts = Integer.getInteger("flakesync.captureRetries", 3);
+                    SurefireExecution stackTraceExec = null;
+                    boolean captured = false;
+
+                    for (int attempt = 0; attempt < captureAttempts && !captured; attempt++) {
+                        // Fresh execution per attempt: the constructor mints the clean_<id> report directory.
+                        stackTraceExec = SurefireExecution.SurefireFactory.createBarrierSTExec(this.surefire,
+                                this.originalArgLine, this.mavenProject, this.mavenSession, this.pluginManager,
+                                Paths.get(this.baseDir.getAbsolutePath(),
+                                        ConfigurationDefaults.DEFAULT_FLAKESYNC_DIR).toString(),
+                                this.localRepository, this.testName, delay, endLoc.replace("/", "."));
+                        captured = executeSurefireExecution(null, stackTraceExec);
+
+                        if (!captured) {
+                            System.out.println("CAPTURE: " + (attempt + 1) + "/" + captureAttempts
+                                    + " passed, no trace");
+                        }
+                    }
+
+                    if (!captured) {
+                        System.out.println("CAPTURE: no failure in " + captureAttempts
+                                + " attempts at " + endLoc);
+                    }
 
                     // Need to programmatically parse stack trace
                     File directory = new File(String.valueOf(Constants.getExecutionDir(
@@ -185,15 +187,8 @@ public class BarrierPointMojo extends FlakeSyncAbstractMojo {
 
                                 // Execute test with the delay and the new potential yield point
                                 // (no need to output starting line anymore)
-                                barrierPoint = SurefireExecution.SurefireFactory.createYieldExec1(this.surefire,
-                                        this.originalArgLine, this.mavenProject, this.mavenSession, this.pluginManager,
-                                        Paths.get(this.baseDir.getAbsolutePath(),
-                                                ConfigurationDefaults.DEFAULT_FLAKESYNC_DIR).toString(),
-                                        this.localRepository, this.testName, delay, endLoc, yieldingPoint, 1);
-                                boolean fail = executeSurefireExecution(null, barrierPoint);
-
                                 // If the test now passes and it was valid, add this point as the barrier point
-                                if (!fail && checkValidPass()) {
+                                if (passesRepeatedly(delay, endLoc, yieldingPoint, 1)) {
                                     addBarrierPointToResults(bw, line, yieldingPoint, 1);
                                     break;
                                 } else {
@@ -214,15 +209,7 @@ public class BarrierPointMojo extends FlakeSyncAbstractMojo {
                                     int numExecutions = Integer.parseInt(reader.readLine().split("=")[1]);
 
                                     // Run again with delay and potential yield point, but now check for threshold
-                                    barrierPoint = SurefireExecution.SurefireFactory.createYieldExec1(this.surefire,
-                                            this.originalArgLine, this.mavenProject, this.mavenSession, this.pluginManager,
-                                            Paths.get(this.baseDir.getAbsolutePath(),
-                                                    ConfigurationDefaults.DEFAULT_FLAKESYNC_DIR).toString(),
-                                            this.localRepository, this.testName, delay, endLoc, yieldingPoint,
-                                            numExecutions);
-                                    fail = executeSurefireExecution(null, barrierPoint);
-
-                                    if (!fail && checkValidPass()) {
+                                    if (passesRepeatedly(delay, endLoc, yieldingPoint, numExecutions)) {
                                         // If test passed, barrier point worked, and add to results file
                                         addBarrierPointToResults(bw, line, yieldingPoint, numExecutions);
                                         break;
@@ -300,6 +287,37 @@ public class BarrierPointMojo extends FlakeSyncAbstractMojo {
     }
 
     // Check whether the passing execution was valid, i.e., the injected delay got executed and yield point was added
+    /** The test is flaky, so one passing run can be luck; require the valid pass to repeat. */
+    private boolean passesRepeatedly(int delay, String endLoc, String yieldingPoint, int threshold)
+            throws Throwable {
+        int confirmations = Integer.getInteger("flakesync.bpConfirmations", 3);
+
+        for (int attempt = 0; attempt < confirmations; attempt++) {
+            // Fresh execution per attempt: the constructor mints the clean_<id> report directory.
+            SurefireExecution exec = SurefireExecution.SurefireFactory.createYieldExec1(this.surefire,
+                    this.originalArgLine, this.mavenProject, this.mavenSession, this.pluginManager,
+                    Paths.get(this.baseDir.getAbsolutePath(),
+                            ConfigurationDefaults.DEFAULT_FLAKESYNC_DIR).toString(),
+                    this.localRepository, this.testName, delay, endLoc, yieldingPoint, threshold);
+
+            boolean failed = executeSurefireExecution(null, exec);
+            if (failed || !checkValidPass()) {
+                if (confirmations > 1) {
+                    System.out.println("BARRIER: reject " + yieldingPoint + " thr=" + threshold
+                            + " at " + (attempt + 1) + "/" + confirmations
+                            + (failed ? " (failed)" : " (flags)"));
+                }
+                return false;
+            }
+        }
+
+        if (confirmations > 1) {
+            System.out.println("BARRIER: accept " + yieldingPoint + " thr=" + threshold
+                    + " (" + confirmations + "/" + confirmations + ")");
+        }
+        return true;
+    }
+
     private boolean checkValidPass() throws IOException {
         // Read the generated file to see that all valid conditions are met
         File barrierResultFile = new File(String.valueOf(Constants.getYieldResultFilepath(String.valueOf(
