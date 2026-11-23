@@ -110,7 +110,7 @@ public class Utility {
             // Consider all other methods currently running on other threads as able to run concurrently
             // Only consider those that are in the code-under-test, to filter out some more
             for (Map.Entry<Long, Stack<String>> entry : threadToMethods.entrySet()) {
-                if (entry.getKey() == threadId) {
+                if (entry.getKey().equals(threadId)) {
                     continue;
                 }
                 for (String otherMethod : entry.getValue()) {
